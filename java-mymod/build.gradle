@@ -1,0 +1,68 @@
+plugins {
+    id "net.fabricmc.fabric-loom" version "1.16.1"
+    id "java"
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    // No mappings — MC 26.1+ ships unobfuscated. If targeting older versions, add mappings here.
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // JUnit 5 for domain tests
+    testImplementation "org.junit.jupiter:junit-jupiter:5.11.4"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+java {
+    sourceCompatibility = JavaVersion.toVersion(project.java_version)
+    targetCompatibility = JavaVersion.toVersion(project.java_version)
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = Integer.parseInt(project.java_version)
+    options.encoding = "UTF-8"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+// SETUP: Replace the path below with your .minecraft/mods directory.
+// On Windows: "${System.getenv('APPDATA')}/.minecraft/mods"
+// On macOS:   "${System.getProperty('user.home')}/Library/Application Support/minecraft/mods"
+// On Linux:   "${System.getProperty('user.home')}/.minecraft/mods"
+tasks.register("deployToMods") {
+    description = "Builds and copies the mod jar to the .minecraft/mods folder"
+    group = "fabric"
+    dependsOn "build"
+    doLast {
+        def modsDir = file("${System.getenv('APPDATA')}/.minecraft/mods") // SETUP: Adjust path for your OS
+        modsDir.mkdirs()
+        def jarFile = jar.outputs.files.singleFile
+        copy {
+            from jarFile
+            into modsDir
+        }
+        println "Deployed ${jarFile.name} to ${modsDir}"
+    }
+}

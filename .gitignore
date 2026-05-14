@@ -1,0 +1,12 @@
+*.mcpack
+*.mcaddon
+*.zip
+.DS_Store
+node_modules/
+
+# Claude
+.claude/
+
+# Java mod
+java-mymod/.gradle/
+java-mymod/build/

@@ -1,0 +1,10 @@
+{
+  "name": "mymod",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Replace with your mod description",
+  "type": "module",
+  "scripts": {
+    "test": "node --import ./tests/register-hooks.mjs --test tests/*.test.mjs"
+  }
+}

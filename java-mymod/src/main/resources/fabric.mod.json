@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "mymod",
+  "version": "${version}",
+  "name": "My Mod",
+  "description": "Replace with your mod description",
+  "authors": ["Your Name"],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/mymod/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.mymod.MymodMod"],
+    "client": ["com.mymod.client.MymodModClient"]
+  },
+  "mixins": ["mymod.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "fabric-api": "*",
+    "minecraft": ">=26.1",
+    "java": ">=25"
+  }
+}
