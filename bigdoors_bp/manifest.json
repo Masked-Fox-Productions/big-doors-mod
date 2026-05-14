@@ -5,7 +5,7 @@
     "description": "Replace with your mod description",
     "uuid": "c6533541-b8dd-4a21-bb16-7788f93c0c2f",
     "version": [0, 1, 0],
-    "min_engine_version": [1, 20, 0]
+    "min_engine_version": [1, 21, 30]
   },
   "modules": [
     {
@@ -24,7 +24,7 @@
   "dependencies": [
     {
       "module_name": "@minecraft/server",
-      "version": "1.12.0"
+      "version": "1.16.0"
     }
   ]
 }

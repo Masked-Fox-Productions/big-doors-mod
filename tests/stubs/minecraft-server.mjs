@@ -61,6 +61,9 @@ function makeDefaultSystem() {
     afterEvents: {
       scriptEventReceive: makeNoopSubscribable(),
     },
+    beforeEvents: {
+      startup: makeNoopSubscribable(),
+    },
   };
 }
 
@@ -76,6 +79,18 @@ export class ItemStack {
   constructor(typeId, amount = 1) {
     this.typeId = typeId;
     this.amount = amount;
+  }
+}
+
+export class BlockPermutation {
+  constructor(typeId, states = {}) {
+    this.type = { id: typeId };
+    this._states = { ...states };
+  }
+  getState(name) { return this._states[name]; }
+  getAllStates() { return { ...this._states }; }
+  static resolve(typeId, states = {}) {
+    return new BlockPermutation(typeId, states);
   }
 }
 
