@@ -16,6 +16,30 @@ export const MAX_DOOR_SCAN_RADIUS = 16;
 // Tick intervals (20 ticks = 1 second)
 export const REDSTONE_DEBOUNCE_TICKS = 2;
 
+// Direction helpers — cardinal direction labels used by assemblies
+export const DIRECTIONS = {
+  NORTH: "north",
+  SOUTH: "south",
+  EAST: "east",
+  WEST: "west",
+};
+
+// Offsets keyed by direction label
+export const DIR_OFFSETS = {
+  north: { x: 0, y: 0, z: -1 },
+  south: { x: 0, y: 0, z: 1 },
+  east:  { x: 1, y: 0, z: 0 },
+  west:  { x: -1, y: 0, z: 0 },
+};
+
+// Opposite direction mapping
+export const OPPOSITE_DIR = {
+  north: "south",
+  south: "north",
+  east: "west",
+  west: "east",
+};
+
 // --------------------------------------------------------------------------
 // Block classification sets — used by ObstructionChecker.classifyBlock()
 // --------------------------------------------------------------------------

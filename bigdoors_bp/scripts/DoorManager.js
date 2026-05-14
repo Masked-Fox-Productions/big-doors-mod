@@ -65,6 +65,21 @@ export class DoorManager {
     return assembly;
   }
 
+  addHingeToAssembly(assemblyId, hingePos) {
+    const assembly = this._assemblies.get(assemblyId);
+    if (!assembly) return;
+    assembly.addHinge(hingePos);
+    this._positionIndex.set(posKey(hingePos), assemblyId);
+    this.save();
+  }
+
+  setDoorSide(assemblyId, doorSide) {
+    const assembly = this._assemblies.get(assemblyId);
+    if (!assembly) return;
+    assembly.doorSide = doorSide;
+    this.save();
+  }
+
   addPanelToAssembly(assemblyId, panelPos, materialIndex) {
     const assembly = this._assemblies.get(assemblyId);
     if (!assembly) return;

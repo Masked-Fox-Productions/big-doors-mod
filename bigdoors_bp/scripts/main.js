@@ -1,5 +1,7 @@
 import { world, system } from "@minecraft/server";
 import { DoorManager } from "./DoorManager.js";
+import { HingePlacementHandler } from "./handler/HingePlacementHandler.js";
+import { PanelPlacementHandler } from "./handler/PanelPlacementHandler.js";
 
 console.warn("[bigdoors] === Mod initializing ===");
 
@@ -39,6 +41,12 @@ system.run(() => {
   console.warn("[bigdoors] Fallback load triggered");
   manager.load();
 });
+
+const hingePlacement = new HingePlacementHandler(manager);
+hingePlacement.register();
+
+const panelPlacement = new PanelPlacementHandler(manager);
+panelPlacement.register();
 
 console.warn("[bigdoors] === Initialization complete ===");
 
