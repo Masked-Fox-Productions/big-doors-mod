@@ -1,4 +1,0 @@
-## SETUP: Replace "mymod" with your mod's namespace and add your entries
-
-tile.mymod:example_block.name=Example Block
-item.mymod:example_block.name=Example Block

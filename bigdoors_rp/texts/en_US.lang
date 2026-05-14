@@ -1,0 +1,4 @@
+## SETUP: Replace "bigdoors" with your mod's namespace and add your entries
+
+tile.bigdoors:example_block.name=Example Block
+item.bigdoors:example_block.name=Example Block

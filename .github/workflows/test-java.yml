@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: java-mymod
+        working-directory: java-bigdoors
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4

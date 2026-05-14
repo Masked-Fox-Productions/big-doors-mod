@@ -8,5 +8,5 @@ node_modules/
 .claude/
 
 # Java mod
-java-mymod/.gradle/
-java-mymod/build/
+java-bigdoors/.gradle/
+java-bigdoors/build/

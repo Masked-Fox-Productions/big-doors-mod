@@ -1,7 +1,7 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { __reset } from "@minecraft/server";
-import { Example } from "../mymod_bp/scripts/domain/Example.js";
+import { Example } from "../bigdoors_bp/scripts/domain/Example.js";
 
 describe("Example", () => {
   beforeEach(() => {

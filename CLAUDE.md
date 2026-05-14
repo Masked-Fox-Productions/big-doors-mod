@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Minecraft mod targeting both Bedrock Edition (Script API + JSON definitions) and Java Edition (Fabric). The repo ships:
 
-- `mymod_bp/` — behavior pack: block JSONs, recipes, entities, and the script bundle entered at `scripts/main.js`.
-- `mymod_rp/` — resource pack: lang strings and textures.
-- `java-mymod/` — Fabric mod: Gradle-based Java project with the same game logic.
+- `bigdoors_bp/` — behavior pack: block JSONs, recipes, entities, and the script bundle entered at `scripts/main.js`.
+- `bigdoors_rp/` — resource pack: lang strings and textures.
+- `java-bigdoors/` — Fabric mod: Gradle-based Java project with the same game logic.
 
 The Bedrock Script API target is `@minecraft/server` 1.12.0 against `min_engine_version` 1.20.0. Scripts are ESM (`"type": "module"` at the repo root).
 
@@ -21,9 +21,9 @@ node --import ./tests/register-hooks.mjs --test tests/Example.test.mjs     # sin
 node --import ./tests/register-hooks.mjs --test --test-name-pattern "pattern" tests/*.test.mjs  # filter by name
 
 # Java tests
-cd java-mymod && ./gradlew test                                       # run all Java tests
-cd java-mymod && ./gradlew build                                      # build mod JAR
-cd java-mymod && ./gradlew deployToMods                               # build and deploy to .minecraft/mods
+cd java-bigdoors && ./gradlew test                                       # run all Java tests
+cd java-bigdoors && ./gradlew build                                      # build mod JAR
+cd java-bigdoors && ./gradlew deployToMods                               # build and deploy to .minecraft/mods
 ```
 
 The `--import ./tests/register-hooks.mjs` flag is required for Bedrock tests: it installs a Node loader hook that redirects `@minecraft/server` to `tests/stubs/minecraft-server.mjs`. Without it, importing any production module fails because the Bedrock module doesn't exist in Node.
@@ -57,7 +57,7 @@ The Java edition follows the same architecture: domain classes have no Minecraft
 ## Conventions
 
 - **All magic numbers go in `scripts/util/Constants.js`.** Radii, intervals, scan thresholds, block IDs. Nothing hardcoded in handlers or domain classes.
-- **Block identifiers are namespaced with your mod ID** (e.g. `mymod:example_block`).
+- **Block identifiers are namespaced with your mod ID** (e.g. `bigdoors:example_block`).
 - **Domain code never imports `@minecraft/server`.** If you need the API in a domain class, that logic belongs in the subsystem or handler layer instead.
 - **Mutations to state must call `manager.save()`** so the world dynamic property stays current.
 
@@ -67,4 +67,4 @@ Tests live in `tests/*.test.mjs` and use `node:test` + `node:assert/strict`. The
 
 When adding a test for code that imports `@minecraft/server`, install fakes via `__setWorld` **before** importing the module under test, or rely on the default noop stub.
 
-Java tests live in `java-mymod/src/test/` and use JUnit 5. Domain tests need no Minecraft server — they test pure Java classes directly.
+Java tests live in `java-bigdoors/src/test/` and use JUnit 5. Domain tests need no Minecraft server — they test pure Java classes directly.

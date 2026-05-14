@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "bigdoors",
+  "version": "${version}",
+  "name": "Big Doors",
+  "description": "Replace with your mod description",
+  "authors": ["Aaron Pogue"],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/bigdoors/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.bigdoors.BigdoorsMod"],
+    "client": ["com.bigdoors.client.BigdoorsModClient"]
+  },
+  "mixins": ["bigdoors.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "fabric-api": "*",
+    "minecraft": ">=26.1",
+    "java": ">=25"
+  }
+}

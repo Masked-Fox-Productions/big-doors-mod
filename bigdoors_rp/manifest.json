@@ -1,0 +1,23 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Big Doors Resources",
+    "description": "Textures and strings for Big Doors",
+    "uuid": "d7998d73-d5f1-4fe1-a42e-da7fa88018c4",
+    "version": [0, 1, 0],
+    "min_engine_version": [1, 20, 0]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "f0b1c480-1d40-44a6-a8e4-00750e814cd3",
+      "version": [0, 1, 0]
+    }
+  ],
+  "dependencies": [
+    {
+      "uuid": "c6533541-b8dd-4a21-bb16-7788f93c0c2f",
+      "version": [0, 1, 0]
+    }
+  ]
+}

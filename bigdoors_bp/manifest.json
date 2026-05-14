@@ -1,0 +1,30 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Big Doors",
+    "description": "Replace with your mod description",
+    "uuid": "c6533541-b8dd-4a21-bb16-7788f93c0c2f",
+    "version": [0, 1, 0],
+    "min_engine_version": [1, 20, 0]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "c0beb08b-3cac-4cd3-8f48-7f32e37a73d2",
+      "version": [0, 1, 0]
+    },
+    {
+      "type": "script",
+      "uuid": "fe060ab6-cadd-4016-a65a-1dbbe0737681",
+      "version": [0, 1, 0],
+      "entry": "scripts/main.js",
+      "language": "javascript"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.12.0"
+    }
+  ]
+}
