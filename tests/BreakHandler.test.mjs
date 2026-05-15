@@ -11,7 +11,7 @@ function makePanelBreakEvent(location, materialIndex, dimension) {
   const id = materialIndex % 16;
   return {
     block: { location, dimension },
-    destroyedBlockPermutation: {
+    brokenBlockPermutation: {
       type: { id: PANEL_BLOCK_ID },
       getState(name) {
         if (name === "bigdoors:material_group") return group;
@@ -27,7 +27,7 @@ function makePanelBreakEvent(location, materialIndex, dimension) {
 function makeHingeBreakEvent(location, dimension) {
   return {
     block: { location, dimension },
-    destroyedBlockPermutation: {
+    brokenBlockPermutation: {
       type: { id: HINGE_BLOCK_ID },
       getState() { return undefined; },
       getAllStates() { return {}; },

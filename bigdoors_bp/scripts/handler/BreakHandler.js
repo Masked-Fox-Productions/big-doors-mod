@@ -10,8 +10,8 @@ export class BreakHandler {
   handlePanelBreak(event) {
     const pos = event.block.location;
     const dimension = event.block.dimension;
-    const group = event.destroyedBlockPermutation.getState("bigdoors:material_group");
-    const id = event.destroyedBlockPermutation.getState("bigdoors:material_id");
+    const group = event.brokenBlockPermutation.getState("bigdoors:material_group");
+    const id = event.brokenBlockPermutation.getState("bigdoors:material_id");
     const materialIndex = blockStatesToMaterial(group, id);
 
     const assembly = this._manager.findByPosition(pos);

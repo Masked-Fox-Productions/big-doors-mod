@@ -64,6 +64,24 @@ export class HingePlacementHandler {
       assembly = this._manager.createAssembly(pos, facing, "horizontal");
     }
 
+    const doubleDoorResult = this._detectDoubleDoor(assembly, pos, dimension);
+    if (doubleDoorResult) {
+      const { otherAssembly, doorSide } = doubleDoorResult;
+      this._manager.setDoorSide(assembly.id, doorSide);
+
+      block.setPermutation(
+        BlockPermutation.resolve(HINGE_BLOCK_ID, {
+          "bigdoors:facing": facing,
+          "bigdoors:mode": "horizontal",
+          "bigdoors:door_side": doorSide,
+        })
+      );
+
+      this._manager.pairAssemblies(assembly.id, otherAssembly.id);
+      this._splitPanelsBetween(assembly, otherAssembly);
+      return;
+    }
+
     const materialSides = this._detectMaterialSides(pos, dimension);
 
     if (materialSides.length === 1) {
@@ -167,6 +185,67 @@ export class HingePlacementHandler {
 
       if (!columnHasBlocks) break;
     }
+  }
+
+  _detectDoubleDoor(newAssembly, hingePos, dimension) {
+    for (const dir of HORIZONTAL_DIRS) {
+      const offset = DIR_OFFSETS[dir];
+      const neighborPos = posAdd(hingePos, offset);
+      const neighborBlock = dimension.getBlock(neighborPos);
+      if (!neighborBlock || neighborBlock.typeId !== PANEL_BLOCK_ID) continue;
+
+      const otherAssembly = this._manager.findByPosition(neighborPos);
+      if (!otherAssembly || otherAssembly.id === newAssembly.id) continue;
+      if (otherAssembly.partnerAssemblyId) continue;
+      if (!otherAssembly.doorSide) continue;
+      if (otherAssembly.doorSide !== OPPOSITE_DIR[dir]) continue;
+
+      return { otherAssembly, doorSide: dir };
+    }
+    return null;
+  }
+
+  _splitPanelsBetween(assemblyA, assemblyB) {
+    const hingeA = assemblyA.primaryHingePos;
+    const hingeB = assemblyB.primaryHingePos;
+
+    const allPanels = [...assemblyA.panelPositions, ...assemblyB.panelPositions];
+    const seen = new Set();
+    const unique = [];
+    for (const p of allPanels) {
+      const key = `${p.closedPos.x},${p.closedPos.y},${p.closedPos.z}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(p);
+      }
+    }
+
+    const axis = hingeA.x !== hingeB.x ? "x" : "z";
+    const minVal = Math.min(hingeA[axis], hingeB[axis]);
+    const maxVal = Math.max(hingeA[axis], hingeB[axis]);
+
+    const between = unique.filter((p) => {
+      const v = p.closedPos[axis];
+      return v > minVal && v < maxVal;
+    });
+
+    between.sort((a, b) => a.closedPos[axis] - b.closedPos[axis]);
+
+    const midpoint = (minVal + maxVal) / 2;
+
+    const panelsA = [];
+    const panelsB = [];
+
+    for (const p of between) {
+      const v = p.closedPos[axis];
+      if (v < midpoint) panelsA.push(p);
+      else if (v > midpoint) panelsB.push(p);
+    }
+
+    const isACloserToMin = hingeA[axis] < hingeB[axis];
+    assemblyA.panelPositions = isACloserToMin ? panelsA : panelsB;
+    assemblyB.panelPositions = isACloserToMin ? panelsB : panelsA;
+    this._manager.save();
   }
 
   _convertIfMaterial(pos, assembly, dimension) {

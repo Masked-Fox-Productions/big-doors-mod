@@ -1,5 +1,6 @@
 import { BlockPermutation, ItemStack } from "@minecraft/server";
 import { PANEL_BLOCK_ID } from "../util/Constants.js";
+import { materialToBlockStates } from "../domain/MaterialRegistry.js";
 import { checkPath } from "../domain/ObstructionChecker.js";
 import { rotateCW, rotateCCW } from "../domain/RotationMath.js";
 import { sweep } from "./EntitySweeper.js";
@@ -100,7 +101,7 @@ export class RedstoneSubsystem {
       const b = dimension.getBlock(t.dest);
       if (b) {
         b.setPermutation(
-          BlockPermutation.resolve(PANEL_BLOCK_ID, { "bigdoors:material": t.materialIndex })
+          BlockPermutation.resolve(PANEL_BLOCK_ID, materialToBlockStates(t.materialIndex))
         );
       }
     }
@@ -134,7 +135,7 @@ export class RedstoneSubsystem {
       const b = dimension.getBlock(t.dest);
       if (b) {
         b.setPermutation(
-          BlockPermutation.resolve(PANEL_BLOCK_ID, { "bigdoors:material": t.materialIndex })
+          BlockPermutation.resolve(PANEL_BLOCK_ID, materialToBlockStates(t.materialIndex))
         );
       }
     }
