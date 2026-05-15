@@ -16,9 +16,31 @@ export class InteractionHandler {
 
     if (!assembly.isOpen) {
       this._tryOpen(assembly, player, dimension);
+      this._tryOpenPartner(assembly, dimension);
     } else {
       this._close(assembly, dimension);
+      this._tryClosePartner(assembly, dimension);
     }
+  }
+
+  _tryOpenPartner(assembly, dimension) {
+    if (!assembly.isOpen || !assembly.partnerAssemblyId) return;
+    const partner = this._manager.getAssembly(assembly.partnerAssemblyId);
+    if (!partner || partner.isOpen || partner.panelPositions.length === 0) return;
+
+    const mirrorDir = assembly.openDirection === "cw" ? "ccw" : "cw";
+    const hingePos = partner.primaryHingePos;
+    const panelPositions = partner.getAllCurrentPositions();
+
+    this._attemptOpen(partner, panelPositions, hingePos, mirrorDir, dimension);
+  }
+
+  _tryClosePartner(assembly, dimension) {
+    if (!assembly.partnerAssemblyId) return;
+    const partner = this._manager.getAssembly(assembly.partnerAssemblyId);
+    if (!partner || !partner.isOpen) return;
+
+    this._close(partner, dimension);
   }
 
   _tryOpen(assembly, player, dimension) {

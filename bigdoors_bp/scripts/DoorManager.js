@@ -145,6 +145,24 @@ export class DoorManager {
     this.save();
   }
 
+  pairAssemblies(assemblyIdA, assemblyIdB) {
+    const a = this._assemblies.get(assemblyIdA);
+    const b = this._assemblies.get(assemblyIdB);
+    if (!a || !b) return;
+    a.partnerAssemblyId = assemblyIdB;
+    b.partnerAssemblyId = assemblyIdA;
+    this.save();
+  }
+
+  unpairAssembly(assemblyId) {
+    const assembly = this._assemblies.get(assemblyId);
+    if (!assembly || !assembly.partnerAssemblyId) return;
+    const partner = this._assemblies.get(assembly.partnerAssemblyId);
+    if (partner) partner.partnerAssemblyId = null;
+    assembly.partnerAssemblyId = null;
+    this.save();
+  }
+
   closeDoor(assemblyId) {
     const assembly = this._assemblies.get(assemblyId);
     if (!assembly) return;
