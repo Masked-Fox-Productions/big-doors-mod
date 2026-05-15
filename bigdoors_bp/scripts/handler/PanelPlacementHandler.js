@@ -6,7 +6,7 @@ import {
   DIRECTIONS,
   OPPOSITE_DIR,
 } from "../util/Constants.js";
-import { indexForTypeId } from "../domain/MaterialRegistry.js";
+import { indexForTypeId, materialToBlockStates } from "../domain/MaterialRegistry.js";
 
 const HORIZONTAL_DIRS = [
   DIRECTIONS.NORTH,
@@ -101,9 +101,7 @@ export class PanelPlacementHandler {
     if (placedDir !== assembly.doorSide) return false;
 
     block.setPermutation(
-      BlockPermutation.resolve(PANEL_BLOCK_ID, {
-        "bigdoors:material": matIdx,
-      })
+      BlockPermutation.resolve(PANEL_BLOCK_ID, materialToBlockStates(matIdx))
     );
     this._manager.addPanelToAssembly(assembly.id, pos, matIdx);
     this._checkDoubleDoor(assembly, dimension);
@@ -123,9 +121,7 @@ export class PanelPlacementHandler {
     }
 
     block.setPermutation(
-      BlockPermutation.resolve(PANEL_BLOCK_ID, {
-        "bigdoors:material": matIdx,
-      })
+      BlockPermutation.resolve(PANEL_BLOCK_ID, materialToBlockStates(matIdx))
     );
     this._manager.addPanelToAssembly(assembly.id, pos, matIdx);
     this._checkDoubleDoor(assembly, dimension);

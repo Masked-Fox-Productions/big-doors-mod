@@ -7,15 +7,18 @@ import { HINGE_BLOCK_ID, PANEL_BLOCK_ID } from "../bigdoors_bp/scripts/util/Cons
 import { makeMockDimension, placeBlock } from "./helpers/mock-dimension.mjs";
 
 function makePanelBreakEvent(location, materialIndex, dimension) {
+  const group = Math.floor(materialIndex / 16);
+  const id = materialIndex % 16;
   return {
     block: { location, dimension },
     destroyedBlockPermutation: {
       type: { id: PANEL_BLOCK_ID },
       getState(name) {
-        if (name === "bigdoors:material") return materialIndex;
+        if (name === "bigdoors:material_group") return group;
+        if (name === "bigdoors:material_id") return id;
         return undefined;
       },
-      getAllStates() { return { "bigdoors:material": materialIndex }; },
+      getAllStates() { return { "bigdoors:material_group": group, "bigdoors:material_id": id }; },
     },
     player: { name: "TestPlayer" },
   };
@@ -149,9 +152,9 @@ describe("BreakHandler", () => {
 
     it("drops correct vanilla material for each panel", () => {
       const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
-      manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 17);
+      manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 14);
 
-      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 }, { "bigdoors:material": 17 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 }, { "bigdoors:material_group": 0, "bigdoors:material_id": 14 });
 
       const event = makeHingeBreakEvent({ x: 0, y: 0, z: 0 }, dim);
       handler.handleHingeBreak(event);

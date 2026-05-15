@@ -10,7 +10,7 @@ Minecraft mod targeting both Bedrock Edition (Script API + JSON definitions) and
 - `bigdoors_rp/` — resource pack: lang strings and textures.
 - `java-bigdoors/` — Fabric mod: Gradle-based Java project with the same game logic.
 
-The Bedrock Script API target is `@minecraft/server` 1.12.0 against `min_engine_version` 1.20.0. Scripts are ESM (`"type": "module"` at the repo root).
+The Bedrock Script API target is `@minecraft/server` 2.7.0 against `min_engine_version` 1.26.0. Scripts are ESM (`"type": "module"` at the repo root).
 
 ## Commands
 

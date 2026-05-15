@@ -3,6 +3,7 @@ import { rotateCW, rotateCCW } from "../domain/RotationMath.js";
 import { checkPath } from "../domain/ObstructionChecker.js";
 import { sweep } from "../subsystem/EntitySweeper.js";
 import { PANEL_BLOCK_ID } from "../util/Constants.js";
+import { materialToBlockStates } from "../domain/MaterialRegistry.js";
 
 export class InteractionHandler {
   constructor(manager) {
@@ -137,7 +138,7 @@ export class InteractionHandler {
       const b = dimension.getBlock(t.dest);
       if (b) {
         b.setPermutation(
-          BlockPermutation.resolve(PANEL_BLOCK_ID, { "bigdoors:material": t.materialIndex })
+          BlockPermutation.resolve(PANEL_BLOCK_ID, materialToBlockStates(t.materialIndex))
         );
       }
     }
@@ -172,7 +173,7 @@ export class InteractionHandler {
       const b = dimension.getBlock(t.dest);
       if (b) {
         b.setPermutation(
-          BlockPermutation.resolve(PANEL_BLOCK_ID, { "bigdoors:material": t.materialIndex })
+          BlockPermutation.resolve(PANEL_BLOCK_ID, materialToBlockStates(t.materialIndex))
         );
       }
     }

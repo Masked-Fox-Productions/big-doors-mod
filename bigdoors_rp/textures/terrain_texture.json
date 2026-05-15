@@ -7,6 +7,120 @@
     },
     "bigdoors_hinge_active": {
       "textures": "textures/blocks/hinge_active"
+    },
+    "bricks": {
+      "textures": "textures/blocks/brick"
+    },
+    "mossy_cobblestone": {
+      "textures": "textures/blocks/cobblestone_mossy"
+    },
+    "sandstone": {
+      "textures": "textures/blocks/sandstone_normal"
+    },
+    "red_sandstone": {
+      "textures": "textures/blocks/red_sandstone_normal"
+    },
+    "purpur_block": {
+      "textures": "textures/blocks/purpur_block"
+    },
+    "end_stone_bricks": {
+      "textures": "textures/blocks/end_bricks"
+    },
+    "white_wool": {
+      "textures": "textures/blocks/wool_colored_white"
+    },
+    "orange_wool": {
+      "textures": "textures/blocks/wool_colored_orange"
+    },
+    "magenta_wool": {
+      "textures": "textures/blocks/wool_colored_magenta"
+    },
+    "light_blue_wool": {
+      "textures": "textures/blocks/wool_colored_light_blue"
+    },
+    "yellow_wool": {
+      "textures": "textures/blocks/wool_colored_yellow"
+    },
+    "lime_wool": {
+      "textures": "textures/blocks/wool_colored_lime"
+    },
+    "pink_wool": {
+      "textures": "textures/blocks/wool_colored_pink"
+    },
+    "gray_wool": {
+      "textures": "textures/blocks/wool_colored_gray"
+    },
+    "light_gray_wool": {
+      "textures": "textures/blocks/wool_colored_silver"
+    },
+    "cyan_wool": {
+      "textures": "textures/blocks/wool_colored_cyan"
+    },
+    "purple_wool": {
+      "textures": "textures/blocks/wool_colored_purple"
+    },
+    "blue_wool": {
+      "textures": "textures/blocks/wool_colored_blue"
+    },
+    "brown_wool": {
+      "textures": "textures/blocks/wool_colored_brown"
+    },
+    "green_wool": {
+      "textures": "textures/blocks/wool_colored_green"
+    },
+    "red_wool": {
+      "textures": "textures/blocks/wool_colored_red"
+    },
+    "black_wool": {
+      "textures": "textures/blocks/wool_colored_black"
+    },
+    "white_concrete": {
+      "textures": "textures/blocks/concrete_white"
+    },
+    "orange_concrete": {
+      "textures": "textures/blocks/concrete_orange"
+    },
+    "magenta_concrete": {
+      "textures": "textures/blocks/concrete_magenta"
+    },
+    "light_blue_concrete": {
+      "textures": "textures/blocks/concrete_light_blue"
+    },
+    "yellow_concrete": {
+      "textures": "textures/blocks/concrete_yellow"
+    },
+    "lime_concrete": {
+      "textures": "textures/blocks/concrete_lime"
+    },
+    "pink_concrete": {
+      "textures": "textures/blocks/concrete_pink"
+    },
+    "gray_concrete": {
+      "textures": "textures/blocks/concrete_gray"
+    },
+    "light_gray_concrete": {
+      "textures": "textures/blocks/concrete_silver"
+    },
+    "cyan_concrete": {
+      "textures": "textures/blocks/concrete_cyan"
+    },
+    "purple_concrete": {
+      "textures": "textures/blocks/concrete_purple"
+    },
+    "blue_concrete": {
+      "textures": "textures/blocks/concrete_blue"
+    },
+    "brown_concrete": {
+      "textures": "textures/blocks/concrete_brown"
+    },
+    "green_concrete": {
+      "textures": "textures/blocks/concrete_green"
+    },
+    "red_concrete": {
+      "textures": "textures/blocks/concrete_red"
+    },
+    "black_concrete": {
+      "textures": "textures/blocks/concrete_black"
     }
   }
 }

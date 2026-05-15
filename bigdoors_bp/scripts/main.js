@@ -18,7 +18,7 @@ system.beforeEvents.startup.subscribe((ev) => {
     onPlayerInteract(e) {
       interaction.handleInteract(e.block, e.player, e.block.dimension);
     },
-    onPlayerDestroy(e) {
+    onPlayerBreak(e) {
       breakHandler.handleHingeBreak(e);
     },
     beforeOnPlayerPlace(e) {
@@ -33,7 +33,7 @@ system.beforeEvents.startup.subscribe((ev) => {
     onPlayerInteract(e) {
       interaction.handleInteract(e.block, e.player, e.block.dimension);
     },
-    onPlayerDestroy(e) {
+    onPlayerBreak(e) {
       breakHandler.handlePanelBreak(e);
     },
   });
@@ -44,8 +44,8 @@ interaction = new InteractionHandler(manager);
 breakHandler = new BreakHandler(manager);
 redstone = new RedstoneSubsystem(manager);
 
-world.afterEvents.worldInitialize.subscribe(() => {
-  console.warn("[bigdoors] worldInitialize fired — loading persistence");
+world.afterEvents.worldLoad.subscribe(() => {
+  console.warn("[bigdoors] worldLoad fired — loading persistence");
   manager.load();
 });
 

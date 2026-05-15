@@ -1,5 +1,5 @@
 import { ItemStack } from "@minecraft/server";
-import { typeIdForIndex } from "../domain/MaterialRegistry.js";
+import { typeIdForIndex, blockStatesToMaterial } from "../domain/MaterialRegistry.js";
 import { HINGE_BLOCK_ID, PANEL_BLOCK_ID } from "../util/Constants.js";
 
 export class BreakHandler {
@@ -10,7 +10,9 @@ export class BreakHandler {
   handlePanelBreak(event) {
     const pos = event.block.location;
     const dimension = event.block.dimension;
-    const materialIndex = event.destroyedBlockPermutation.getState("bigdoors:material");
+    const group = event.destroyedBlockPermutation.getState("bigdoors:material_group");
+    const id = event.destroyedBlockPermutation.getState("bigdoors:material_id");
+    const materialIndex = blockStatesToMaterial(group, id);
 
     const assembly = this._manager.findByPosition(pos);
     if (!assembly) return;

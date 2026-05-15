@@ -1,16 +1,16 @@
 {
-  "format_version": "1.21.30",
+  "format_version": "1.26.0",
   "minecraft:block": {
     "description": {
       "identifier": "bigdoors:hinge",
       "menu_category": {
         "category": "construction",
-        "group": "itemGroup.name.door"
+        "group": "minecraft:itemGroup.name.door"
       },
       "states": {
-        "bigdoors:facing": [0, 1, 2, 3],
-        "bigdoors:mode": [0, 1],
-        "bigdoors:door_side": [0, 1, 2, 3, 4]
+        "bigdoors:facing": ["north", "south", "east", "west"],
+        "bigdoors:mode": ["horizontal", "vertical"],
+        "bigdoors:door_side": ["none", "north", "south", "east", "west"]
       }
     },
     "components": {
@@ -20,7 +20,7 @@
       "minecraft:loot": "loot_tables/empty.json",
       "bigdoors:hinge_component": {},
       "minecraft:redstone_consumer": {},
-      "minecraft:geometry": "geometry.full_block",
+      "minecraft:geometry": "minecraft:geometry.full_block",
       "minecraft:material_instances": {
         "*": {
           "texture": "bigdoors_hinge",
@@ -30,25 +30,25 @@
     },
     "permutations": [
       {
-        "condition": "q.block_state('bigdoors:facing') == 0",
+        "condition": "q.block_state('bigdoors:facing') == 'north'",
         "components": {
           "minecraft:transformation": { "rotation": [0, 0, 0] }
         }
       },
       {
-        "condition": "q.block_state('bigdoors:facing') == 1",
+        "condition": "q.block_state('bigdoors:facing') == 'south'",
         "components": {
           "minecraft:transformation": { "rotation": [0, 180, 0] }
         }
       },
       {
-        "condition": "q.block_state('bigdoors:facing') == 2",
+        "condition": "q.block_state('bigdoors:facing') == 'east'",
         "components": {
           "minecraft:transformation": { "rotation": [0, 90, 0] }
         }
       },
       {
-        "condition": "q.block_state('bigdoors:facing') == 3",
+        "condition": "q.block_state('bigdoors:facing') == 'west'",
         "components": {
           "minecraft:transformation": { "rotation": [0, -90, 0] }
         }

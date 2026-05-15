@@ -7,7 +7,7 @@ import {
   DIRECTIONS,
   OPPOSITE_DIR,
 } from "../util/Constants.js";
-import { indexForTypeId } from "../domain/MaterialRegistry.js";
+import { indexForTypeId, materialToBlockStates } from "../domain/MaterialRegistry.js";
 
 const HORIZONTAL_DIRS = [
   DIRECTIONS.NORTH,
@@ -55,7 +55,7 @@ export class HingePlacementHandler {
       BlockPermutation.resolve(HINGE_BLOCK_ID, {
         "bigdoors:facing": facing,
         "bigdoors:mode": "horizontal",
-        "bigdoors:door_side": "",
+        "bigdoors:door_side": "none",
       })
     );
 
@@ -177,9 +177,7 @@ export class HingePlacementHandler {
     if (matIdx < 0) return false;
 
     block.setPermutation(
-      BlockPermutation.resolve(PANEL_BLOCK_ID, {
-        "bigdoors:material": matIdx,
-      })
+      BlockPermutation.resolve(PANEL_BLOCK_ID, materialToBlockStates(matIdx))
     );
     this._manager.addPanelToAssembly(assembly.id, pos, matIdx);
     return true;
