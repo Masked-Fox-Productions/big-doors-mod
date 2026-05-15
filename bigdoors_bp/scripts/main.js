@@ -3,11 +3,13 @@ import { DoorManager } from "./DoorManager.js";
 import { HingePlacementHandler } from "./handler/HingePlacementHandler.js";
 import { PanelPlacementHandler } from "./handler/PanelPlacementHandler.js";
 import { InteractionHandler } from "./handler/InteractionHandler.js";
+import { BreakHandler } from "./handler/BreakHandler.js";
 
 console.warn("[bigdoors] === Mod initializing ===");
 
 let manager;
 let interaction;
+let breakHandler;
 
 system.beforeEvents.startup.subscribe((ev) => {
   ev.blockComponentRegistry.registerCustomComponent("bigdoors:hinge_component", {
@@ -15,7 +17,7 @@ system.beforeEvents.startup.subscribe((ev) => {
       interaction.handleInteract(e.block, e.player, e.block.dimension);
     },
     onPlayerDestroy(e) {
-      console.warn("[bigdoors] hinge destroy stub");
+      breakHandler.handleHingeBreak(e);
     },
     beforeOnPlayerPlace(e) {
       console.warn("[bigdoors] hinge place stub");
@@ -27,13 +29,14 @@ system.beforeEvents.startup.subscribe((ev) => {
       interaction.handleInteract(e.block, e.player, e.block.dimension);
     },
     onPlayerDestroy(e) {
-      console.warn("[bigdoors] panel destroy stub");
+      breakHandler.handlePanelBreak(e);
     },
   });
 });
 
 manager = new DoorManager();
 interaction = new InteractionHandler(manager);
+breakHandler = new BreakHandler(manager);
 
 world.afterEvents.worldInitialize.subscribe(() => {
   console.warn("[bigdoors] worldInitialize fired — loading persistence");
