@@ -94,6 +94,18 @@ export function rotateVerticalCCW(pos, hingePos, facing) {
 }
 
 /**
+ * Returns the appropriate rotation function for the given mode/facing/direction.
+ * The returned function has signature (pos, hingePos) => pos.
+ */
+export function getRotateFn(mode, facing, direction) {
+  if (mode === "vertical") {
+    const vertFn = direction === "cw" ? rotateVerticalCW : rotateVerticalCCW;
+    return (pos, hingePos) => vertFn(pos, hingePos, facing);
+  }
+  return direction === "cw" ? rotateCW : rotateCCW;
+}
+
+/**
  * Compute intermediate arc positions between current and rotated position
  * for entity sweep purposes. Returns an array of {x,y,z} positions the
  * panel passes through during the 90-degree sweep.

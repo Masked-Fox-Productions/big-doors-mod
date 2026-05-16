@@ -6,7 +6,7 @@
  */
 
 import { SOFT_BLOCKS, PASSABLE_BLOCKS, AIR_BLOCKS } from "../util/Constants.js";
-import { rotateCW, rotateCCW } from "./RotationMath.js";
+import { getRotateFn } from "./RotationMath.js";
 
 /**
  * Classify a block typeId into one of three tiers.
@@ -28,10 +28,12 @@ export function classifyBlock(typeId) {
  * @param {'cw'|'ccw'} direction — rotation direction
  * @param {function({x:number,y:number,z:number}): string|null} blockQueryFn
  *        Called with a position, returns the typeId of the block there (or null/undefined for air).
+ * @param {string} [mode="horizontal"] — rotation mode
+ * @param {string} [facing=""] — hinge facing (required for vertical mode)
  * @returns {{canOpen:boolean, obstructedPositions:Array, softBlocks:Array, passableBlocks:Array}}
  */
-export function checkPath(panelPositions, hingePos, direction, blockQueryFn) {
-  const rotateFn = direction === "cw" ? rotateCW : rotateCCW;
+export function checkPath(panelPositions, hingePos, direction, blockQueryFn, mode = "horizontal", facing = "") {
+  const rotateFn = getRotateFn(mode, facing, direction);
   const obstructedPositions = [];
   const softBlocks = [];
   const passableBlocks = [];

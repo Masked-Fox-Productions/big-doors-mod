@@ -145,4 +145,40 @@ describe("checkPath", () => {
     assert.equal(result.canOpen, true);
     assert.equal(result.obstructedPositions.length, 0);
   });
+
+  it("uses vertical rotation when mode='vertical' and facing='north'", () => {
+    // Panel at (0, 2, 0), hinge at (0,0,0), vertical north CW:
+    // dy=2, dx=0 → newX = 0+2=2, newY = 0-0=0 → dest (2, 0, 0)
+    const panels = [{ x: 0, y: 2, z: 0 }];
+    const blockQuery = (pos) => {
+      if (pos.x === 2 && pos.y === 0 && pos.z === 0) return "minecraft:stone";
+      return null;
+    };
+
+    const result = checkPath(panels, hinge, "cw", blockQuery, "vertical", "north");
+    assert.equal(result.canOpen, false);
+    assert.equal(result.obstructedPositions.length, 1);
+  });
+
+  it("defaults to horizontal when mode params omitted (backward compat)", () => {
+    const panels = [{ x: 1, y: 0, z: 0 }];
+    // Horizontal CW: (1,0,0) → (0,0,1)
+    const blockQuery = (pos) => {
+      if (pos.x === 0 && pos.z === 1) return "minecraft:stone";
+      return null;
+    };
+
+    const result = checkPath(panels, hinge, "cw", blockQuery);
+    assert.equal(result.canOpen, false);
+  });
+
+  it("vertical mode with facing='east' rotates in Y/Z plane", () => {
+    // Panel at (0, 2, 0), hinge at (0,0,0), vertical east CW:
+    // dz=0, dy=2 → newY = 0-0=0, newZ = 0+2=2 → dest (0, 0, 2)
+    const panels = [{ x: 0, y: 2, z: 0 }];
+    const blockQuery = () => null;
+
+    const result = checkPath(panels, hinge, "cw", blockQuery, "vertical", "east");
+    assert.equal(result.canOpen, true);
+  });
 });
