@@ -117,6 +117,13 @@ export const EntityInitializationCause = {
   Transformed: "Transformed"
 };
 
+export const GameMode = {
+  survival: "survival",
+  creative: "creative",
+  adventure: "adventure",
+  spectator: "spectator",
+};
+
 /** Test-only: replace the exported `world` object. */
 export function __setWorld(w) { world = w; }
 

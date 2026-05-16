@@ -1,4 +1,4 @@
-import { ItemStack } from "@minecraft/server";
+import { GameMode, ItemStack } from "@minecraft/server";
 import { typeIdForIndex, blockStatesToMaterial } from "../domain/MaterialRegistry.js";
 import { HINGE_BLOCK_ID, PANEL_BLOCK_ID } from "../util/Constants.js";
 
@@ -13,21 +13,25 @@ export class BreakHandler {
     const group = event.brokenBlockPermutation.getState("bigdoors:material_group");
     const id = event.brokenBlockPermutation.getState("bigdoors:material_id");
     const materialIndex = blockStatesToMaterial(group, id);
+    const creative = event.player?.getGameMode?.() === GameMode.creative;
 
     const assembly = this._manager.findByPosition(pos);
     if (!assembly) return;
 
     this._manager.removePanelFromAssembly(assembly.id, pos);
 
-    const vanillaTypeId = typeIdForIndex(materialIndex);
-    if (vanillaTypeId) {
-      dimension.spawnItem(new ItemStack(vanillaTypeId, 1), pos);
+    if (!creative) {
+      const vanillaTypeId = typeIdForIndex(materialIndex);
+      if (vanillaTypeId) {
+        dimension.spawnItem(new ItemStack(vanillaTypeId, 1), pos);
+      }
     }
   }
 
   handleHingeBreak(event) {
     const hingePos = event.block.location;
     const dimension = event.block.dimension;
+    const creative = event.player?.getGameMode?.() === GameMode.creative;
 
     const assembly = this._manager.findByPosition(hingePos);
     if (!assembly) return;
@@ -58,6 +62,8 @@ export class BreakHandler {
 
     this._manager.dissolveAssembly(assembly.id);
 
-    dimension.spawnItem(new ItemStack(HINGE_BLOCK_ID, 1), hingePos);
+    if (!creative) {
+      dimension.spawnItem(new ItemStack(HINGE_BLOCK_ID, 1), hingePos);
+    }
   }
 }
