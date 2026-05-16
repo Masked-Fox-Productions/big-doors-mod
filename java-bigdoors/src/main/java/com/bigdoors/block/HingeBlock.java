@@ -7,11 +7,14 @@ import com.bigdoors.BigdoorsMod;
 import com.bigdoors.DoorManager;
 import com.bigdoors.domain.DoorAssembly;
 import com.bigdoors.domain.MaterialRegistry;
+import com.bigdoors.subsystem.DoorMover;
 import com.bigdoors.util.BlockPos3;
 import com.bigdoors.util.Constants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
@@ -24,6 +27,7 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -62,6 +66,28 @@ public class HingeBlock extends Block {
     @Override
     protected List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
         return List.of();
+    }
+
+    // --- Interaction: open / close door ---
+
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
+                                               Player player, BlockHitResult hitResult) {
+        if (level.isClientSide()) return InteractionResult.SUCCESS;
+        DoorManager manager = BigdoorsMod.getManager();
+        if (manager == null) return InteractionResult.PASS;
+
+        BlockPos3 bp = new BlockPos3(pos.getX(), pos.getY(), pos.getZ());
+        DoorAssembly assembly = manager.findByPosition(bp);
+        if (assembly == null) return InteractionResult.PASS;
+        if (assembly.getPanelPositions().isEmpty()) return InteractionResult.PASS;
+
+        if (!assembly.isOpen()) {
+            DoorMover.tryOpen(manager, assembly, player, level);
+        } else {
+            DoorMover.tryClose(manager, assembly, level);
+        }
+        return InteractionResult.SUCCESS;
     }
 
     // --- Placement: create or merge assembly, detect double doors ---
