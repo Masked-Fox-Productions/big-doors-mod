@@ -6,7 +6,7 @@ import {
   DIRECTIONS,
   OPPOSITE_DIR,
 } from "../util/Constants.js";
-import { indexForTypeId, materialToBlockStates, typeIdForIndex } from "../domain/MaterialRegistry.js";
+import { indexForTypeId, materialToBlockStates } from "../domain/MaterialRegistry.js";
 
 const HORIZONTAL_DIRS = [
   DIRECTIONS.NORTH,
@@ -177,12 +177,7 @@ export class PanelPlacementHandler {
         if (other.partnerAssemblyId) break;
         if (other.doorSide !== OPPOSITE_DIR[assembly.doorSide]) break;
 
-        this._manager.pairAndSplitAssemblies(assembly.id, other.id, (pos, materialIndex) => {
-          const b = dimension.getBlock(pos);
-          if (!b) return;
-          const vanillaId = typeIdForIndex(materialIndex);
-          b.setType(vanillaId || "minecraft:air");
-        });
+        this._manager.pairAndSplitAssemblies(assembly.id, other.id);
         return;
       }
 

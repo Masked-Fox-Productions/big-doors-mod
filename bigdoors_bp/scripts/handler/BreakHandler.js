@@ -48,6 +48,14 @@ export class BreakHandler {
       }
     }
 
+    for (const panel of assembly.boundaryPanels) {
+      const vanillaTypeId = typeIdForIndex(panel.materialIndex);
+      if (vanillaTypeId) {
+        const b = dimension.getBlock(panel.closedPos);
+        if (b) b.setType(vanillaTypeId);
+      }
+    }
+
     this._manager.dissolveAssembly(assembly.id);
 
     dimension.spawnItem(new ItemStack(HINGE_BLOCK_ID, 1), hingePos);

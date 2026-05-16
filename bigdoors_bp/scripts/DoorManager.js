@@ -44,6 +44,9 @@ export class DoorManager {
       for (const panel of assembly.panelPositions) {
         this._positionIndex.set(posKey(panel.currentPos), assembly.id);
       }
+      for (const panel of assembly.boundaryPanels) {
+        this._positionIndex.set(posKey(panel.currentPos), assembly.id);
+      }
 
       const numPart = parseInt(assembly.id.replace("door_", ""), 10);
       if (!isNaN(numPart) && numPart >= this._nextId) {
@@ -127,6 +130,9 @@ export class DoorManager {
     for (const panel of assembly.panelPositions) {
       this._positionIndex.delete(posKey(panel.currentPos));
     }
+    for (const panel of assembly.boundaryPanels) {
+      this._positionIndex.delete(posKey(panel.currentPos));
+    }
 
     this._assemblies.delete(assemblyId);
     this.save();
@@ -168,12 +174,26 @@ export class DoorManager {
     const assembly = this._assemblies.get(assemblyId);
     if (!assembly || !assembly.partnerAssemblyId) return;
     const partner = this._assemblies.get(assembly.partnerAssemblyId);
+
+    if (assembly.boundaryPanels.length > 0) {
+      for (const p of assembly.boundaryPanels) {
+        assembly.panelPositions.push(p);
+      }
+      assembly.boundaryPanels = [];
+    }
+    if (partner && partner.boundaryPanels.length > 0) {
+      for (const p of partner.boundaryPanels) {
+        partner.panelPositions.push(p);
+      }
+      partner.boundaryPanels = [];
+    }
+
     if (partner) partner.partnerAssemblyId = null;
     assembly.partnerAssemblyId = null;
     this.save();
   }
 
-  pairAndSplitAssemblies(assemblyIdA, assemblyIdB, revertCallback) {
+  pairAndSplitAssemblies(assemblyIdA, assemblyIdB) {
     const a = this._assemblies.get(assemblyIdA);
     const b = this._assemblies.get(assemblyIdB);
     if (!a || !b) return;
@@ -228,10 +248,9 @@ export class DoorManager {
       this._positionIndex.set(posKey(p.currentPos), assemblyIdB);
     }
 
-    if (revertCallback) {
-      for (const p of droppedPanels) {
-        revertCallback(p.closedPos, p.materialIndex);
-      }
+    a.boundaryPanels = droppedPanels;
+    for (const p of droppedPanels) {
+      this._positionIndex.set(posKey(p.currentPos), assemblyIdA);
     }
 
     this.save();
