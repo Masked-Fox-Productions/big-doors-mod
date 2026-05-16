@@ -98,7 +98,7 @@ describe("HingePlacementHandler", () => {
     assert.equal(assembly1.hingePositions.length, 2);
   });
 
-  it("hinge with one material side auto-sets door_side and converts blocks", () => {
+  it("hinge ignores pre-placed blocks and creates assembly with no panels", () => {
     const dim = makeMockDimension();
 
     placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 0 });
@@ -108,94 +108,12 @@ describe("HingePlacementHandler", () => {
     handler.onPlace(hingeBlock, player, dim);
 
     const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
-    assert.equal(assembly.doorSide, "east");
-    assert.equal(assembly.panelPositions.length, 1);
-
-    const convertedBlock = dim.getBlock({ x: 1, y: 0, z: 0 });
-    assert.equal(convertedBlock.typeId, PANEL_BLOCK_ID);
-  });
-
-  it("hinge with material on multiple sides leaves door_side empty", () => {
-    const dim = makeMockDimension();
-
-    placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 0 });
-    placeBlock(dim, "minecraft:cobblestone", { x: -1, y: 0, z: 0 });
-    const hingeBlock = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 });
-    const player = makeMockPlayer({ x: 0, y: 0, z: -1 });
-
-    handler.onPlace(hingeBlock, player, dim);
-
-    const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
-    assert.equal(assembly.doorSide, "");
+    assert.ok(assembly);
     assert.equal(assembly.panelPositions.length, 0);
-  });
+    assert.equal(assembly.doorSide, "");
 
-  it("hinge next to 3-wide wall scans and converts all blocks", () => {
-    const dim = makeMockDimension();
-
-    placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 0 });
-    placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: -1 });
-    placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 1 });
-
-    const hingeBlock = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 });
-    const player = makeMockPlayer({ x: 0, y: 0, z: -1 });
-
-    handler.onPlace(hingeBlock, player, dim);
-
-    const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
-    assert.equal(assembly.panelPositions.length, 3);
-  });
-
-  it("hinge next to 3-wide 2-tall wall converts all 6 blocks", () => {
-    const dim = makeMockDimension();
-
-    for (let z = -1; z <= 1; z++) {
-      for (let y = 0; y <= 1; y++) {
-        placeBlock(dim, "minecraft:cobblestone", { x: 1, y, z });
-      }
-    }
-
-    const hingeBlock = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 });
-    const player = makeMockPlayer({ x: 0, y: 0, z: -1 });
-
-    handler.onPlace(hingeBlock, player, dim);
-
-    const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
-    assert.equal(assembly.panelPositions.length, 6);
-  });
-
-  it("scan stops at unsupported materials", () => {
-    const dim = makeMockDimension();
-
-    placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 0 });
-    placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: -1 });
-    placeBlock(dim, "minecraft:diamond_block", { x: 1, y: 0, z: -2 });
-    placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 1 });
-
-    const hingeBlock = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 });
-    const player = makeMockPlayer({ x: 0, y: 0, z: -1 });
-
-    handler.onPlace(hingeBlock, player, dim);
-
-    const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
-    assert.equal(assembly.panelPositions.length, 3);
-  });
-
-  it("scan stops at MAX_DOOR_SCAN_RADIUS", () => {
-    const dim = makeMockDimension();
-
-    for (let z = -20; z <= 20; z++) {
-      placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z });
-    }
-
-    const hingeBlock = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 });
-    const player = makeMockPlayer({ x: 0, y: 0, z: -1 });
-
-    handler.onPlace(hingeBlock, player, dim);
-
-    const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
-    assert.ok(assembly.panelPositions.length <= 31);
-    assert.ok(assembly.panelPositions.length > 0);
+    const cobble = dim.getBlock({ x: 1, y: 0, z: 0 });
+    assert.equal(cobble.typeId, "minecraft:cobblestone");
   });
 
   it("hinge with no adjacent materials creates assembly with no panels", () => {
