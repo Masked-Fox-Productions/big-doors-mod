@@ -1,8 +1,10 @@
 package com.bigdoors;
 
 import com.bigdoors.block.ModBlocks;
+import com.bigdoors.handler.BreakHandler;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +22,10 @@ public class BigdoorsMod implements ModInitializer {
     @Override
     public void onInitialize() {
         ModBlocks.initialize();
+
+        PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, entity) -> {
+            BreakHandler.onBlockBroken(world, player, pos, state, entity);
+        });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             BigDoorsState state = server.overworld().getDataStorage().computeIfAbsent(BigDoorsState.TYPE);
