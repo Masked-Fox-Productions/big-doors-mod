@@ -15,17 +15,24 @@ const HORIZONTAL_DIRS = [
   DIRECTIONS.WEST,
 ];
 
+const ALL_DIRS = [...HORIZONTAL_DIRS, "up", "down"];
+
+const VERTICAL_DIRS = new Set(["up", "down"]);
+
 function posAdd(pos, offset) {
   return { x: pos.x + offset.x, y: pos.y + offset.y, z: pos.z + offset.z };
 }
 
 function directionFromTo(from, to) {
   const dx = to.x - from.x;
+  const dy = to.y - from.y;
   const dz = to.z - from.z;
   if (dx === 1) return DIRECTIONS.EAST;
   if (dx === -1) return DIRECTIONS.WEST;
   if (dz === 1) return DIRECTIONS.SOUTH;
   if (dz === -1) return DIRECTIONS.NORTH;
+  if (dy === 1) return "up";
+  if (dy === -1) return "down";
   return null;
 }
 
@@ -51,7 +58,7 @@ export class PanelPlacementHandler {
     const matIdx = indexForTypeId(block.typeId);
     if (matIdx < 0) return false;
 
-    for (const dir of HORIZONTAL_DIRS) {
+    for (const dir of ALL_DIRS) {
       const offset = DIR_OFFSETS[dir];
       const neighborPos = posAdd(pos, offset);
       const neighborBlock = dimension.getBlock(neighborPos);
@@ -81,6 +88,9 @@ export class PanelPlacementHandler {
 
     const placedDir = directionFromTo(hingePos, pos);
     if (!placedDir) return false;
+
+    if (assembly.mode === "vertical" && !VERTICAL_DIRS.has(placedDir)) return false;
+    if (assembly.mode === "horizontal" && VERTICAL_DIRS.has(placedDir)) return false;
 
     const wallSide = OPPOSITE_DIR[assembly.doorSide];
     if (assembly.doorSide && placedDir === wallSide) return false;
@@ -114,6 +124,10 @@ export class PanelPlacementHandler {
 
     if (!assembly.doorSide) return false;
 
+    const dirFromPanel = directionFromTo(panelPos, pos);
+    if (assembly.mode === "vertical" && !VERTICAL_DIRS.has(dirFromPanel)) return false;
+    if (assembly.mode === "horizontal" && VERTICAL_DIRS.has(dirFromPanel)) return false;
+
     const wallSide = OPPOSITE_DIR[assembly.doorSide];
     for (const hingePos of assembly.hingePositions) {
       const dirFromHinge = directionFromTo(hingePos, pos);
@@ -129,6 +143,7 @@ export class PanelPlacementHandler {
   }
 
   _checkDoubleDoor(assembly, dimension) {
+    if (assembly.mode === "vertical") return;
     if (!assembly.doorSide || assembly.partnerAssemblyId) return;
 
     const doorSideOffset = DIR_OFFSETS[assembly.doorSide];
