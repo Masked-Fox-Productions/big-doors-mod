@@ -173,6 +173,9 @@ public class HingeBlock extends Block {
         if (assembly == null) return;
 
         tryConvertNeighbors(level, manager, assembly, pos);
+
+        // Redstone power detection
+        handleRedstone(state, level, pos, manager, assembly);
     }
 
     private static void tryConvertNeighbors(Level level, DoorManager manager,
@@ -262,6 +265,64 @@ public class HingeBlock extends Block {
 
         // Check for double door after each conversion
         checkDoubleDoorAfterConversion(level, manager, assembly);
+    }
+
+    // --- Redstone: open / close door on power transition ---
+
+    private static void handleRedstone(BlockState state, Level level, BlockPos pos,
+                                       DoorManager manager, DoorAssembly assembly) {
+        boolean wasPowered = state.getValue(POWERED);
+        boolean isPowered = level.getBestNeighborSignal(pos) > 0;
+
+        if (isPowered == wasPowered) return; // no transition
+
+        // Update the POWERED block state — use UPDATE_CLIENTS (flag 2) to avoid
+        // triggering another neighborChanged on ourselves
+        level.setBlock(pos, state.setValue(POWERED, isPowered), Block.UPDATE_CLIENTS);
+
+        if (isPowered && !assembly.isOpen()) {
+            openWithRedstone(manager, assembly, level);
+        } else if (!isPowered && assembly.isOpen()) {
+            closeWithRedstone(manager, assembly, level);
+        }
+    }
+
+    private static void openWithRedstone(DoorManager manager, DoorAssembly assembly, Level level) {
+        if (assembly.getPanelPositions().isEmpty()) return;
+
+        BlockPos3 hingePos = assembly.getPrimaryHingePos();
+        List<BlockPos3> panelPositions = assembly.getAllCurrentPositions();
+
+        // Try CW first, then CCW
+        String direction = "cw";
+        boolean opened = DoorMover.attemptOpen(manager, assembly, panelPositions, hingePos, direction, level);
+        if (!opened) {
+            direction = "ccw";
+            opened = DoorMover.attemptOpen(manager, assembly, panelPositions, hingePos, direction, level);
+        }
+        if (!opened) return;
+
+        // Open partner in mirror direction
+        if (assembly.getPartnerAssemblyId() != null) {
+            DoorAssembly partner = manager.getAssembly(assembly.getPartnerAssemblyId());
+            if (partner != null && !partner.isOpen() && !partner.getPanelPositions().isEmpty()) {
+                String mirrorDir = "cw".equals(direction) ? "ccw" : "cw";
+                BlockPos3 partnerHinge = partner.getPrimaryHingePos();
+                List<BlockPos3> partnerPanels = partner.getAllCurrentPositions();
+                DoorMover.attemptOpen(manager, partner, partnerPanels, partnerHinge, mirrorDir, level);
+            }
+        }
+    }
+
+    private static void closeWithRedstone(DoorManager manager, DoorAssembly assembly, Level level) {
+        DoorMover.closeAssembly(manager, assembly, level);
+
+        if (assembly.getPartnerAssemblyId() != null) {
+            DoorAssembly partner = manager.getAssembly(assembly.getPartnerAssemblyId());
+            if (partner != null && partner.isOpen()) {
+                DoorMover.closeAssembly(manager, partner, level);
+            }
+        }
     }
 
     /**
