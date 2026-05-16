@@ -1,7 +1,7 @@
 ---
 title: "feat: Port Big Doors to Java/Fabric edition"
 type: feat
-status: active
+status: completed
 date: 2026-05-15
 origin: docs/brainstorms/2026-05-14-big-doors-mod-requirements.md
 ---
