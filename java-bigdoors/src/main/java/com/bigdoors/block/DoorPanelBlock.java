@@ -20,6 +20,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -35,16 +37,18 @@ import org.jspecify.annotations.Nullable;
 public class DoorPanelBlock extends Block {
 
     public static final IntegerProperty MATERIAL_INDEX = IntegerProperty.create("material_index", 0, 63);
+    public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
     public DoorPanelBlock(BlockBehaviour.Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any()
-                .setValue(MATERIAL_INDEX, 0));
+                .setValue(MATERIAL_INDEX, 0)
+                .setValue(POWERED, false));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(MATERIAL_INDEX);
+        builder.add(MATERIAL_INDEX, POWERED);
     }
 
     @Override
@@ -124,6 +128,24 @@ public class DoorPanelBlock extends Block {
             } finally {
                 manager.endConversion(neighborPos);
             }
+        }
+
+        handleRedstone(state, level, pos, manager, assembly);
+    }
+
+    private static void handleRedstone(BlockState state, Level level, BlockPos pos,
+                                       DoorManager manager, DoorAssembly assembly) {
+        boolean wasPowered = state.getValue(POWERED);
+        boolean isPowered = level.getBestNeighborSignal(pos) > 0;
+
+        if (isPowered == wasPowered) return;
+
+        level.setBlock(pos, state.setValue(POWERED, isPowered), Block.UPDATE_CLIENTS);
+
+        if (isPowered && !assembly.isOpen()) {
+            DoorMover.openWithRedstone(manager, assembly, level);
+        } else if (!isPowered && assembly.isOpen()) {
+            DoorMover.closeWithRedstone(manager, assembly, level);
         }
     }
 

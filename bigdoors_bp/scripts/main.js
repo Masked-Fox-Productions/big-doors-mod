@@ -36,6 +36,9 @@ system.beforeEvents.startup.subscribe((ev) => {
     onPlayerBreak(e) {
       breakHandler.handlePanelBreak(e);
     },
+    onRedstoneUpdate(e) {
+      redstone.handleRedstoneUpdate(e);
+    },
   });
 });
 

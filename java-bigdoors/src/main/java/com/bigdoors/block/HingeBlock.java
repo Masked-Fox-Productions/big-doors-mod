@@ -283,47 +283,9 @@ public class HingeBlock extends Block {
         level.setBlock(pos, state.setValue(POWERED, isPowered), Block.UPDATE_CLIENTS);
 
         if (isPowered && !assembly.isOpen()) {
-            openWithRedstone(manager, assembly, level);
+            DoorMover.openWithRedstone(manager, assembly, level);
         } else if (!isPowered && assembly.isOpen()) {
-            closeWithRedstone(manager, assembly, level);
-        }
-    }
-
-    private static void openWithRedstone(DoorManager manager, DoorAssembly assembly, Level level) {
-        if (assembly.getPanelPositions().isEmpty()) return;
-
-        BlockPos3 hingePos = assembly.getPrimaryHingePos();
-        List<BlockPos3> panelPositions = assembly.getAllCurrentPositions();
-
-        // Try CW first, then CCW
-        String direction = "cw";
-        boolean opened = DoorMover.attemptOpen(manager, assembly, panelPositions, hingePos, direction, level);
-        if (!opened) {
-            direction = "ccw";
-            opened = DoorMover.attemptOpen(manager, assembly, panelPositions, hingePos, direction, level);
-        }
-        if (!opened) return;
-
-        // Open partner in mirror direction
-        if (assembly.getPartnerAssemblyId() != null) {
-            DoorAssembly partner = manager.getAssembly(assembly.getPartnerAssemblyId());
-            if (partner != null && !partner.isOpen() && !partner.getPanelPositions().isEmpty()) {
-                String mirrorDir = "cw".equals(direction) ? "ccw" : "cw";
-                BlockPos3 partnerHinge = partner.getPrimaryHingePos();
-                List<BlockPos3> partnerPanels = partner.getAllCurrentPositions();
-                DoorMover.attemptOpen(manager, partner, partnerPanels, partnerHinge, mirrorDir, level);
-            }
-        }
-    }
-
-    private static void closeWithRedstone(DoorManager manager, DoorAssembly assembly, Level level) {
-        DoorMover.closeAssembly(manager, assembly, level);
-
-        if (assembly.getPartnerAssemblyId() != null) {
-            DoorAssembly partner = manager.getAssembly(assembly.getPartnerAssemblyId());
-            if (partner != null && partner.isOpen()) {
-                DoorMover.closeAssembly(manager, partner, level);
-            }
+            DoorMover.closeWithRedstone(manager, assembly, level);
         }
     }
 

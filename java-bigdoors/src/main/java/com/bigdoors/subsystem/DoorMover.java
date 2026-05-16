@@ -201,6 +201,42 @@ public final class DoorMover {
         manager.closeDoor(assembly.getId());
     }
 
+    public static void openWithRedstone(DoorManager manager, DoorAssembly assembly, Level level) {
+        if (assembly.getPanelPositions().isEmpty()) return;
+
+        BlockPos3 hingePos = assembly.getPrimaryHingePos();
+        List<BlockPos3> panelPositions = assembly.getAllCurrentPositions();
+
+        String direction = "cw";
+        boolean opened = attemptOpen(manager, assembly, panelPositions, hingePos, direction, level);
+        if (!opened) {
+            direction = "ccw";
+            opened = attemptOpen(manager, assembly, panelPositions, hingePos, direction, level);
+        }
+        if (!opened) return;
+
+        if (assembly.getPartnerAssemblyId() != null) {
+            DoorAssembly partner = manager.getAssembly(assembly.getPartnerAssemblyId());
+            if (partner != null && !partner.isOpen() && !partner.getPanelPositions().isEmpty()) {
+                String mirrorDir = "cw".equals(direction) ? "ccw" : "cw";
+                BlockPos3 partnerHinge = partner.getPrimaryHingePos();
+                List<BlockPos3> partnerPanels = partner.getAllCurrentPositions();
+                attemptOpen(manager, partner, partnerPanels, partnerHinge, mirrorDir, level);
+            }
+        }
+    }
+
+    public static void closeWithRedstone(DoorManager manager, DoorAssembly assembly, Level level) {
+        closeAssembly(manager, assembly, level);
+
+        if (assembly.getPartnerAssemblyId() != null) {
+            DoorAssembly partner = manager.getAssembly(assembly.getPartnerAssemblyId());
+            if (partner != null && partner.isOpen()) {
+                closeAssembly(manager, partner, level);
+            }
+        }
+    }
+
     /**
      * Determine the preferred rotation direction to move panels away from the player.
      *

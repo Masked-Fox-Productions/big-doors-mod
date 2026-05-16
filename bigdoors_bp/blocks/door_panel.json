@@ -18,6 +18,7 @@
       },
       "minecraft:loot": "loot_tables/empty.json",
       "bigdoors:panel_component": {},
+      "minecraft:redstone_consumer": {},
       "minecraft:geometry": "minecraft:geometry.full_block",
       "minecraft:material_instances": {
         "*": {
