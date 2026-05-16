@@ -72,12 +72,26 @@ export class HingePlacementHandler {
   }
 
   _mergeWithAdjacentHinge(pos, dimension) {
+    // Vertical stacking (both modes)
     for (const dy of [1, -1]) {
       const neighborPos = { x: pos.x, y: pos.y + dy, z: pos.z };
       const neighborBlock = dimension.getBlock(neighborPos);
       if (neighborBlock && neighborBlock.typeId === HINGE_BLOCK_ID) {
         const existing = this._manager.findByPosition(neighborPos);
         if (existing) {
+          this._manager.addHingeToAssembly(existing.id, pos);
+          return existing;
+        }
+      }
+    }
+    // Horizontal neighbors — merge along the rotation axis for vertical-mode hinges
+    for (const dir of HORIZONTAL_DIRS) {
+      const offset = DIR_OFFSETS[dir];
+      const neighborPos = posAdd(pos, offset);
+      const neighborBlock = dimension.getBlock(neighborPos);
+      if (neighborBlock && neighborBlock.typeId === HINGE_BLOCK_ID) {
+        const existing = this._manager.findByPosition(neighborPos);
+        if (existing && existing.mode === "vertical") {
           this._manager.addHingeToAssembly(existing.id, pos);
           return existing;
         }
