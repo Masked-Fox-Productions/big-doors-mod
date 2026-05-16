@@ -8,6 +8,7 @@ import com.bigdoors.DoorManager;
 import com.bigdoors.domain.DoorAssembly;
 import com.bigdoors.domain.MaterialRegistry;
 import com.bigdoors.subsystem.DoorMover;
+import com.bigdoors.subsystem.RedstoneHandler;
 import com.bigdoors.util.BlockPos3;
 import com.bigdoors.util.Constants;
 import net.minecraft.core.BlockPos;
@@ -83,6 +84,12 @@ public class HingeBlock extends Block {
         DoorAssembly assembly = manager.findByPosition(bp);
         if (assembly == null) return InteractionResult.PASS;
         if (assembly.getPanelPositions().isEmpty()) return InteractionResult.PASS;
+
+        long tick = level.getGameTime();
+        manager.setRedstoneDebounce(assembly.getId(), tick + Constants.REDSTONE_DEBOUNCE_TICKS);
+        if (assembly.getPartnerAssemblyId() != null) {
+            manager.setRedstoneDebounce(assembly.getPartnerAssemblyId(), tick + Constants.REDSTONE_DEBOUNCE_TICKS);
+        }
 
         if (!assembly.isOpen()) {
             DoorMover.tryOpen(manager, assembly, player, level);
@@ -273,20 +280,7 @@ public class HingeBlock extends Block {
 
     private static void handleRedstone(BlockState state, Level level, BlockPos pos,
                                        DoorManager manager, DoorAssembly assembly) {
-        boolean wasPowered = state.getValue(POWERED);
-        boolean isPowered = level.getBestNeighborSignal(pos) > 0;
-
-        if (isPowered == wasPowered) return; // no transition
-
-        // Update the POWERED block state — use UPDATE_CLIENTS (flag 2) to avoid
-        // triggering another neighborChanged on ourselves
-        level.setBlock(pos, state.setValue(POWERED, isPowered), Block.UPDATE_CLIENTS);
-
-        if (isPowered && !assembly.isOpen()) {
-            DoorMover.openWithRedstone(manager, assembly, level);
-        } else if (!isPowered && assembly.isOpen()) {
-            DoorMover.closeWithRedstone(manager, assembly, level);
-        }
+        RedstoneHandler.handleRedstone(state, level, pos, manager, assembly);
     }
 
     // --- Redstone propagation: pass signal through to the opposite face ---

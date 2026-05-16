@@ -17,6 +17,7 @@ public class DoorManager {
     private final Map<String, DoorAssembly> assemblies = new LinkedHashMap<>();
     private final Map<String, String> positionIndex = new HashMap<>();
     private final Set<BlockPos> conversionInProgress = new HashSet<>();
+    private final Map<String, Long> redstoneDebounce = new HashMap<>();
     private int nextId = 1;
     private Runnable saveCallback;
 
@@ -270,6 +271,17 @@ public class DoorManager {
         }
 
         save();
+    }
+
+    // --- Redstone debounce ---
+
+    public void setRedstoneDebounce(String assemblyId, long untilTick) {
+        redstoneDebounce.put(assemblyId, untilTick);
+    }
+
+    public boolean isRedstoneDebounced(String assemblyId, long currentTick) {
+        Long expiry = redstoneDebounce.get(assemblyId);
+        return expiry != null && currentTick < expiry;
     }
 
     // --- Conversion guard (uses MC BlockPos) ---

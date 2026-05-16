@@ -201,16 +201,19 @@ public final class DoorMover {
         manager.closeDoor(assembly.getId());
     }
 
-    public static void openWithRedstone(DoorManager manager, DoorAssembly assembly, Level level) {
+    public static void openWithRedstone(DoorManager manager, DoorAssembly assembly, Level level, BlockPos sourcePos) {
         if (assembly.getPanelPositions().isEmpty()) return;
 
         BlockPos3 hingePos = assembly.getPrimaryHingePos();
         List<BlockPos3> panelPositions = assembly.getAllCurrentPositions();
 
-        String direction = "cw";
+        String preferred = preferredDirectionFromSource(panelPositions, hingePos, sourcePos);
+        String fallback = "cw".equals(preferred) ? "ccw" : "cw";
+
+        String direction = preferred;
         boolean opened = attemptOpen(manager, assembly, panelPositions, hingePos, direction, level);
         if (!opened) {
-            direction = "ccw";
+            direction = fallback;
             opened = attemptOpen(manager, assembly, panelPositions, hingePos, direction, level);
         }
         if (!opened) return;
@@ -218,6 +221,7 @@ public final class DoorMover {
         if (assembly.getPartnerAssemblyId() != null) {
             DoorAssembly partner = manager.getAssembly(assembly.getPartnerAssemblyId());
             if (partner != null && !partner.isOpen() && !partner.getPanelPositions().isEmpty()) {
+                manager.setRedstoneDebounce(partner.getId(), level.getGameTime() + Constants.REDSTONE_DEBOUNCE_TICKS);
                 String mirrorDir = "cw".equals(direction) ? "ccw" : "cw";
                 BlockPos3 partnerHinge = partner.getPrimaryHingePos();
                 List<BlockPos3> partnerPanels = partner.getAllCurrentPositions();
@@ -226,12 +230,31 @@ public final class DoorMover {
         }
     }
 
+    private static String preferredDirectionFromSource(List<BlockPos3> panelPositions,
+                                                       BlockPos3 hingePos, BlockPos sourcePos) {
+        long cwTotalDist = 0;
+        long ccwTotalDist = 0;
+
+        for (BlockPos3 pos : panelPositions) {
+            BlockPos3 cwDest = RotationMath.rotateCW(pos, hingePos);
+            BlockPos3 ccwDest = RotationMath.rotateCCW(pos, hingePos);
+
+            cwTotalDist += Math.abs(cwDest.x() + 0.5 - sourcePos.getX())
+                         + Math.abs(cwDest.z() + 0.5 - sourcePos.getZ());
+            ccwTotalDist += Math.abs(ccwDest.x() + 0.5 - sourcePos.getX())
+                         + Math.abs(ccwDest.z() + 0.5 - sourcePos.getZ());
+        }
+
+        return cwTotalDist >= ccwTotalDist ? "cw" : "ccw";
+    }
+
     public static void closeWithRedstone(DoorManager manager, DoorAssembly assembly, Level level) {
         closeAssembly(manager, assembly, level);
 
         if (assembly.getPartnerAssemblyId() != null) {
             DoorAssembly partner = manager.getAssembly(assembly.getPartnerAssemblyId());
             if (partner != null && partner.isOpen()) {
+                manager.setRedstoneDebounce(partner.getId(), level.getGameTime() + Constants.REDSTONE_DEBOUNCE_TICKS);
                 closeAssembly(manager, partner, level);
             }
         }
