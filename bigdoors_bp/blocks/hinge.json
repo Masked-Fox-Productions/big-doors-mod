@@ -19,7 +19,12 @@
       },
       "minecraft:loot": "loot_tables/empty.json",
       "bigdoors:hinge_component": {},
-      "minecraft:redstone_consumer": {},
+      "minecraft:redstone_conductivity": {
+        "redstone_conductor": true
+      },
+      "minecraft:redstone_consumer": {
+        "propagates_power": true
+      },
       "minecraft:geometry": "minecraft:geometry.full_block",
       "minecraft:material_instances": {
         "*": {

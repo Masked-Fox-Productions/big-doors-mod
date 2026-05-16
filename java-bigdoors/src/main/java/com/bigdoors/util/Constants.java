@@ -21,6 +21,7 @@ public final class Constants {
     // Limits
     public static final int MAX_DOOR_SCAN_RADIUS = 16;
     public static final int REDSTONE_DEBOUNCE_TICKS = 2;
+    public static final int REDSTONE_PROPAGATION_POWER = 15;
 
     // Directions
     public static final String NORTH = "north";

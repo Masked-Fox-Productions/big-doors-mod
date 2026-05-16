@@ -25,7 +25,9 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.redstone.Orientation;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
@@ -323,6 +325,18 @@ public class HingeBlock extends Block {
                 DoorMover.closeAssembly(manager, partner, level);
             }
         }
+    }
+
+    // --- Redstone propagation: pass signal through to the opposite face ---
+
+    @Override
+    protected boolean isSignalSource(BlockState state) {
+        return state.getValue(POWERED);
+    }
+
+    @Override
+    protected int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
+        return state.getValue(POWERED) ? Constants.REDSTONE_PROPAGATION_POWER : 0;
     }
 
     /**
