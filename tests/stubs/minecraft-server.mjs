@@ -52,12 +52,26 @@ function makeDefaultWorld() {
 }
 
 function makeDefaultSystem() {
-  return {
+  const sys = {
+    currentTick: 0,
+    _scheduled: [],
     runInterval(_fn, _ticks) { return 0; },
-    runTimeout(_fn, _ticks) { return 0; },
-    run(_fn) { return 0; },
+    runTimeout(fn, ticks) {
+      sys._scheduled.push({ fn, fireAt: sys.currentTick + ticks });
+      return sys._scheduled.length;
+    },
+    run(fn) {
+      sys._scheduled.push({ fn, fireAt: sys.currentTick });
+      return sys._scheduled.length;
+    },
     runJob(_gen) { return 0; },
     clearRun(_id) {},
+    advanceTicks(n) {
+      sys.currentTick += n;
+      const ready = sys._scheduled.filter(s => s.fireAt <= sys.currentTick);
+      sys._scheduled = sys._scheduled.filter(s => s.fireAt > sys.currentTick);
+      for (const s of ready) s.fn();
+    },
     afterEvents: {
       scriptEventReceive: makeNoopSubscribable(),
     },
@@ -65,6 +79,7 @@ function makeDefaultSystem() {
       startup: makeNoopSubscribable(),
     },
   };
+  return sys;
 }
 
 export let world = makeDefaultWorld();

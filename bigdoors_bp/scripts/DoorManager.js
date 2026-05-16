@@ -10,8 +10,18 @@ export class DoorManager {
   constructor() {
     this._assemblies = new Map();
     this._positionIndex = new Map();
+    this._redstoneDebounce = new Map();
     this._loaded = false;
     this._nextId = 1;
+  }
+
+  setRedstoneDebounce(assemblyId, untilTick) {
+    this._redstoneDebounce.set(assemblyId, untilTick);
+  }
+
+  isRedstoneDebounced(assemblyId, currentTick) {
+    const expiry = this._redstoneDebounce.get(assemblyId) ?? 0;
+    return currentTick < expiry;
   }
 
   load() {

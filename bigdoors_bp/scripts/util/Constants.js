@@ -14,7 +14,7 @@ export const PERSISTENCE_KEY = "bigdoors:state";
 export const MAX_DOOR_SCAN_RADIUS = 16;
 
 // Tick intervals (20 ticks = 1 second)
-export const REDSTONE_DEBOUNCE_TICKS = 2;
+export const REDSTONE_DEBOUNCE_TICKS = 4;
 
 // Direction helpers — cardinal direction labels used by assemblies
 export const DIRECTIONS = {

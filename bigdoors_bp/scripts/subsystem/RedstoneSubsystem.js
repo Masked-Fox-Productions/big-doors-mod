@@ -1,9 +1,18 @@
-import { BlockPermutation, ItemStack } from "@minecraft/server";
-import { PANEL_BLOCK_ID } from "../util/Constants.js";
+import { BlockPermutation, ItemStack, system } from "@minecraft/server";
+import { PANEL_BLOCK_ID, HINGE_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS } from "../util/Constants.js";
 import { materialToBlockStates } from "../domain/MaterialRegistry.js";
 import { checkPath } from "../domain/ObstructionChecker.js";
 import { rotateCW, rotateCCW } from "../domain/RotationMath.js";
 import { sweep } from "./EntitySweeper.js";
+
+const NEIGHBOR_OFFSETS = [
+  { x: 1, y: 0, z: 0 },
+  { x: -1, y: 0, z: 0 },
+  { x: 0, y: 0, z: 1 },
+  { x: 0, y: 0, z: -1 },
+  { x: 0, y: 1, z: 0 },
+  { x: 0, y: -1, z: 0 },
+];
 
 export class RedstoneSubsystem {
   constructor(manager) {
@@ -12,17 +21,60 @@ export class RedstoneSubsystem {
 
   handleRedstoneUpdate(event) {
     const { block, powerLevel } = event;
-    const assembly = this._manager.findByPosition(block.location);
+    const loc = block.location;
+    const assembly = this._manager.findByPosition(loc);
     if (!assembly) return;
 
+    const now = system.currentTick;
+    if (this._manager.isRedstoneDebounced(assembly.id, now)) {
+      console.warn(`[redstone] DEBOUNCED assembly=${assembly.id} tick=${now}`);
+      return;
+    }
+
+    console.warn(`[redstone] event: typeId=${block.typeId} pos=(${loc.x},${loc.y},${loc.z}) power=${powerLevel} assembly=${assembly.id} isOpen=${assembly.isOpen}`);
+
     if (powerLevel > 0 && !assembly.isOpen) {
-      this._openWithRedstone(assembly, block.dimension);
+      console.warn(`[redstone]   -> OPENING door`);
+      this._manager.setRedstoneDebounce(assembly.id, now + REDSTONE_DEBOUNCE_TICKS);
+      this._openWithRedstone(assembly, block.dimension, block);
     } else if (powerLevel === 0 && assembly.isOpen) {
-      this._closeWithRedstone(assembly, block.dimension);
+      this._scheduleCloseCheck(assembly, block.dimension);
     }
   }
 
-  _openWithRedstone(assembly, dimension) {
+  _scheduleCloseCheck(assembly, dimension) {
+    const now = system.currentTick;
+    if (this._manager.isRedstoneDebounced(assembly.id, now)) return;
+
+    this._manager.setRedstoneDebounce(assembly.id, now + REDSTONE_DEBOUNCE_TICKS);
+    const assemblyId = assembly.id;
+
+    system.runTimeout(() => {
+      const asm = this._manager.getAssembly(assemblyId);
+      if (!asm || !asm.isOpen) return;
+
+      // Check if ANY block in the assembly (hinges + current panel positions) still has power
+      const allPositions = [...asm.hingePositions, ...asm.getAllCurrentPositions()];
+      let stillPowered = false;
+      for (const pos of allPositions) {
+        const b = dimension.getBlock(pos);
+        const power = b?.getRedstonePower();
+        if (power != null && power > 0) {
+          stillPowered = true;
+          break;
+        }
+      }
+
+      console.warn(`[redstone] deferred close check: assembly=${assemblyId} stillPowered=${stillPowered}`);
+      if (!stillPowered) {
+        console.warn(`[redstone]   -> CLOSING door (confirmed no power)`);
+        this._manager.setRedstoneDebounce(assemblyId, system.currentTick + REDSTONE_DEBOUNCE_TICKS);
+        this._closeWithRedstone(asm, dimension);
+      }
+    }, REDSTONE_DEBOUNCE_TICKS);
+  }
+
+  _openWithRedstone(assembly, dimension, signalBlock) {
     const panelPositions = assembly.getAllCurrentPositions();
     const hingePos = assembly.primaryHingePos;
 
@@ -31,12 +83,15 @@ export class RedstoneSubsystem {
       return b?.typeId ?? null;
     };
 
-    let result = checkPath(panelPositions, hingePos, "cw", blockQueryFn);
-    let direction = "cw";
+    const preferred = this._preferredDirectionFromSignal(panelPositions, hingePos, signalBlock, dimension);
+    const fallback = preferred === "cw" ? "ccw" : "cw";
+
+    let result = checkPath(panelPositions, hingePos, preferred, blockQueryFn);
+    let direction = preferred;
 
     if (!result.canOpen) {
-      result = checkPath(panelPositions, hingePos, "ccw", blockQueryFn);
-      direction = "ccw";
+      result = checkPath(panelPositions, hingePos, fallback, blockQueryFn);
+      direction = fallback;
     }
 
     if (!result.canOpen) return;
@@ -46,10 +101,47 @@ export class RedstoneSubsystem {
     if (assembly.partnerAssemblyId) {
       const partner = this._manager.getAssembly(assembly.partnerAssemblyId);
       if (partner && !partner.isOpen) {
+        this._manager.setRedstoneDebounce(partner.id, system.currentTick + REDSTONE_DEBOUNCE_TICKS);
         const mirrorDir = direction === "cw" ? "ccw" : "cw";
         this._openSingleAssembly(partner, mirrorDir, dimension);
       }
     }
+  }
+
+  _preferredDirectionFromSignal(panelPositions, hingePos, signalBlock, dimension) {
+    // Find the actual power source: scan neighbors of the signal block for a
+    // non-door block that has redstone power (pressure plate, repeater, wire, etc.)
+    const loc = signalBlock.location;
+    let sourcePos = loc;
+
+    for (const off of NEIGHBOR_OFFSETS) {
+      const neighborPos = { x: loc.x + off.x, y: loc.y + off.y, z: loc.z + off.z };
+      const nb = dimension.getBlock(neighborPos);
+      if (!nb) continue;
+      if (nb.typeId === HINGE_BLOCK_ID || nb.typeId === PANEL_BLOCK_ID) continue;
+      const power = nb.getRedstonePower();
+      if (power != null && power > 0) {
+        sourcePos = neighborPos;
+        break;
+      }
+    }
+
+    console.warn(`[redstone]   signal source at (${sourcePos.x},${sourcePos.y},${sourcePos.z})`);
+
+    const cwDests = panelPositions.map((p) => rotateCW(p, hingePos));
+    const ccwDests = panelPositions.map((p) => rotateCCW(p, hingePos));
+
+    let cwDist = 0;
+    let ccwDist = 0;
+
+    for (const d of cwDests) {
+      cwDist += Math.abs(d.x - sourcePos.x) + Math.abs(d.z - sourcePos.z);
+    }
+    for (const d of ccwDests) {
+      ccwDist += Math.abs(d.x - sourcePos.x) + Math.abs(d.z - sourcePos.z);
+    }
+
+    return cwDist >= ccwDist ? "cw" : "ccw";
   }
 
   _openSingleAssembly(assembly, direction, dimension) {
@@ -115,6 +207,7 @@ export class RedstoneSubsystem {
     if (assembly.partnerAssemblyId) {
       const partner = this._manager.getAssembly(assembly.partnerAssemblyId);
       if (partner && partner.isOpen) {
+        this._manager.setRedstoneDebounce(partner.id, system.currentTick + REDSTONE_DEBOUNCE_TICKS);
         this._closeSingleAssembly(partner, dimension);
       }
     }

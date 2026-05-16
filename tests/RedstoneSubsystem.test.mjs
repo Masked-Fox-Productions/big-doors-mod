@@ -1,10 +1,10 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { __reset } from "./stubs/minecraft-server.mjs";
+import { __reset, system } from "./stubs/minecraft-server.mjs";
 import { DoorManager } from "../bigdoors_bp/scripts/DoorManager.js";
 import { RedstoneSubsystem } from "../bigdoors_bp/scripts/subsystem/RedstoneSubsystem.js";
 import { makeMockDimension, placeBlock } from "./helpers/mock-dimension.mjs";
-import { PANEL_BLOCK_ID, HINGE_BLOCK_ID } from "../bigdoors_bp/scripts/util/Constants.js";
+import { PANEL_BLOCK_ID, HINGE_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS } from "../bigdoors_bp/scripts/util/Constants.js";
 
 function posKey(pos) {
   return `${pos.x},${pos.y},${pos.z}`;
@@ -74,7 +74,18 @@ describe("RedstoneSubsystem", () => {
     // Ensure closed position is available
     placeBlock(dim, "minecraft:air", { x: 1, y: 0, z: 0 });
 
+    // Advance past open debounce so close event is accepted
+    system.advanceTicks(REDSTONE_DEBOUNCE_TICKS + 1);
+
+    // All blocks return 0 power (no redstone present)
+    for (const [, b] of dim._blocks) {
+      b.getRedstonePower = () => 0;
+    }
+
     subsystem.handleRedstoneUpdate({ block: hingeBlock, powerLevel: 0 });
+
+    // Close is deferred — advance ticks to fire the scheduled check
+    system.advanceTicks(REDSTONE_DEBOUNCE_TICKS + 1);
 
     const closed = manager.getAssembly(assembly.id);
     assert.equal(closed.isOpen, false);

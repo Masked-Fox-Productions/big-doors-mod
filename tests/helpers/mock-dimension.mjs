@@ -20,6 +20,9 @@ export function makeMockBlock(typeId, location, states = {}) {
     setType(newTypeId) {
       block.typeId = newTypeId;
     },
+    getRedstonePower() {
+      return undefined;
+    },
   };
   return block;
 }

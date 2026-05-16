@@ -1,8 +1,8 @@
-import { BlockPermutation, ItemStack } from "@minecraft/server";
+import { BlockPermutation, ItemStack, system } from "@minecraft/server";
 import { rotateCW, rotateCCW } from "../domain/RotationMath.js";
 import { checkPath } from "../domain/ObstructionChecker.js";
 import { sweep } from "../subsystem/EntitySweeper.js";
-import { PANEL_BLOCK_ID } from "../util/Constants.js";
+import { PANEL_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS } from "../util/Constants.js";
 import { materialToBlockStates } from "../domain/MaterialRegistry.js";
 
 export class InteractionHandler {
@@ -14,6 +14,12 @@ export class InteractionHandler {
     const assembly = this._manager.findByPosition(block.location);
     if (!assembly) return;
     if (assembly.panelPositions.length === 0) return;
+
+    const now = system.currentTick;
+    this._manager.setRedstoneDebounce(assembly.id, now + REDSTONE_DEBOUNCE_TICKS);
+    if (assembly.partnerAssemblyId) {
+      this._manager.setRedstoneDebounce(assembly.partnerAssemblyId, now + REDSTONE_DEBOUNCE_TICKS);
+    }
 
     if (!assembly.isOpen) {
       this._tryOpen(assembly, player, dimension);
