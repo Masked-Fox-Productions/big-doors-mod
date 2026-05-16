@@ -1,0 +1,58 @@
+{
+  "format_version": "1.26.0",
+  "minecraft:block": {
+    "description": {
+      "identifier": "bigdoors:hinge",
+      "menu_category": {
+        "category": "construction",
+        "group": "minecraft:itemGroup.name.door"
+      },
+      "states": {
+        "bigdoors:facing": ["north", "south", "east", "west"],
+        "bigdoors:mode": ["horizontal", "vertical"],
+        "bigdoors:door_side": ["none", "north", "south", "east", "west"]
+      }
+    },
+    "components": {
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 3.0
+      },
+      "minecraft:loot": "loot_tables/empty.json",
+      "bigdoors:hinge_component": {},
+      "minecraft:redstone_consumer": {},
+      "minecraft:geometry": "minecraft:geometry.full_block",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "bigdoors_hinge",
+          "render_method": "opaque"
+        }
+      }
+    },
+    "permutations": [
+      {
+        "condition": "q.block_state('bigdoors:facing') == 'north'",
+        "components": {
+          "minecraft:transformation": { "rotation": [0, 0, 0] }
+        }
+      },
+      {
+        "condition": "q.block_state('bigdoors:facing') == 'south'",
+        "components": {
+          "minecraft:transformation": { "rotation": [0, 180, 0] }
+        }
+      },
+      {
+        "condition": "q.block_state('bigdoors:facing') == 'east'",
+        "components": {
+          "minecraft:transformation": { "rotation": [0, 90, 0] }
+        }
+      },
+      {
+        "condition": "q.block_state('bigdoors:facing') == 'west'",
+        "components": {
+          "minecraft:transformation": { "rotation": [0, -90, 0] }
+        }
+      }
+    ]
+  }
+}

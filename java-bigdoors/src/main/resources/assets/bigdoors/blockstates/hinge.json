@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north,mode=horizontal,powered=false": { "model": "bigdoors:block/hinge" },
+    "facing=south,mode=horizontal,powered=false": { "model": "bigdoors:block/hinge", "y": 180 },
+    "facing=west,mode=horizontal,powered=false": { "model": "bigdoors:block/hinge", "y": 270 },
+    "facing=east,mode=horizontal,powered=false": { "model": "bigdoors:block/hinge", "y": 90 },
+    "facing=north,mode=horizontal,powered=true": { "model": "bigdoors:block/hinge" },
+    "facing=south,mode=horizontal,powered=true": { "model": "bigdoors:block/hinge", "y": 180 },
+    "facing=west,mode=horizontal,powered=true": { "model": "bigdoors:block/hinge", "y": 270 },
+    "facing=east,mode=horizontal,powered=true": { "model": "bigdoors:block/hinge", "y": 90 },
+    "facing=north,mode=vertical,powered=false": { "model": "bigdoors:block/hinge" },
+    "facing=south,mode=vertical,powered=false": { "model": "bigdoors:block/hinge", "y": 180 },
+    "facing=west,mode=vertical,powered=false": { "model": "bigdoors:block/hinge", "y": 270 },
+    "facing=east,mode=vertical,powered=false": { "model": "bigdoors:block/hinge", "y": 90 },
+    "facing=north,mode=vertical,powered=true": { "model": "bigdoors:block/hinge" },
+    "facing=south,mode=vertical,powered=true": { "model": "bigdoors:block/hinge", "y": 180 },
+    "facing=west,mode=vertical,powered=true": { "model": "bigdoors:block/hinge", "y": 270 },
+    "facing=east,mode=vertical,powered=true": { "model": "bigdoors:block/hinge", "y": 90 }
+  }
+}

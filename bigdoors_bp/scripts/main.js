@@ -1,49 +1,65 @@
 import { world, system } from "@minecraft/server";
+import { DoorManager } from "./DoorManager.js";
+import { HingePlacementHandler } from "./handler/HingePlacementHandler.js";
+import { PanelPlacementHandler } from "./handler/PanelPlacementHandler.js";
+import { InteractionHandler } from "./handler/InteractionHandler.js";
+import { BreakHandler } from "./handler/BreakHandler.js";
+import { RedstoneSubsystem } from "./subsystem/RedstoneSubsystem.js";
 
-// SETUP: Replace "bigdoors" with your mod ID throughout this file
-// SETUP: Import your own manager, subsystems, and handlers below
+console.warn("[bigdoors] === Mod initializing ===");
 
-/**
- * Big Doors — Entry Point
- *
- * Startup order matters: the manager must exist before any subsystem
- * so its reference can be shared. Subsystems register their own
- * Bedrock event hooks via .register().
- *
- * Architecture:
- *   1. Manager (data layer — must exist first)
- *   2. Subsystems (each owns one event subscription or interval)
- *   3. Block handlers (thin glue between Bedrock events and domain)
- */
+let manager;
+let interaction;
+let breakHandler;
+let redstone;
 
-console.warn("[bigdoors] === Mod initializing ==="); // SETUP: Replace "bigdoors"
+system.beforeEvents.startup.subscribe((ev) => {
+  ev.blockComponentRegistry.registerCustomComponent("bigdoors:hinge_component", {
+    onPlayerInteract(e) {
+      interaction.handleInteract(e.block, e.player, e.block.dimension);
+    },
+    onPlayerBreak(e) {
+      breakHandler.handleHingeBreak(e);
+    },
+    beforeOnPlayerPlace(e) {
+      console.warn("[bigdoors] hinge place stub");
+    },
+    onRedstoneUpdate(e) {
+      redstone.handleRedstoneUpdate(e);
+    },
+  });
 
-// --- Manager ---
-// SETUP: Create your manager instance here
-// const manager = new MyManager();
-
-// --- Persistence: load on worldInitialize ---
-world.afterEvents.worldInitialize.subscribe(() => {
-  console.warn("[bigdoors] worldInitialize fired — loading persistence"); // SETUP: Replace "bigdoors"
-  // manager.load();
+  ev.blockComponentRegistry.registerCustomComponent("bigdoors:panel_component", {
+    onPlayerInteract(e) {
+      interaction.handleInteract(e.block, e.player, e.block.dimension);
+    },
+    onPlayerBreak(e) {
+      breakHandler.handlePanelBreak(e);
+    },
+  });
 });
 
-// --- Subsystems ---
-// SETUP: Create and register your subsystems here
-// const mySub = new MySubsystem(manager);
-// mySub.register();
+manager = new DoorManager();
+interaction = new InteractionHandler(manager);
+breakHandler = new BreakHandler(manager);
+redstone = new RedstoneSubsystem(manager);
 
-// --- Block handlers ---
-// SETUP: Create and register your block handlers here
-// const myHandler = new MyHandler(manager);
-// myHandler.register();
+world.afterEvents.worldLoad.subscribe(() => {
+  console.warn("[bigdoors] worldLoad fired — loading persistence");
+  manager.load();
+});
 
-// --- Fallback load ---
-// Some Bedrock builds don't fire worldInitialize on script reload.
-// This one-shot fallback ensures persistence is hydrated.
 system.run(() => {
-  console.warn("[bigdoors] Fallback load triggered"); // SETUP: Replace "bigdoors"
-  // manager.load();
+  console.warn("[bigdoors] Fallback load triggered");
+  manager.load();
 });
 
-console.warn("[bigdoors] === Initialization complete ==="); // SETUP: Replace "bigdoors"
+const hingePlacement = new HingePlacementHandler(manager);
+hingePlacement.register();
+
+const panelPlacement = new PanelPlacementHandler(manager);
+panelPlacement.register();
+
+console.warn("[bigdoors] === Initialization complete ===");
+
+export { manager };

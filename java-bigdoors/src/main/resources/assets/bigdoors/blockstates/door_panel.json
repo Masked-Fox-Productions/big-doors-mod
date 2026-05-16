@@ -1,0 +1,196 @@
+{
+  "variants": {
+    "material_index=0": {
+      "model": "bigdoors:block/door_panel/0"
+    },
+    "material_index=1": {
+      "model": "bigdoors:block/door_panel/1"
+    },
+    "material_index=2": {
+      "model": "bigdoors:block/door_panel/2"
+    },
+    "material_index=3": {
+      "model": "bigdoors:block/door_panel/3"
+    },
+    "material_index=4": {
+      "model": "bigdoors:block/door_panel/4"
+    },
+    "material_index=5": {
+      "model": "bigdoors:block/door_panel/5"
+    },
+    "material_index=6": {
+      "model": "bigdoors:block/door_panel/6"
+    },
+    "material_index=7": {
+      "model": "bigdoors:block/door_panel/7"
+    },
+    "material_index=8": {
+      "model": "bigdoors:block/door_panel/8"
+    },
+    "material_index=9": {
+      "model": "bigdoors:block/door_panel/9"
+    },
+    "material_index=10": {
+      "model": "bigdoors:block/door_panel/10"
+    },
+    "material_index=11": {
+      "model": "bigdoors:block/door_panel/11"
+    },
+    "material_index=12": {
+      "model": "bigdoors:block/door_panel/12"
+    },
+    "material_index=13": {
+      "model": "bigdoors:block/door_panel/13"
+    },
+    "material_index=14": {
+      "model": "bigdoors:block/door_panel/14"
+    },
+    "material_index=15": {
+      "model": "bigdoors:block/door_panel/15"
+    },
+    "material_index=16": {
+      "model": "bigdoors:block/door_panel/16"
+    },
+    "material_index=17": {
+      "model": "bigdoors:block/door_panel/17"
+    },
+    "material_index=18": {
+      "model": "bigdoors:block/door_panel/18"
+    },
+    "material_index=19": {
+      "model": "bigdoors:block/door_panel/19"
+    },
+    "material_index=20": {
+      "model": "bigdoors:block/door_panel/20"
+    },
+    "material_index=21": {
+      "model": "bigdoors:block/door_panel/21"
+    },
+    "material_index=22": {
+      "model": "bigdoors:block/door_panel/22"
+    },
+    "material_index=23": {
+      "model": "bigdoors:block/door_panel/23"
+    },
+    "material_index=24": {
+      "model": "bigdoors:block/door_panel/24"
+    },
+    "material_index=25": {
+      "model": "bigdoors:block/door_panel/25"
+    },
+    "material_index=26": {
+      "model": "bigdoors:block/door_panel/26"
+    },
+    "material_index=27": {
+      "model": "bigdoors:block/door_panel/27"
+    },
+    "material_index=28": {
+      "model": "bigdoors:block/door_panel/28"
+    },
+    "material_index=29": {
+      "model": "bigdoors:block/door_panel/29"
+    },
+    "material_index=30": {
+      "model": "bigdoors:block/door_panel/30"
+    },
+    "material_index=31": {
+      "model": "bigdoors:block/door_panel/31"
+    },
+    "material_index=32": {
+      "model": "bigdoors:block/door_panel/32"
+    },
+    "material_index=33": {
+      "model": "bigdoors:block/door_panel/33"
+    },
+    "material_index=34": {
+      "model": "bigdoors:block/door_panel/34"
+    },
+    "material_index=35": {
+      "model": "bigdoors:block/door_panel/35"
+    },
+    "material_index=36": {
+      "model": "bigdoors:block/door_panel/36"
+    },
+    "material_index=37": {
+      "model": "bigdoors:block/door_panel/37"
+    },
+    "material_index=38": {
+      "model": "bigdoors:block/door_panel/38"
+    },
+    "material_index=39": {
+      "model": "bigdoors:block/door_panel/39"
+    },
+    "material_index=40": {
+      "model": "bigdoors:block/door_panel/40"
+    },
+    "material_index=41": {
+      "model": "bigdoors:block/door_panel/41"
+    },
+    "material_index=42": {
+      "model": "bigdoors:block/door_panel/42"
+    },
+    "material_index=43": {
+      "model": "bigdoors:block/door_panel/43"
+    },
+    "material_index=44": {
+      "model": "bigdoors:block/door_panel/44"
+    },
+    "material_index=45": {
+      "model": "bigdoors:block/door_panel/45"
+    },
+    "material_index=46": {
+      "model": "bigdoors:block/door_panel/46"
+    },
+    "material_index=47": {
+      "model": "bigdoors:block/door_panel/47"
+    },
+    "material_index=48": {
+      "model": "bigdoors:block/door_panel/48"
+    },
+    "material_index=49": {
+      "model": "bigdoors:block/door_panel/49"
+    },
+    "material_index=50": {
+      "model": "bigdoors:block/door_panel/50"
+    },
+    "material_index=51": {
+      "model": "bigdoors:block/door_panel/51"
+    },
+    "material_index=52": {
+      "model": "bigdoors:block/door_panel/52"
+    },
+    "material_index=53": {
+      "model": "bigdoors:block/door_panel/53"
+    },
+    "material_index=54": {
+      "model": "bigdoors:block/door_panel/54"
+    },
+    "material_index=55": {
+      "model": "bigdoors:block/door_panel/55"
+    },
+    "material_index=56": {
+      "model": "bigdoors:block/door_panel/56"
+    },
+    "material_index=57": {
+      "model": "bigdoors:block/door_panel/57"
+    },
+    "material_index=58": {
+      "model": "bigdoors:block/door_panel/58"
+    },
+    "material_index=59": {
+      "model": "bigdoors:block/door_panel/59"
+    },
+    "material_index=60": {
+      "model": "bigdoors:block/door_panel/60"
+    },
+    "material_index=61": {
+      "model": "bigdoors:block/door_panel/61"
+    },
+    "material_index=62": {
+      "model": "bigdoors:block/door_panel/62"
+    },
+    "material_index=63": {
+      "model": "bigdoors:block/door_panel/63"
+    }
+  }
+}
