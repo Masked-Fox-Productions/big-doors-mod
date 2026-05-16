@@ -1,7 +1,7 @@
 ---
 title: "feat: Wire vertical rotation mode into handlers and subsystems"
 type: feat
-status: active
+status: completed
 date: 2026-05-16
 origin: docs/brainstorms/2026-05-14-big-doors-mod-requirements.md
 deepened: 2026-05-16
@@ -80,7 +80,7 @@ R2 specifies: "Hinge supports two rotation modes: horizontal (normal door) and v
 
 ## Implementation Units
 
-- [ ] **Unit 1: Add rotation function selector, extend ObstructionChecker, and update block schema**
+- [x] **Unit 1: Add rotation function selector, extend ObstructionChecker, and update block schema**
 
 **Goal:** Add a domain-layer helper that selects the correct rotation function based on mode/facing/direction, extend `checkPath()` to accept mode parameters, extend the hinge block state to support vertical door_side values, and add vertical directions to Constants.
 
@@ -120,7 +120,7 @@ R2 specifies: "Hinge supports two rotation modes: horizontal (normal door) and v
 
 ---
 
-- [ ] **Unit 2: Wire vertical mode into hinge placement (custom component + handler)**
+- [x] **Unit 2: Wire vertical mode into hinge placement (custom component + handler)**
 
 **Goal:** Detect floor/ceiling placement via the stable custom component callback and create vertical-mode assemblies. Fix stacked hinge permutation to adopt the assembly's mode after merge.
 
@@ -160,7 +160,7 @@ R2 specifies: "Hinge supports two rotation modes: horizontal (normal door) and v
 
 ---
 
-- [ ] **Unit 3: Wire vertical mode into PanelPlacementHandler**
+- [x] **Unit 3: Wire vertical mode into PanelPlacementHandler**
 
 **Goal:** Allow panels to attach above/below vertical-mode hinges, with explicit mode gating for both hinge-neighbor and panel-neighbor paths.
 
@@ -203,7 +203,7 @@ R2 specifies: "Hinge supports two rotation modes: horizontal (normal door) and v
 
 ---
 
-- [ ] **Unit 4: Wire vertical mode into InteractionHandler and RedstoneSubsystem**
+- [x] **Unit 4: Wire vertical mode into InteractionHandler and RedstoneSubsystem**
 
 **Goal:** Use mode-appropriate rotation when opening/closing doors via interaction or redstone.
 
