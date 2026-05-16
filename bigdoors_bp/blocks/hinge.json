@@ -10,7 +10,7 @@
       "states": {
         "bigdoors:facing": ["north", "south", "east", "west"],
         "bigdoors:mode": ["horizontal", "vertical"],
-        "bigdoors:door_side": ["none", "north", "south", "east", "west"]
+        "bigdoors:door_side": ["none", "north", "south", "east", "west", "up", "down"]
       }
     },
     "components": {

@@ -1,5 +1,5 @@
 import { BlockPermutation, ItemStack, system } from "@minecraft/server";
-import { rotateCW, rotateCCW } from "../domain/RotationMath.js";
+import { getRotateFn } from "../domain/RotationMath.js";
 import { checkPath } from "../domain/ObstructionChecker.js";
 import { sweep } from "../subsystem/EntitySweeper.js";
 import { PANEL_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS } from "../util/Constants.js";
@@ -54,7 +54,7 @@ export class InteractionHandler {
     const hingePos = assembly.primaryHingePos;
     const panelPositions = assembly.getAllCurrentPositions();
 
-    const preferred = this._preferredDirection(panelPositions, hingePos, player);
+    const preferred = this._preferredDirection(assembly, panelPositions, hingePos, player);
     const fallback = preferred === "cw" ? "ccw" : "cw";
 
     const result = this._attemptOpen(assembly, panelPositions, hingePos, preferred, dimension);
@@ -63,21 +63,23 @@ export class InteractionHandler {
     this._attemptOpen(assembly, panelPositions, hingePos, fallback, dimension);
   }
 
-  _preferredDirection(panelPositions, hingePos, player) {
+  _preferredDirection(assembly, panelPositions, hingePos, player) {
     if (!player || !player.location) return "cw";
 
-    const cwDests = panelPositions.map((p) => rotateCW(p, hingePos));
-    const ccwDests = panelPositions.map((p) => rotateCCW(p, hingePos));
+    const cwFn = getRotateFn(assembly.mode, assembly.facing, "cw");
+    const ccwFn = getRotateFn(assembly.mode, assembly.facing, "ccw");
+    const cwDests = panelPositions.map((p) => cwFn(p, hingePos));
+    const ccwDests = panelPositions.map((p) => ccwFn(p, hingePos));
 
     const playerPos = player.location;
     let cwDist = 0;
     let ccwDist = 0;
 
     for (const d of cwDests) {
-      cwDist += Math.abs(d.x - playerPos.x) + Math.abs(d.z - playerPos.z);
+      cwDist += Math.abs(d.x - playerPos.x) + Math.abs(d.y - playerPos.y) + Math.abs(d.z - playerPos.z);
     }
     for (const d of ccwDests) {
-      ccwDist += Math.abs(d.x - playerPos.x) + Math.abs(d.z - playerPos.z);
+      ccwDist += Math.abs(d.x - playerPos.x) + Math.abs(d.y - playerPos.y) + Math.abs(d.z - playerPos.z);
     }
 
     return cwDist >= ccwDist ? "cw" : "ccw";
@@ -89,10 +91,10 @@ export class InteractionHandler {
       return b?.typeId ?? null;
     };
 
-    const result = checkPath(panelPositions, hingePos, direction, blockQueryFn);
+    const result = checkPath(panelPositions, hingePos, direction, blockQueryFn, assembly.mode, assembly.facing);
     if (!result.canOpen) return false;
 
-    const rotateFn = direction === "cw" ? rotateCW : rotateCCW;
+    const rotateFn = getRotateFn(assembly.mode, assembly.facing, direction);
     const destinations = panelPositions.map((p) => rotateFn(p, hingePos));
 
     // Validate all destinations are in loaded chunks

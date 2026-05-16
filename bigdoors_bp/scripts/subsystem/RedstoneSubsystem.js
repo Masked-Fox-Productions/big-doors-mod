@@ -2,7 +2,7 @@ import { BlockPermutation, ItemStack, system } from "@minecraft/server";
 import { PANEL_BLOCK_ID, HINGE_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS } from "../util/Constants.js";
 import { materialToBlockStates } from "../domain/MaterialRegistry.js";
 import { checkPath } from "../domain/ObstructionChecker.js";
-import { rotateCW, rotateCCW } from "../domain/RotationMath.js";
+import { getRotateFn } from "../domain/RotationMath.js";
 import { sweep } from "./EntitySweeper.js";
 
 const NEIGHBOR_OFFSETS = [
@@ -27,7 +27,6 @@ export class RedstoneSubsystem {
 
     const now = system.currentTick;
     if (this._manager.isRedstoneDebounced(assembly.id, now)) {
-      console.warn(`[redstone] DEBOUNCED assembly=${assembly.id} tick=${now}`);
       return;
     }
 
@@ -83,14 +82,14 @@ export class RedstoneSubsystem {
       return b?.typeId ?? null;
     };
 
-    const preferred = this._preferredDirectionFromSignal(panelPositions, hingePos, signalBlock, dimension);
+    const preferred = this._preferredDirectionFromSignal(assembly, panelPositions, hingePos, signalBlock, dimension);
     const fallback = preferred === "cw" ? "ccw" : "cw";
 
-    let result = checkPath(panelPositions, hingePos, preferred, blockQueryFn);
+    let result = checkPath(panelPositions, hingePos, preferred, blockQueryFn, assembly.mode, assembly.facing);
     let direction = preferred;
 
     if (!result.canOpen) {
-      result = checkPath(panelPositions, hingePos, fallback, blockQueryFn);
+      result = checkPath(panelPositions, hingePos, fallback, blockQueryFn, assembly.mode, assembly.facing);
       direction = fallback;
     }
 
@@ -108,9 +107,7 @@ export class RedstoneSubsystem {
     }
   }
 
-  _preferredDirectionFromSignal(panelPositions, hingePos, signalBlock, dimension) {
-    // Find the actual power source: scan neighbors of the signal block for a
-    // non-door block that has redstone power (pressure plate, repeater, wire, etc.)
+  _preferredDirectionFromSignal(assembly, panelPositions, hingePos, signalBlock, dimension) {
     const loc = signalBlock.location;
     let sourcePos = loc;
 
@@ -126,19 +123,19 @@ export class RedstoneSubsystem {
       }
     }
 
-    console.warn(`[redstone]   signal source at (${sourcePos.x},${sourcePos.y},${sourcePos.z})`);
-
-    const cwDests = panelPositions.map((p) => rotateCW(p, hingePos));
-    const ccwDests = panelPositions.map((p) => rotateCCW(p, hingePos));
+    const cwFn = getRotateFn(assembly.mode, assembly.facing, "cw");
+    const ccwFn = getRotateFn(assembly.mode, assembly.facing, "ccw");
+    const cwDests = panelPositions.map((p) => cwFn(p, hingePos));
+    const ccwDests = panelPositions.map((p) => ccwFn(p, hingePos));
 
     let cwDist = 0;
     let ccwDist = 0;
 
     for (const d of cwDests) {
-      cwDist += Math.abs(d.x - sourcePos.x) + Math.abs(d.z - sourcePos.z);
+      cwDist += Math.abs(d.x - sourcePos.x) + Math.abs(d.y - sourcePos.y) + Math.abs(d.z - sourcePos.z);
     }
     for (const d of ccwDests) {
-      ccwDist += Math.abs(d.x - sourcePos.x) + Math.abs(d.z - sourcePos.z);
+      ccwDist += Math.abs(d.x - sourcePos.x) + Math.abs(d.y - sourcePos.y) + Math.abs(d.z - sourcePos.z);
     }
 
     return cwDist >= ccwDist ? "cw" : "ccw";
@@ -149,14 +146,14 @@ export class RedstoneSubsystem {
     const hingePos = assembly.primaryHingePos;
     const blockQueryFn = (pos) => dimension.getBlock(pos)?.typeId ?? null;
 
-    const result = checkPath(panelPositions, hingePos, direction, blockQueryFn);
+    const result = checkPath(panelPositions, hingePos, direction, blockQueryFn, assembly.mode, assembly.facing);
     if (!result.canOpen) return;
 
     this._executeOpen(assembly, panelPositions, hingePos, direction, result, dimension);
   }
 
   _executeOpen(assembly, panelPositions, hingePos, direction, result, dimension) {
-    const rotateFn = direction === "cw" ? rotateCW : rotateCCW;
+    const rotateFn = getRotateFn(assembly.mode, assembly.facing, direction);
     const newPositions = panelPositions.map(pos => rotateFn(pos, hingePos));
 
     for (const dest of newPositions) {

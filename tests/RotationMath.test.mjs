@@ -6,6 +6,7 @@ import {
   rotateVerticalCW,
   rotateVerticalCCW,
   computeArcPositions,
+  getRotateFn,
 } from "../bigdoors_bp/scripts/domain/RotationMath.js";
 
 describe("RotationMath — horizontal", () => {
@@ -121,6 +122,41 @@ describe("RotationMath — vertical (east/west facing)", () => {
     const pos = { x: 77, y: 8, z: 3 };
     assert.equal(rotateVerticalCW(pos, hinge, "east").x, 77);
     assert.equal(rotateVerticalCCW(pos, hinge, "west").x, 77);
+  });
+});
+
+describe("getRotateFn", () => {
+  const hinge = { x: 0, y: 5, z: 0 };
+
+  it("returns rotateCW-equivalent for horizontal/cw", () => {
+    const fn = getRotateFn("horizontal", "north", "cw");
+    const pos = { x: 2, y: 5, z: 0 };
+    assert.deepEqual(fn(pos, hinge), rotateCW(pos, hinge));
+  });
+
+  it("returns rotateCCW-equivalent for horizontal/ccw", () => {
+    const fn = getRotateFn("horizontal", "north", "ccw");
+    const pos = { x: 2, y: 5, z: 0 };
+    assert.deepEqual(fn(pos, hinge), rotateCCW(pos, hinge));
+  });
+
+  it("returns rotateVerticalCW with facing curried for vertical/north/cw", () => {
+    const fn = getRotateFn("vertical", "north", "cw");
+    const pos = { x: 0, y: 7, z: 0 };
+    assert.deepEqual(fn(pos, hinge), rotateVerticalCW(pos, hinge, "north"));
+  });
+
+  it("returns rotateVerticalCCW with facing curried for vertical/east/ccw", () => {
+    const fn = getRotateFn("vertical", "east", "ccw");
+    const pos = { x: 0, y: 7, z: 0 };
+    assert.deepEqual(fn(pos, hinge), rotateVerticalCCW(pos, hinge, "east"));
+  });
+
+  it("returned vertical function has (pos, hingePos) signature", () => {
+    const fn = getRotateFn("vertical", "south", "cw");
+    const pos = { x: 3, y: 7, z: 0 };
+    const result = fn(pos, hinge);
+    assert.deepEqual(result, rotateVerticalCW(pos, hinge, "south"));
   });
 });
 
