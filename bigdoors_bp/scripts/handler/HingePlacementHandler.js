@@ -18,13 +18,6 @@ function posAdd(pos, offset) {
   return { x: pos.x + offset.x, y: pos.y + offset.y, z: pos.z + offset.z };
 }
 
-function facingFromViewDirection(viewDir) {
-  if (Math.abs(viewDir.x) > Math.abs(viewDir.z)) {
-    return viewDir.x > 0 ? DIRECTIONS.EAST : DIRECTIONS.WEST;
-  }
-  return viewDir.z > 0 ? DIRECTIONS.SOUTH : DIRECTIONS.NORTH;
-}
-
 export class HingePlacementHandler {
   constructor(manager) {
     this._manager = manager;
@@ -39,20 +32,20 @@ export class HingePlacementHandler {
 
   onPlace(block, player, dimension) {
     const pos = block.location;
-    const viewDir = player.getViewDirection();
-    const facing = facingFromViewDirection(viewDir);
-
-    block.setPermutation(
-      BlockPermutation.resolve(HINGE_BLOCK_ID, {
-        "bigdoors:facing": facing,
-        "bigdoors:mode": "horizontal",
-        "bigdoors:door_side": "none",
-      })
-    );
+    const facing = block.permutation.getState("bigdoors:facing");
+    const mode = block.permutation.getState("bigdoors:mode");
 
     let assembly = this._mergeWithAdjacentHinge(pos, dimension);
-    if (!assembly) {
-      assembly = this._manager.createAssembly(pos, facing, "horizontal");
+    if (assembly) {
+      block.setPermutation(
+        BlockPermutation.resolve(HINGE_BLOCK_ID, {
+          "bigdoors:facing": assembly.facing,
+          "bigdoors:mode": assembly.mode,
+          "bigdoors:door_side": assembly.doorSide || "none",
+        })
+      );
+    } else {
+      assembly = this._manager.createAssembly(pos, facing, mode);
     }
 
     const doubleDoorResult = this._detectDoubleDoor(assembly, pos, dimension);
@@ -62,8 +55,8 @@ export class HingePlacementHandler {
 
       block.setPermutation(
         BlockPermutation.resolve(HINGE_BLOCK_ID, {
-          "bigdoors:facing": facing,
-          "bigdoors:mode": "horizontal",
+          "bigdoors:facing": assembly.facing,
+          "bigdoors:mode": assembly.mode,
           "bigdoors:door_side": doorSide,
         })
       );
@@ -96,6 +89,7 @@ export class HingePlacementHandler {
 
       const otherAssembly = this._manager.findByPosition(neighborPos);
       if (!otherAssembly || otherAssembly.id === newAssembly.id) continue;
+      if (otherAssembly.mode !== newAssembly.mode) continue;
       if (otherAssembly.partnerAssemblyId) continue;
       if (!otherAssembly.doorSide) continue;
       if (otherAssembly.doorSide !== OPPOSITE_DIR[dir]) continue;

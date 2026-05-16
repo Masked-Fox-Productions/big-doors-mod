@@ -27,7 +27,6 @@ export class RedstoneSubsystem {
 
     const now = system.currentTick;
     if (this._manager.isRedstoneDebounced(assembly.id, now)) {
-      console.warn(`[redstone] DEBOUNCED assembly=${assembly.id} tick=${now}`);
       return;
     }
 

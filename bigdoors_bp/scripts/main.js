@@ -1,4 +1,5 @@
-import { world, system } from "@minecraft/server";
+import { world, system, BlockPermutation } from "@minecraft/server";
+import { HINGE_BLOCK_ID } from "./util/Constants.js";
 import { DoorManager } from "./DoorManager.js";
 import { HingePlacementHandler } from "./handler/HingePlacementHandler.js";
 import { PanelPlacementHandler } from "./handler/PanelPlacementHandler.js";
@@ -22,7 +23,17 @@ system.beforeEvents.startup.subscribe((ev) => {
       breakHandler.handleHingeBreak(e);
     },
     beforeOnPlayerPlace(e) {
-      console.warn("[bigdoors] hinge place stub");
+      const face = e.face;
+      const mode = (face === "Up" || face === "Down") ? "vertical" : "horizontal";
+      const viewDir = e.player.getViewDirection();
+      const facing = Math.abs(viewDir.x) > Math.abs(viewDir.z)
+        ? (viewDir.x > 0 ? "east" : "west")
+        : (viewDir.z > 0 ? "south" : "north");
+      e.permutationToPlace = BlockPermutation.resolve(HINGE_BLOCK_ID, {
+        "bigdoors:facing": facing,
+        "bigdoors:mode": mode,
+        "bigdoors:door_side": "none",
+      });
     },
     onRedstoneUpdate(e) {
       redstone.handleRedstoneUpdate(e);
