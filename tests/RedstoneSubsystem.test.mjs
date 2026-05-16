@@ -199,4 +199,48 @@ describe("RedstoneSubsystem", () => {
     // Should not throw
     subsystem.handleRedstoneUpdate({ block, powerLevel: 15 });
   });
+
+  it("opens a vertical-mode door using vertical rotation", () => {
+    const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "vertical");
+    manager.setDoorSide(assembly.id, "up");
+    manager.addPanelToAssembly(assembly.id, { x: 0, y: 1, z: 0 }, 12);
+
+    const dim = makeMockDimension(new Map());
+    dim.spawnItem = () => {};
+    dim.getEntities = () => [];
+    for (let x = -2; x <= 2; x++) {
+      for (let y = -2; y <= 2; y++) {
+        for (let z = -2; z <= 2; z++) {
+          placeBlock(dim, "minecraft:air", { x, y, z });
+        }
+      }
+    }
+    placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 });
+    placeBlock(dim, PANEL_BLOCK_ID, { x: 0, y: 1, z: 0 }, { "bigdoors:material": 12 });
+
+    const hingeBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
+    hingeBlock.dimension = dim;
+
+    subsystem.handleRedstoneUpdate({ block: hingeBlock, powerLevel: 15 });
+
+    const updated = manager.getAssembly(assembly.id);
+    assert.equal(updated.isOpen, true);
+    const panelPos = updated.panelPositions[0].currentPos;
+    // Vertical north: panel at (0,1,0) rotates to either (1,0,0) CW or (-1,0,0) CCW
+    assert.equal(panelPos.y, 0);
+    assert.ok(panelPos.x === 1 || panelPos.x === -1);
+  });
+
+  it("horizontal doors still work after vertical mode addition (no regression)", () => {
+    const assembly = setupDoor(manager);
+    const dim = buildDimension();
+    const hingeBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
+    hingeBlock.dimension = dim;
+
+    subsystem.handleRedstoneUpdate({ block: hingeBlock, powerLevel: 15 });
+
+    const updated = manager.getAssembly(assembly.id);
+    assert.equal(updated.isOpen, true);
+    assert.deepEqual(updated.panelPositions[0].currentPos, { x: 0, y: 0, z: 1 });
+  });
 });

@@ -242,4 +242,100 @@ describe("InteractionHandler", () => {
     handler.handleInteract(block, player, dim);
     // Should not throw
   });
+
+  describe("vertical mode", () => {
+    function setupVerticalDoor(manager) {
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "vertical");
+      manager.setDoorSide(assembly.id, "up");
+      manager.addPanelToAssembly(assembly.id, { x: 0, y: 1, z: 0 }, 12);
+      return assembly;
+    }
+
+    function buildVerticalDimension(assembly) {
+      const dim = makeMockDimension(new Map());
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 0, y: 1, z: 0 }, { "bigdoors:material": 12 });
+      for (let x = -2; x <= 2; x++) {
+        for (let y = -2; y <= 2; y++) {
+          for (let z = -2; z <= 2; z++) {
+            const key = posKey({ x, y, z });
+            if (!dim._blocks.has(key)) {
+              placeBlock(dim, "minecraft:air", { x, y, z });
+            }
+          }
+        }
+      }
+      return dim;
+    }
+
+    it("opens a vertical door using vertical rotation (panel moves in Y plane)", () => {
+      const assembly = setupVerticalDoor(manager);
+      const dim = buildVerticalDimension(assembly);
+      const player = { location: { x: -2, y: 0, z: 0 } };
+      const block = dim.getBlock({ x: 0, y: 1, z: 0 });
+
+      handler.handleInteract(block, player, dim);
+
+      const updated = manager.getAssembly(assembly.id);
+      assert.equal(updated.isOpen, true);
+      const panelPos = updated.panelPositions[0].currentPos;
+      // Vertical north CW: panel at (0,1,0) -> dy=1,dx=0 -> (0+1, 0-0, 0) = (1,0,0)
+      // Vertical north CCW: panel at (0,1,0) -> dy=1,dx=0 -> (0-1, 0+0, 0) = (-1,0,0)
+      assert.equal(panelPos.y, 0, "Panel Y should change for vertical rotation");
+      assert.ok(
+        panelPos.x === 1 || panelPos.x === -1,
+        `Panel should rotate vertically, got x=${panelPos.x}`
+      );
+    });
+
+    it("closes a vertical door - panels return to original positions", () => {
+      const assembly = setupVerticalDoor(manager);
+      const dim = buildVerticalDimension(assembly);
+      const player = { location: { x: -2, y: 0, z: 0 } };
+      const block = dim.getBlock({ x: 0, y: 1, z: 0 });
+
+      handler.handleInteract(block, player, dim);
+      const updated = manager.getAssembly(assembly.id);
+      assert.equal(updated.isOpen, true);
+
+      const newPos = updated.panelPositions[0].currentPos;
+      const panelBlock = dim.getBlock(newPos);
+      handler.handleInteract(panelBlock, player, dim);
+
+      const closed = manager.getAssembly(assembly.id);
+      assert.equal(closed.isOpen, false);
+      assert.deepEqual(closed.panelPositions[0].currentPos, { x: 0, y: 1, z: 0 });
+    });
+
+    it("vertical door blocked in one direction falls back to opposite", () => {
+      const assembly = setupVerticalDoor(manager);
+      const dim = buildVerticalDimension(assembly);
+      const player = { location: { x: -2, y: 0, z: 0 } };
+
+      // Block CW destination (1,0,0)
+      placeBlock(dim, "minecraft:stone", { x: 1, y: 0, z: 0 });
+
+      const block = dim.getBlock({ x: 0, y: 0, z: 0 });
+      handler.handleInteract(block, player, dim);
+
+      const updated = manager.getAssembly(assembly.id);
+      assert.equal(updated.isOpen, true);
+    });
+
+    it("vertical door blocked in both directions does not move", () => {
+      const assembly = setupVerticalDoor(manager);
+      const dim = buildVerticalDimension(assembly);
+      const player = { location: { x: -2, y: 0, z: 0 } };
+
+      // Block both CW (1,0,0) and CCW (-1,0,0) for north-facing vertical
+      placeBlock(dim, "minecraft:stone", { x: 1, y: 0, z: 0 });
+      placeBlock(dim, "minecraft:stone", { x: -1, y: 0, z: 0 });
+
+      const block = dim.getBlock({ x: 0, y: 0, z: 0 });
+      handler.handleInteract(block, player, dim);
+
+      const updated = manager.getAssembly(assembly.id);
+      assert.equal(updated.isOpen, false);
+    });
+  });
 });
