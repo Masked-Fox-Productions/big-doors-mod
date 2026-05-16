@@ -149,8 +149,7 @@ export class PanelPlacementHandler {
         if (other.partnerAssemblyId) break;
         if (other.doorSide !== OPPOSITE_DIR[assembly.doorSide]) break;
 
-        this._manager.pairAssemblies(assembly.id, other.id);
-        this._splitPanels(assembly, other);
+        this._manager.pairAndSplitAssemblies(assembly.id, other.id);
         return;
       }
 
@@ -158,46 +157,4 @@ export class PanelPlacementHandler {
     }
   }
 
-  _splitPanels(assemblyA, assemblyB) {
-    const hingeA = assemblyA.primaryHingePos;
-    const hingeB = assemblyB.primaryHingePos;
-
-    const allPanels = [...assemblyA.panelPositions, ...assemblyB.panelPositions];
-    const seen = new Set();
-    const unique = [];
-    for (const p of allPanels) {
-      const key = `${p.closedPos.x},${p.closedPos.y},${p.closedPos.z}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        unique.push(p);
-      }
-    }
-
-    const axis = hingeA.x !== hingeB.x ? "x" : "z";
-    const minVal = Math.min(hingeA[axis], hingeB[axis]);
-    const maxVal = Math.max(hingeA[axis], hingeB[axis]);
-
-    const between = unique.filter((p) => {
-      const v = p.closedPos[axis];
-      return v > minVal && v < maxVal;
-    });
-
-    between.sort((a, b) => a.closedPos[axis] - b.closedPos[axis]);
-
-    const midpoint = (minVal + maxVal) / 2;
-
-    const panelsA = [];
-    const panelsB = [];
-
-    for (const p of between) {
-      const v = p.closedPos[axis];
-      if (v < midpoint) panelsA.push(p);
-      else if (v > midpoint) panelsB.push(p);
-      // Center panel (v === midpoint) belongs to neither — remove from both
-    }
-
-    assemblyA.panelPositions = panelsA;
-    assemblyB.panelPositions = panelsB;
-    this._manager.save();
-  }
 }

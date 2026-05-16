@@ -163,6 +163,59 @@ export class DoorManager {
     this.save();
   }
 
+  pairAndSplitAssemblies(assemblyIdA, assemblyIdB) {
+    const a = this._assemblies.get(assemblyIdA);
+    const b = this._assemblies.get(assemblyIdB);
+    if (!a || !b) return;
+
+    a.partnerAssemblyId = assemblyIdB;
+    b.partnerAssemblyId = assemblyIdA;
+
+    const hingeA = a.primaryHingePos;
+    const hingeB = b.primaryHingePos;
+    const axis = hingeA.x !== hingeB.x ? "x" : "z";
+    const minVal = Math.min(hingeA[axis], hingeB[axis]);
+    const maxVal = Math.max(hingeA[axis], hingeB[axis]);
+    const midpoint = (minVal + maxVal) / 2;
+
+    const allPanels = [...a.panelPositions, ...b.panelPositions];
+    const seen = new Set();
+    const unique = [];
+    for (const p of allPanels) {
+      const key = posKey(p.closedPos);
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(p);
+      }
+    }
+
+    for (const p of allPanels) {
+      this._positionIndex.delete(posKey(p.currentPos));
+    }
+
+    const panelsA = [];
+    const panelsB = [];
+    for (const p of unique) {
+      const v = p.closedPos[axis];
+      if (v <= minVal || v >= maxVal) continue;
+      if (v < midpoint) panelsA.push(p);
+      else if (v > midpoint) panelsB.push(p);
+    }
+
+    const aIsMin = hingeA[axis] < hingeB[axis];
+    a.panelPositions = aIsMin ? panelsA : panelsB;
+    b.panelPositions = aIsMin ? panelsB : panelsA;
+
+    for (const p of a.panelPositions) {
+      this._positionIndex.set(posKey(p.currentPos), assemblyIdA);
+    }
+    for (const p of b.panelPositions) {
+      this._positionIndex.set(posKey(p.currentPos), assemblyIdB);
+    }
+
+    this.save();
+  }
+
   closeDoor(assemblyId) {
     const assembly = this._assemblies.get(assemblyId);
     if (!assembly) return;
