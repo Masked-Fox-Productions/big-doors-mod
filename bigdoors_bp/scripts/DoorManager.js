@@ -173,7 +173,7 @@ export class DoorManager {
     this.save();
   }
 
-  pairAndSplitAssemblies(assemblyIdA, assemblyIdB) {
+  pairAndSplitAssemblies(assemblyIdA, assemblyIdB, revertCallback) {
     const a = this._assemblies.get(assemblyIdA);
     const b = this._assemblies.get(assemblyIdB);
     if (!a || !b) return;
@@ -205,11 +205,16 @@ export class DoorManager {
 
     const panelsA = [];
     const panelsB = [];
+    const droppedPanels = [];
     for (const p of unique) {
       const v = p.closedPos[axis];
-      if (v <= minVal || v >= maxVal) continue;
+      if (v <= minVal || v >= maxVal) {
+        droppedPanels.push(p);
+        continue;
+      }
       if (v < midpoint) panelsA.push(p);
       else if (v > midpoint) panelsB.push(p);
+      else droppedPanels.push(p);
     }
 
     const aIsMin = hingeA[axis] < hingeB[axis];
@@ -221,6 +226,12 @@ export class DoorManager {
     }
     for (const p of b.panelPositions) {
       this._positionIndex.set(posKey(p.currentPos), assemblyIdB);
+    }
+
+    if (revertCallback) {
+      for (const p of droppedPanels) {
+        revertCallback(p.closedPos, p.materialIndex);
+      }
     }
 
     this.save();

@@ -6,7 +6,7 @@ import {
   DIRECTIONS,
   OPPOSITE_DIR,
 } from "../util/Constants.js";
-import { indexForTypeId, materialToBlockStates } from "../domain/MaterialRegistry.js";
+import { indexForTypeId, materialToBlockStates, typeIdForIndex } from "../domain/MaterialRegistry.js";
 
 const HORIZONTAL_DIRS = [
   DIRECTIONS.NORTH,
@@ -82,6 +82,15 @@ export class PanelPlacementHandler {
     return false;
   }
 
+  _isCoplanar(assembly, pos) {
+    const hinge = assembly.primaryHingePos;
+    const side = assembly.doorSide;
+    if (side === "east" || side === "west") return pos.z === hinge.z;
+    if (side === "north" || side === "south") return pos.x === hinge.x;
+    if (side === "up" || side === "down") return pos.x === hinge.x && pos.z === hinge.z;
+    return true;
+  }
+
   _handleHingeNeighbor(block, pos, matIdx, hingeBlock, hingePos, dimension) {
     const assembly = this._manager.findByPosition(hingePos);
     if (!assembly) return false;
@@ -91,6 +100,8 @@ export class PanelPlacementHandler {
 
     if (assembly.mode === "vertical" && !VERTICAL_DIRS.has(placedDir)) return false;
     if (assembly.mode === "horizontal" && VERTICAL_DIRS.has(placedDir)) return false;
+
+    if (assembly.doorSide && !this._isCoplanar(assembly, pos)) return false;
 
     const wallSide = OPPOSITE_DIR[assembly.doorSide];
     if (assembly.doorSide && placedDir === wallSide) return false;
@@ -123,6 +134,8 @@ export class PanelPlacementHandler {
     if (!assembly) return false;
 
     if (!assembly.doorSide) return false;
+
+    if (!this._isCoplanar(assembly, pos)) return false;
 
     const dirFromPanel = directionFromTo(panelPos, pos);
     if (assembly.mode === "vertical" && !VERTICAL_DIRS.has(dirFromPanel)) return false;
@@ -164,7 +177,12 @@ export class PanelPlacementHandler {
         if (other.partnerAssemblyId) break;
         if (other.doorSide !== OPPOSITE_DIR[assembly.doorSide]) break;
 
-        this._manager.pairAndSplitAssemblies(assembly.id, other.id);
+        this._manager.pairAndSplitAssemblies(assembly.id, other.id, (pos, materialIndex) => {
+          const b = dimension.getBlock(pos);
+          if (!b) return;
+          const vanillaId = typeIdForIndex(materialIndex);
+          b.setType(vanillaId || "minecraft:air");
+        });
         return;
       }
 

@@ -292,4 +292,116 @@ describe("PanelPlacementHandler", () => {
     assert.equal(result, false);
     assert.equal(block.typeId, "minecraft:cobblestone");
   });
+
+  describe("coplanarity validation", () => {
+    it("block behind east-door plane (Z+1) NOT converted via hinge neighbor", () => {
+      const dim = makeMockDimension();
+      setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 0, y: 0, z: 1 });
+
+      const result = handler.onPlace(block, dim);
+      assert.equal(result, false);
+      assert.equal(block.typeId, "minecraft:cobblestone");
+    });
+
+    it("block in front of east-door plane (Z-1) NOT converted via hinge neighbor", () => {
+      const dim = makeMockDimension();
+      setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 0, y: 0, z: -1 });
+
+      const result = handler.onPlace(block, dim);
+      assert.equal(result, false);
+      assert.equal(block.typeId, "minecraft:cobblestone");
+    });
+
+    it("block off-plane adjacent to panel at Y=2 NOT converted via panel neighbor", () => {
+      const dim = makeMockDimension();
+      const assembly = setupHingeAssembly(
+        dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east"
+      );
+      manager.addHingeToAssembly(assembly.id, { x: 0, y: 1, z: 0 });
+      manager.addHingeToAssembly(assembly.id, { x: 0, y: 2, z: 0 });
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 1, z: 0 });
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 2, z: 0 });
+
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 2, z: 0 });
+      manager.addPanelToAssembly(assembly.id, { x: 1, y: 2, z: 0 }, 12);
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 2, z: 1 });
+
+      const result = handler.onPlace(block, dim);
+      assert.equal(result, false);
+      assert.equal(block.typeId, "minecraft:cobblestone");
+    });
+
+    it("north/south door off-plane (wrong X) NOT converted via panel neighbor", () => {
+      const dim = makeMockDimension();
+      const assembly = setupHingeAssembly(
+        dim, { x: 0, y: 0, z: 0 }, "east", "horizontal", "south"
+      );
+
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 0, y: 0, z: 1 });
+      manager.addPanelToAssembly(assembly.id, { x: 0, y: 0, z: 1 }, 12);
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 1 });
+
+      const result = handler.onPlace(block, dim);
+      assert.equal(result, false);
+      assert.equal(block.typeId, "minecraft:cobblestone");
+    });
+
+    it("in-plane at Y+1 (second row) IS converted via panel neighbor", () => {
+      const dim = makeMockDimension();
+      const assembly = setupHingeAssembly(
+        dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east"
+      );
+      manager.addHingeToAssembly(assembly.id, { x: 0, y: 1, z: 0 });
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 1, z: 0 });
+
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 });
+      manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 12);
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 1, z: 0 });
+
+      const result = handler.onPlace(block, dim);
+      assert.equal(result, true);
+      assert.equal(block.typeId, PANEL_BLOCK_ID);
+    });
+
+    it("in-plane extending further from hinge IS converted via panel neighbor", () => {
+      const dim = makeMockDimension();
+      const assembly = setupHingeAssembly(
+        dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east"
+      );
+
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 });
+      manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 12);
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 2, y: 0, z: 0 });
+      manager.addPanelToAssembly(assembly.id, { x: 2, y: 0, z: 0 }, 12);
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 3, y: 0, z: 0 });
+
+      const result = handler.onPlace(block, dim);
+      assert.equal(result, true);
+      assert.equal(block.typeId, PANEL_BLOCK_ID);
+    });
+
+    it("vertical door: off-plane (wrong X) NOT converted via panel neighbor", () => {
+      const dim = makeMockDimension();
+      const assembly = setupHingeAssembly(
+        dim, { x: 0, y: 0, z: 0 }, "north", "vertical", "up"
+      );
+
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 0, y: 1, z: 0 });
+      manager.addPanelToAssembly(assembly.id, { x: 0, y: 1, z: 0 }, 12);
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 1, z: 0 });
+
+      const result = handler.onPlace(block, dim);
+      assert.equal(result, false);
+      assert.equal(block.typeId, "minecraft:cobblestone");
+    });
+  });
 });

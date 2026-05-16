@@ -6,6 +6,7 @@ import {
   DIRECTIONS,
   OPPOSITE_DIR,
 } from "../util/Constants.js";
+import { typeIdForIndex } from "../domain/MaterialRegistry.js";
 
 const HORIZONTAL_DIRS = [
   DIRECTIONS.NORTH,
@@ -61,7 +62,12 @@ export class HingePlacementHandler {
         })
       );
 
-      this._manager.pairAndSplitAssemblies(assembly.id, otherAssembly.id);
+      this._manager.pairAndSplitAssemblies(assembly.id, otherAssembly.id, (pos, materialIndex) => {
+        const b = dimension.getBlock(pos);
+        if (!b) return;
+        const vanillaId = typeIdForIndex(materialIndex);
+        b.setType(vanillaId || "minecraft:air");
+      });
     }
   }
 
