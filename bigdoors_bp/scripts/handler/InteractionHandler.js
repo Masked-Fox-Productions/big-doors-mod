@@ -138,14 +138,15 @@ export class InteractionHandler {
     // Three-phase block movement
     const tuples = [];
     for (let i = 0; i < panelPositions.length; i++) {
-      const matIdx = assembly.panelPositions[i].materialIndex;
+      const panel = assembly.panelPositions[i];
+      const matIdx = panel.materialIndex;
       const geoClass = geometryClassForMaterial(matIdx);
       const geoId = this._resolveGeoForPanel(assembly, i, true);
       const rotation = openRotation(assembly.mode, assembly.doorSide, assembly.facing, direction, geoClass);
       tuples.push({
         source: panelPositions[i],
         dest: destinations[i],
-        states: panelBlockStates(matIdx, geoId, rotation),
+        states: panelBlockStates(matIdx, geoId, rotation, panel.overlay ?? 0),
       });
     }
 
@@ -176,14 +177,15 @@ export class InteractionHandler {
 
     const tuples = [];
     for (let i = 0; i < currentPositions.length; i++) {
-      const matIdx = assembly.panelPositions[i].materialIndex;
+      const panel = assembly.panelPositions[i];
+      const matIdx = panel.materialIndex;
       const geoClass = geometryClassForMaterial(matIdx);
       const geoId = this._resolveGeoForPanel(assembly, i, false);
       const rotation = closedRotation(assembly.doorSide, assembly.facing, geoClass);
       tuples.push({
         source: currentPositions[i],
         dest: closedPositions[i],
-        states: panelBlockStates(matIdx, geoId, rotation),
+        states: panelBlockStates(matIdx, geoId, rotation, panel.overlay ?? 0),
       });
     }
 

@@ -363,4 +363,40 @@ describe("InteractionHandler", () => {
     assert.equal(closed.isOpen, false);
     assert.equal(closed.redstoneSource, null);
   });
+
+  it("preserves overlay=1 on panels when opening a strapped door", () => {
+    const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+    manager.setDoorSide(assembly.id, "east");
+    manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 12, undefined, 1);
+
+    const dim = buildDimension(assembly);
+    const player = { location: { x: 1, y: 0, z: -2 } };
+    const block = dim.getBlock({ x: 1, y: 0, z: 0 });
+
+    handler.handleInteract(block, player, dim);
+
+    const opened = manager.getAssembly(assembly.id);
+    assert.equal(opened.isOpen, true);
+    const destPos = opened.panelPositions[0].currentPos;
+    const destBlock = dim.getBlock(destPos);
+    assert.equal(destBlock.permutation.getState("bigdoors:overlay"), 1);
+  });
+
+  it("preserves overlay=0 on panels when opening a hidden-hinge door", () => {
+    const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal", "hidden");
+    manager.setDoorSide(assembly.id, "east");
+    manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 12, undefined, 0);
+
+    const dim = buildDimension(assembly);
+    const player = { location: { x: 1, y: 0, z: -2 } };
+    const block = dim.getBlock({ x: 1, y: 0, z: 0 });
+
+    handler.handleInteract(block, player, dim);
+
+    const opened = manager.getAssembly(assembly.id);
+    assert.equal(opened.isOpen, true);
+    const destPos = opened.panelPositions[0].currentPos;
+    const destBlock = dim.getBlock(destPos);
+    assert.equal(destBlock.permutation.getState("bigdoors:overlay"), 0);
+  });
 });

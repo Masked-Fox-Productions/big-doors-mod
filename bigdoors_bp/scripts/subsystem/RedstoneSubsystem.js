@@ -307,7 +307,7 @@ export class RedstoneSubsystem {
     const rotation = isOpen
       ? openRotation(assembly.mode, assembly.doorSide, assembly.facing, direction, geoClass)
       : closedRotation(assembly.doorSide, assembly.facing, geoClass);
-    return panelBlockStates(matIdx, geoId, rotation);
+    return panelBlockStates(matIdx, geoId, rotation, panel.overlay ?? 0);
   }
 
   _resolveVerticalFenceGeo(assembly, panelIndex) {
