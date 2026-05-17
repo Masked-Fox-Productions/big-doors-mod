@@ -44,6 +44,9 @@ export class DoorManager {
       for (const panel of assembly.panelPositions) {
         this._positionIndex.set(posKey(panel.currentPos), assembly.id);
       }
+      for (const panel of assembly.boundaryPanels) {
+        this._positionIndex.set(posKey(panel.currentPos), assembly.id);
+      }
 
       const numPart = parseInt(assembly.id.replace("door_", ""), 10);
       if (!isNaN(numPart) && numPart >= this._nextId) {
@@ -90,6 +93,13 @@ export class DoorManager {
     this.save();
   }
 
+  setMode(assemblyId, mode) {
+    const assembly = this._assemblies.get(assemblyId);
+    if (!assembly) return;
+    assembly.mode = mode;
+    this.save();
+  }
+
   addPanelToAssembly(assemblyId, panelPos, materialIndex) {
     const assembly = this._assemblies.get(assemblyId);
     if (!assembly) return;
@@ -125,6 +135,9 @@ export class DoorManager {
       this._positionIndex.delete(posKey(hPos));
     }
     for (const panel of assembly.panelPositions) {
+      this._positionIndex.delete(posKey(panel.currentPos));
+    }
+    for (const panel of assembly.boundaryPanels) {
       this._positionIndex.delete(posKey(panel.currentPos));
     }
 
@@ -168,6 +181,20 @@ export class DoorManager {
     const assembly = this._assemblies.get(assemblyId);
     if (!assembly || !assembly.partnerAssemblyId) return;
     const partner = this._assemblies.get(assembly.partnerAssemblyId);
+
+    if (assembly.boundaryPanels.length > 0) {
+      for (const p of assembly.boundaryPanels) {
+        assembly.panelPositions.push(p);
+      }
+      assembly.boundaryPanels = [];
+    }
+    if (partner && partner.boundaryPanels.length > 0) {
+      for (const p of partner.boundaryPanels) {
+        partner.panelPositions.push(p);
+      }
+      partner.boundaryPanels = [];
+    }
+
     if (partner) partner.partnerAssemblyId = null;
     assembly.partnerAssemblyId = null;
     this.save();
@@ -205,11 +232,16 @@ export class DoorManager {
 
     const panelsA = [];
     const panelsB = [];
+    const droppedPanels = [];
     for (const p of unique) {
       const v = p.closedPos[axis];
-      if (v <= minVal || v >= maxVal) continue;
+      if (v <= minVal || v >= maxVal) {
+        droppedPanels.push(p);
+        continue;
+      }
       if (v < midpoint) panelsA.push(p);
       else if (v > midpoint) panelsB.push(p);
+      else droppedPanels.push(p);
     }
 
     const aIsMin = hingeA[axis] < hingeB[axis];
@@ -221,6 +253,11 @@ export class DoorManager {
     }
     for (const p of b.panelPositions) {
       this._positionIndex.set(posKey(p.currentPos), assemblyIdB);
+    }
+
+    a.boundaryPanels = droppedPanels;
+    for (const p of droppedPanels) {
+      this._positionIndex.set(posKey(p.currentPos), assemblyIdA);
     }
 
     this.save();

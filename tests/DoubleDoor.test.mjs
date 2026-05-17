@@ -272,6 +272,144 @@ describe("DoubleDoor", () => {
     });
   });
 
+  describe("boundary panels", () => {
+    it("odd-column double door center panel stays as door_panel (boundary)", () => {
+      const assemblyA = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assemblyA.id, "east");
+      manager.addPanelToAssembly(assemblyA.id, { x: 1, y: 0, z: 0 }, 0);
+      manager.addPanelToAssembly(assemblyA.id, { x: 2, y: 0, z: 0 }, 0);
+      manager.addPanelToAssembly(assemblyA.id, { x: 3, y: 0, z: 0 }, 0);
+
+      const assemblyB = manager.createAssembly({ x: 4, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assemblyB.id, "west");
+
+      const dim = makeMockDimension(new Map());
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 2, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 3, y: 0, z: 0 });
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 4, y: 0, z: 0 });
+
+      panelHandler._checkDoubleDoor(assemblyA, dim);
+
+      const centerBlock = dim.getBlock({ x: 2, y: 0, z: 0 });
+      assert.equal(centerBlock.typeId, PANEL_BLOCK_ID);
+
+      const updatedA = manager.getAssembly(assemblyA.id);
+      assert.equal(updatedA.boundaryPanels.length, 1);
+      assert.deepEqual(updatedA.boundaryPanels[0].closedPos, { x: 2, y: 0, z: 0 });
+    });
+
+    it("tall odd-column double door center column all tracked as boundary", () => {
+      const assemblyA = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.addHingeToAssembly(assemblyA.id, { x: 0, y: 1, z: 0 });
+      manager.setDoorSide(assemblyA.id, "east");
+
+      for (let y = 0; y < 2; y++) {
+        manager.addPanelToAssembly(assemblyA.id, { x: 1, y, z: 0 }, 0);
+        manager.addPanelToAssembly(assemblyA.id, { x: 2, y, z: 0 }, 0);
+        manager.addPanelToAssembly(assemblyA.id, { x: 3, y, z: 0 }, 0);
+      }
+
+      const assemblyB = manager.createAssembly({ x: 4, y: 0, z: 0 }, "north", "horizontal");
+      manager.addHingeToAssembly(assemblyB.id, { x: 4, y: 1, z: 0 });
+      manager.setDoorSide(assemblyB.id, "west");
+
+      const dim = makeMockDimension(new Map());
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 });
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 1, z: 0 });
+      for (let y = 0; y < 2; y++) {
+        for (let x = 1; x <= 3; x++) {
+          placeBlock(dim, PANEL_BLOCK_ID, { x, y, z: 0 });
+        }
+      }
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 4, y: 0, z: 0 });
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 4, y: 1, z: 0 });
+
+      panelHandler._checkDoubleDoor(assemblyA, dim);
+
+      const updatedA = manager.getAssembly(assemblyA.id);
+      assert.equal(updatedA.boundaryPanels.length, 2);
+
+      for (let y = 0; y < 2; y++) {
+        const centerBlock = dim.getBlock({ x: 2, y, z: 0 });
+        assert.equal(centerBlock.typeId, PANEL_BLOCK_ID,
+          `center block at y=${y} should remain a door panel`);
+      }
+    });
+
+    it("even-column double door has no boundary panels", () => {
+      const assemblyA = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assemblyA.id, "east");
+      manager.addPanelToAssembly(assemblyA.id, { x: 1, y: 0, z: 0 }, 0);
+      manager.addPanelToAssembly(assemblyA.id, { x: 2, y: 0, z: 0 }, 0);
+      manager.addPanelToAssembly(assemblyA.id, { x: 3, y: 0, z: 0 }, 0);
+      manager.addPanelToAssembly(assemblyA.id, { x: 4, y: 0, z: 0 }, 0);
+
+      const assemblyB = manager.createAssembly({ x: 5, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assemblyB.id, "west");
+
+      manager.pairAndSplitAssemblies(assemblyA.id, assemblyB.id);
+
+      const updatedA = manager.getAssembly(assemblyA.id);
+      assert.equal(updatedA.boundaryPanels.length, 0);
+      assert.equal(updatedA.panelPositions.length, 2);
+    });
+
+    it("clicking boundary panel triggers double-door interaction", () => {
+      const assemblyA = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assemblyA.id, "east");
+      manager.addPanelToAssembly(assemblyA.id, { x: 1, y: 0, z: 0 }, 0);
+      manager.addPanelToAssembly(assemblyA.id, { x: 2, y: 0, z: 0 }, 0);
+      manager.addPanelToAssembly(assemblyA.id, { x: 3, y: 0, z: 0 }, 0);
+
+      const assemblyB = manager.createAssembly({ x: 4, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assemblyB.id, "west");
+
+      const dim = makeMockDimension(new Map());
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 2, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 3, y: 0, z: 0 });
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 4, y: 0, z: 0 });
+      fillAir(dim, -3, 7, -3, 3, 0);
+
+      panelHandler._checkDoubleDoor(assemblyA, dim);
+
+      const player = { location: { x: 2, y: 0, z: -2 } };
+      const boundaryBlock = dim.getBlock({ x: 2, y: 0, z: 0 });
+      handler.handleInteract(boundaryBlock, player, dim);
+
+      const updatedA = manager.getAssembly(assemblyA.id);
+      const updatedB = manager.getAssembly(assemblyB.id);
+      assert.equal(updatedA.isOpen, true);
+      assert.equal(updatedB.isOpen, true);
+    });
+
+    it("unpairing absorbs boundary panels back into the owning assembly", () => {
+      const assemblyA = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assemblyA.id, "east");
+      manager.addPanelToAssembly(assemblyA.id, { x: 1, y: 0, z: 0 }, 0);
+      manager.addPanelToAssembly(assemblyA.id, { x: 2, y: 0, z: 0 }, 0);
+      manager.addPanelToAssembly(assemblyA.id, { x: 3, y: 0, z: 0 }, 0);
+
+      const assemblyB = manager.createAssembly({ x: 4, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assemblyB.id, "west");
+
+      manager.pairAndSplitAssemblies(assemblyA.id, assemblyB.id);
+
+      const beforeUnpair = manager.getAssembly(assemblyA.id);
+      assert.equal(beforeUnpair.boundaryPanels.length, 1);
+      assert.equal(beforeUnpair.panelPositions.length, 1);
+
+      manager.unpairAssembly(assemblyA.id);
+
+      const afterUnpair = manager.getAssembly(assemblyA.id);
+      assert.equal(afterUnpair.boundaryPanels.length, 0);
+      assert.equal(afterUnpair.panelPositions.length, 2);
+    });
+  });
+
   describe("tall double-door", () => {
     it("3-tall double door with stacked hinges on both sides", () => {
       const assemblyA = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");

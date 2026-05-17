@@ -26,6 +26,8 @@ export class DoorAssembly {
     this.hingePositions = [{ ...primaryHingePos }];
     /** @type {Array<{materialIndex:number, closedPos:{x:number,y:number,z:number}, currentPos:{x:number,y:number,z:number}}>} */
     this.panelPositions = [];
+    /** @type {Array<{materialIndex:number, closedPos:{x:number,y:number,z:number}, currentPos:{x:number,y:number,z:number}}>} */
+    this.boundaryPanels = [];
     this.facing = facing;
     this.doorSide = "";      // direction of the door side (n/s/e/w), empty until set
     this.mode = mode;        // 'horizontal' or 'vertical'
@@ -62,15 +64,26 @@ export class DoorAssembly {
       (p) => posKey(p.currentPos) === key
     );
     if (idx === -1) {
-      // Also check closedPos
       const idx2 = this.panelPositions.findIndex(
         (p) => posKey(p.closedPos) === key
       );
-      if (idx2 === -1) return false;
-      this.panelPositions.splice(idx2, 1);
-      return true;
+      if (idx2 !== -1) {
+        this.panelPositions.splice(idx2, 1);
+        return true;
+      }
+      return this.removeBoundaryPanel(pos);
     }
     this.panelPositions.splice(idx, 1);
+    return true;
+  }
+
+  removeBoundaryPanel(pos) {
+    const key = posKey(pos);
+    const idx = this.boundaryPanels.findIndex(
+      (p) => posKey(p.currentPos) === key || posKey(p.closedPos) === key
+    );
+    if (idx === -1) return false;
+    this.boundaryPanels.splice(idx, 1);
     return true;
   }
 
@@ -104,6 +117,11 @@ export class DoorAssembly {
         closedPos: p.closedPos,
         currentPos: p.currentPos,
       })),
+      boundaryPanels: this.boundaryPanels.map((p) => ({
+        materialIndex: p.materialIndex,
+        closedPos: p.closedPos,
+        currentPos: p.currentPos,
+      })),
       facing: this.facing,
       doorSide: this.doorSide,
       mode: this.mode,
@@ -125,6 +143,11 @@ export class DoorAssembly {
     );
     assembly.hingePositions = json.hingePositions.map((p) => ({ ...p }));
     assembly.panelPositions = (json.panelPositions || []).map((p) => ({
+      materialIndex: p.materialIndex,
+      closedPos: { ...p.closedPos },
+      currentPos: { ...p.currentPos },
+    }));
+    assembly.boundaryPanels = (json.boundaryPanels || []).map((p) => ({
       materialIndex: p.materialIndex,
       closedPos: { ...p.closedPos },
       currentPos: { ...p.currentPos },

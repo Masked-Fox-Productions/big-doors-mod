@@ -45,29 +45,29 @@ export function rotateCCW(pos, hingePos) {
 
 /**
  * Rotate a position 90 degrees clockwise in vertical mode around a horizontal axis.
- * For a hinge facing north/south: rotate in the Y/X plane (X changes, Y changes, Z unchanged).
- * For a hinge facing east/west: rotate in the Y/Z plane (Z changes, Y changes, X unchanged).
+ * The rotation axis is perpendicular to the facing direction:
+ * - Facing north/south: axis runs E/W → rotate in Y/Z plane (Y and Z change, X unchanged).
+ * - Facing east/west: axis runs N/S → rotate in Y/X plane (Y and X change, Z unchanged).
  *
  * @param {string} facing 'north'|'south'|'east'|'west'
  */
 export function rotateVerticalCW(pos, hingePos, facing) {
   if (facing === "north" || facing === "south") {
-    // Rotate in Y/X plane: +X maps to +Y (like CW viewed from south)
-    const dx = pos.x - hingePos.x;
+    const dz = pos.z - hingePos.z;
     const dy = pos.y - hingePos.y;
     return {
-      x: Math.round(hingePos.x + dy),
-      y: Math.round(hingePos.y - dx),
-      z: pos.z,
+      x: pos.x,
+      y: Math.round(hingePos.y - dz),
+      z: Math.round(hingePos.z + dy),
     };
   }
-  // east or west — rotate in Y/Z plane
-  const dz = pos.z - hingePos.z;
+  // east or west — rotate in Y/X plane
+  const dx = pos.x - hingePos.x;
   const dy = pos.y - hingePos.y;
   return {
-    x: pos.x,
-    y: Math.round(hingePos.y - dz),
-    z: Math.round(hingePos.z + dy),
+    x: Math.round(hingePos.x + dy),
+    y: Math.round(hingePos.y - dx),
+    z: pos.z,
   };
 }
 
@@ -76,20 +76,20 @@ export function rotateVerticalCW(pos, hingePos, facing) {
  */
 export function rotateVerticalCCW(pos, hingePos, facing) {
   if (facing === "north" || facing === "south") {
-    const dx = pos.x - hingePos.x;
+    const dz = pos.z - hingePos.z;
     const dy = pos.y - hingePos.y;
     return {
-      x: Math.round(hingePos.x - dy),
-      y: Math.round(hingePos.y + dx),
-      z: pos.z,
+      x: pos.x,
+      y: Math.round(hingePos.y + dz),
+      z: Math.round(hingePos.z - dy),
     };
   }
-  const dz = pos.z - hingePos.z;
+  const dx = pos.x - hingePos.x;
   const dy = pos.y - hingePos.y;
   return {
-    x: pos.x,
-    y: Math.round(hingePos.y + dz),
-    z: Math.round(hingePos.z - dy),
+    x: Math.round(hingePos.x - dy),
+    y: Math.round(hingePos.y + dx),
+    z: pos.z,
   };
 }
 

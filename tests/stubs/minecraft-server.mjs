@@ -117,6 +117,7 @@ export const EntityInitializationCause = {
   Transformed: "Transformed"
 };
 
+
 /** Test-only: replace the exported `world` object. */
 export function __setWorld(w) { world = w; }
 

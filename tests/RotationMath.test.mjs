@@ -79,49 +79,52 @@ describe("RotationMath — horizontal", () => {
 describe("RotationMath — vertical (north/south facing)", () => {
   const hinge = { x: 0, y: 5, z: 0 };
 
-  it("rotateVerticalCW rotates Y axis correctly for north-facing hinge", () => {
-    // Point 2 blocks above hinge
+  it("rotateVerticalCW rotates in Y/Z plane for north-facing hinge", () => {
+    // Point 2 blocks above hinge: (0, 7, 0)
+    // Axis runs E/W, so Y and Z change, X stays
+    // dz=0, dy=2 → newY = 5-0=5, newZ = 0+2=2
     const pos = { x: 0, y: 7, z: 0 };
     const result = rotateVerticalCW(pos, hinge, "north");
-    // dy=2, dx=0 → newX = hinge.x + dy = 2, newY = hinge.y - dx = 5
-    assert.deepEqual(result, { x: 2, y: 5, z: 0 });
+    assert.deepEqual(result, { x: 0, y: 5, z: 2 });
   });
 
   it("rotateVerticalCCW reverses rotateVerticalCW for north-facing", () => {
-    const pos = { x: 3, y: 7, z: 0 };
+    const pos = { x: 0, y: 7, z: 3 };
     const rotated = rotateVerticalCW(pos, hinge, "north");
     const restored = rotateVerticalCCW(rotated, hinge, "north");
     assert.deepEqual(restored, { x: pos.x, y: pos.y, z: pos.z });
   });
 
-  it("preserves Z coordinate for north/south vertical rotation", () => {
-    const pos = { x: 2, y: 8, z: 99 };
-    assert.equal(rotateVerticalCW(pos, hinge, "north").z, 99);
-    assert.equal(rotateVerticalCCW(pos, hinge, "south").z, 99);
+  it("preserves X coordinate for north/south vertical rotation", () => {
+    const pos = { x: 99, y: 8, z: 2 };
+    assert.equal(rotateVerticalCW(pos, hinge, "north").x, 99);
+    assert.equal(rotateVerticalCCW(pos, hinge, "south").x, 99);
   });
 });
 
 describe("RotationMath — vertical (east/west facing)", () => {
   const hinge = { x: 0, y: 5, z: 0 };
 
-  it("rotateVerticalCW rotates Y/Z for east-facing hinge", () => {
+  it("rotateVerticalCW rotates in Y/X plane for east-facing hinge", () => {
+    // Point 2 blocks above hinge: (0, 7, 0)
+    // Axis runs N/S, so Y and X change, Z stays
+    // dx=0, dy=2 → newX = 0+2=2, newY = 5-0=5
     const pos = { x: 0, y: 7, z: 0 };
     const result = rotateVerticalCW(pos, hinge, "east");
-    // dz=0, dy=2 → newY = hinge.y - dz = 5, newZ = hinge.z + dy = 2
-    assert.deepEqual(result, { x: 0, y: 5, z: 2 });
+    assert.deepEqual(result, { x: 2, y: 5, z: 0 });
   });
 
   it("rotateVerticalCCW reverses rotateVerticalCW for east-facing", () => {
-    const pos = { x: 0, y: 8, z: 3 };
+    const pos = { x: 3, y: 8, z: 0 };
     const rotated = rotateVerticalCW(pos, hinge, "east");
     const restored = rotateVerticalCCW(rotated, hinge, "east");
     assert.deepEqual(restored, { x: pos.x, y: pos.y, z: pos.z });
   });
 
-  it("preserves X coordinate for east/west vertical rotation", () => {
-    const pos = { x: 77, y: 8, z: 3 };
-    assert.equal(rotateVerticalCW(pos, hinge, "east").x, 77);
-    assert.equal(rotateVerticalCCW(pos, hinge, "west").x, 77);
+  it("preserves Z coordinate for east/west vertical rotation", () => {
+    const pos = { x: 3, y: 8, z: 77 };
+    assert.equal(rotateVerticalCW(pos, hinge, "east").z, 77);
+    assert.equal(rotateVerticalCCW(pos, hinge, "west").z, 77);
   });
 });
 

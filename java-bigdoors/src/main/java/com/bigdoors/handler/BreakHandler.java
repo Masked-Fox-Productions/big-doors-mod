@@ -47,17 +47,18 @@ public final class BreakHandler {
         DoorManager manager = BigdoorsMod.getManager();
         if (manager == null) return;
 
+        boolean creative = player.isCreative();
         Block brokenBlock = oldState.getBlock();
 
         if (brokenBlock instanceof DoorPanelBlock) {
-            handlePanelBreak(manager, level, pos, oldState);
+            handlePanelBreak(manager, level, pos, oldState, creative);
         } else if (brokenBlock instanceof HingeBlock) {
-            handleHingeBreak(manager, level, pos);
+            handleHingeBreak(manager, level, pos, creative);
         }
     }
 
     private static void handlePanelBreak(DoorManager manager, Level level,
-                                         BlockPos pos, BlockState oldState) {
+                                         BlockPos pos, BlockState oldState, boolean creative) {
         int materialIndex = oldState.getValue(DoorPanelBlock.MATERIAL_INDEX);
         BlockPos3 bp = new BlockPos3(pos.getX(), pos.getY(), pos.getZ());
         DoorAssembly assembly = manager.findByPosition(bp);
@@ -66,18 +67,19 @@ public final class BreakHandler {
             manager.removePanelFromAssembly(assembly.getId(), bp);
         }
 
-        // Drop the original vanilla material
-        String typeId = MaterialRegistry.typeIdForIndex(materialIndex);
-        if (typeId != null) {
-            Block vanillaBlock = BuiltInRegistries.BLOCK.getValue(Identifier.parse(typeId));
-            ItemStack stack = new ItemStack(vanillaBlock.asItem());
-            ItemEntity itemEntity = new ItemEntity(level,
-                    pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
-            level.addFreshEntity(itemEntity);
+        if (!creative) {
+            String typeId = MaterialRegistry.typeIdForIndex(materialIndex);
+            if (typeId != null) {
+                Block vanillaBlock = BuiltInRegistries.BLOCK.getValue(Identifier.parse(typeId));
+                ItemStack stack = new ItemStack(vanillaBlock.asItem());
+                ItemEntity itemEntity = new ItemEntity(level,
+                        pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
+                level.addFreshEntity(itemEntity);
+            }
         }
     }
 
-    private static void handleHingeBreak(DoorManager manager, Level level, BlockPos pos) {
+    private static void handleHingeBreak(DoorManager manager, Level level, BlockPos pos, boolean creative) {
         BlockPos3 bp = new BlockPos3(pos.getX(), pos.getY(), pos.getZ());
         DoorAssembly assembly = manager.findByPosition(bp);
         if (assembly == null) return;
@@ -130,10 +132,11 @@ public final class BreakHandler {
         // Step 5: Dissolve assembly
         manager.dissolveAssembly(assembly.getId());
 
-        // Drop a hinge item at the break position
-        ItemStack hingeStack = new ItemStack(ModBlocks.HINGE_BLOCK.asItem());
-        ItemEntity hingeEntity = new ItemEntity(level,
-                pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, hingeStack);
-        level.addFreshEntity(hingeEntity);
+        if (!creative) {
+            ItemStack hingeStack = new ItemStack(ModBlocks.HINGE_BLOCK.asItem());
+            ItemEntity hingeEntity = new ItemEntity(level,
+                    pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, hingeStack);
+            level.addFreshEntity(hingeEntity);
+        }
     }
 }

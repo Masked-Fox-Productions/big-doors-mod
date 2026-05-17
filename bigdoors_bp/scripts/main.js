@@ -23,15 +23,13 @@ system.beforeEvents.startup.subscribe((ev) => {
       breakHandler.handleHingeBreak(e);
     },
     beforeOnPlayerPlace(e) {
-      const face = e.face;
-      const mode = (face === "Up" || face === "Down") ? "vertical" : "horizontal";
       const viewDir = e.player.getViewDirection();
       const facing = Math.abs(viewDir.x) > Math.abs(viewDir.z)
         ? (viewDir.x > 0 ? "east" : "west")
         : (viewDir.z > 0 ? "south" : "north");
       e.permutationToPlace = BlockPermutation.resolve(HINGE_BLOCK_ID, {
         "bigdoors:facing": facing,
-        "bigdoors:mode": mode,
+        "bigdoors:mode": "horizontal",
         "bigdoors:door_side": "none",
       });
     },
@@ -67,6 +65,7 @@ system.run(() => {
   console.warn("[bigdoors] Fallback load triggered");
   manager.load();
 });
+
 
 const hingePlacement = new HingePlacementHandler(manager);
 hingePlacement.register();

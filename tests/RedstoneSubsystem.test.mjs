@@ -226,9 +226,9 @@ describe("RedstoneSubsystem", () => {
     const updated = manager.getAssembly(assembly.id);
     assert.equal(updated.isOpen, true);
     const panelPos = updated.panelPositions[0].currentPos;
-    // Vertical north: panel at (0,1,0) rotates to either (1,0,0) CW or (-1,0,0) CCW
+    // Vertical north: panel at (0,1,0) rotates to either (0,0,1) CW or (0,0,-1) CCW
     assert.equal(panelPos.y, 0);
-    assert.ok(panelPos.x === 1 || panelPos.x === -1);
+    assert.ok(panelPos.z === 1 || panelPos.z === -1);
   });
 
   it("horizontal doors still work after vertical mode addition (no regression)", () => {

@@ -138,6 +138,46 @@ describe("HingePlacementHandler", () => {
     assert.equal(assembly1.hingePositions.length, 2);
   });
 
+  it("horizontal neighbor of vertical hinge merges into same assembly", () => {
+    const dim = makeMockDimension();
+
+    const block1 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 }, {
+      "bigdoors:facing": "north", "bigdoors:mode": "vertical", "bigdoors:door_side": "none",
+    });
+    const player = makeMockPlayer({ x: 0, y: 0, z: -1 });
+    handler.onPlace(block1, player, dim);
+
+    const block2 = placeBlock(dim, HINGE_BLOCK_ID, { x: 1, y: 0, z: 0 }, {
+      "bigdoors:facing": "north", "bigdoors:mode": "vertical", "bigdoors:door_side": "none",
+    });
+    handler.onPlace(block2, player, dim);
+
+    const assembly1 = manager.findByPosition({ x: 0, y: 0, z: 0 });
+    const assembly2 = manager.findByPosition({ x: 1, y: 0, z: 0 });
+    assert.equal(assembly1, assembly2);
+    assert.equal(assembly1.hingePositions.length, 2);
+    assert.equal(assembly1.mode, "vertical");
+  });
+
+  it("horizontal neighbor of horizontal hinge does NOT merge (only stacks vertically)", () => {
+    const dim = makeMockDimension();
+
+    const block1 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 }, {
+      "bigdoors:facing": "north", "bigdoors:mode": "horizontal", "bigdoors:door_side": "none",
+    });
+    const player = makeMockPlayer({ x: 0, y: 0, z: -1 });
+    handler.onPlace(block1, player, dim);
+
+    const block2 = placeBlock(dim, HINGE_BLOCK_ID, { x: 1, y: 0, z: 0 }, {
+      "bigdoors:facing": "north", "bigdoors:mode": "horizontal", "bigdoors:door_side": "none",
+    });
+    handler.onPlace(block2, player, dim);
+
+    const assembly1 = manager.findByPosition({ x: 0, y: 0, z: 0 });
+    const assembly2 = manager.findByPosition({ x: 1, y: 0, z: 0 });
+    assert.notEqual(assembly1, assembly2);
+  });
+
   it("stacked hinge with different detected mode adopts assembly's mode after merge", () => {
     const dim = makeMockDimension();
 
