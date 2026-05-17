@@ -299,6 +299,69 @@ export class DoorManager {
     this.save();
   }
 
+  resplitAssemblies(assemblyIdA, assemblyIdB) {
+    const a = this._assemblies.get(assemblyIdA);
+    const b = this._assemblies.get(assemblyIdB);
+    if (!a || !b) return;
+
+    const hingeA = a.primaryHingePos;
+    const hingeB = b.primaryHingePos;
+    const axis = hingeA.x !== hingeB.x ? "x" : "z";
+    const minVal = Math.min(hingeA[axis], hingeB[axis]);
+    const maxVal = Math.max(hingeA[axis], hingeB[axis]);
+    const midpoint = (minVal + maxVal) / 2;
+
+    const allPanels = [...a.panelPositions, ...b.panelPositions, ...a.boundaryPanels, ...b.boundaryPanels];
+    const seen = new Set();
+    const unique = [];
+    for (const p of allPanels) {
+      const key = posKey(p.closedPos);
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(p);
+      }
+    }
+
+    for (const p of allPanels) {
+      this._positionIndex.delete(posKey(p.currentPos));
+    }
+
+    const panelsA = [];
+    const panelsB = [];
+    const droppedPanels = [];
+    for (const p of unique) {
+      const v = p.closedPos[axis];
+      if (v <= minVal || v >= maxVal) {
+        droppedPanels.push(p);
+        continue;
+      }
+      if (v < midpoint) panelsA.push(p);
+      else if (v > midpoint) panelsB.push(p);
+      else droppedPanels.push(p);
+    }
+
+    const aIsMin = hingeA[axis] < hingeB[axis];
+    a.panelPositions = aIsMin ? panelsA : panelsB;
+    b.panelPositions = aIsMin ? panelsB : panelsA;
+
+    for (const p of a.panelPositions) {
+      this._positionIndex.set(posKey(p.currentPos), assemblyIdA);
+    }
+    for (const p of b.panelPositions) {
+      this._positionIndex.set(posKey(p.currentPos), assemblyIdB);
+    }
+
+    for (const p of droppedPanels) {
+      p.overlay = 0;
+    }
+    a.boundaryPanels = droppedPanels;
+    for (const p of droppedPanels) {
+      this._positionIndex.set(posKey(p.currentPos), assemblyIdA);
+    }
+
+    this.save();
+  }
+
   setHingeMaterialIndex(assemblyId, materialIndex) {
     const assembly = this._assemblies.get(assemblyId);
     if (!assembly) return;

@@ -145,7 +145,11 @@ export class PanelPlacementHandler {
     if (placedDir !== assembly.doorSide) return false;
 
     this._placePanel(block, pos, matIdx, assembly, dimension);
-    this._checkDoubleDoor(assembly, dimension);
+    if (assembly.partnerAssemblyId) {
+      this._resplitPairedAssembly(assembly, dimension);
+    } else {
+      this._checkDoubleDoor(assembly, dimension);
+    }
     return true;
   }
 
@@ -168,7 +172,11 @@ export class PanelPlacementHandler {
     }
 
     this._placePanel(block, pos, matIdx, assembly, dimension);
-    this._checkDoubleDoor(assembly, dimension);
+    if (assembly.partnerAssemblyId) {
+      this._resplitPairedAssembly(assembly, dimension);
+    } else {
+      this._checkDoubleDoor(assembly, dimension);
+    }
     return true;
   }
 
@@ -286,6 +294,13 @@ export class PanelPlacementHandler {
     block.setPermutation(
       BlockPermutation.resolve(PANEL_BLOCK_ID, panelBlockStates(neighborMatIdx, newGeoId, rotation, overlay))
     );
+  }
+
+  _resplitPairedAssembly(assembly, dimension) {
+    const partner = this._manager.getAssembly(assembly.partnerAssemblyId);
+    if (!partner) return;
+    this._manager.resplitAssemblies(assembly.id, partner.id);
+    this._clearBoundaryOverlays(assembly, dimension);
   }
 
   _checkDoubleDoor(assembly, dimension) {
