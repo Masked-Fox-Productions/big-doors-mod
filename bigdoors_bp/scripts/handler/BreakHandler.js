@@ -1,6 +1,6 @@
 import { BlockPermutation, ItemStack } from "@minecraft/server";
 import { typeIdForIndex, blockStatesToMaterial } from "../domain/MaterialRegistry.js";
-import { HINGE_BLOCK_ID, PANEL_BLOCK_ID } from "../util/Constants.js";
+import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, PANEL_BLOCK_ID, UNMATCHED_MATERIAL_INDEX } from "../util/Constants.js";
 
 export class BreakHandler {
   constructor(manager) {
@@ -21,14 +21,17 @@ export class BreakHandler {
     this._manager.removePanelFromAssembly(assembly.id, pos);
 
     if (assembly.panelPositions.length === 0) {
-      for (const hPos of assembly.hingePositions) {
-        const hBlock = dimension.getBlock(hPos);
+      for (const hinge of assembly.hingePositions) {
+        const hBlock = dimension.getBlock(hinge);
         if (hBlock) {
+          const blockId = hinge.type === "hidden" ? HIDDEN_HINGE_BLOCK_ID : HINGE_BLOCK_ID;
           hBlock.setPermutation(
-            BlockPermutation.resolve(HINGE_BLOCK_ID, {
+            BlockPermutation.resolve(blockId, {
               "bigdoors:facing": assembly.facing,
               "bigdoors:mode": "",
               "bigdoors:door_side": "none",
+              "bigdoors:material_group": Math.floor(UNMATCHED_MATERIAL_INDEX / 16),
+              "bigdoors:material_id": UNMATCHED_MATERIAL_INDEX % 16,
             })
           );
         }
@@ -51,10 +54,15 @@ export class BreakHandler {
     const assembly = this._manager.findByPosition(hingePos);
     if (!assembly) return;
 
+    const hingeEntry = assembly.hingePositions.find(
+      (h) => h.x === hingePos.x && h.y === hingePos.y && h.z === hingePos.z
+    );
+    const dropId = hingeEntry?.type === "hidden" ? HIDDEN_HINGE_BLOCK_ID : HINGE_BLOCK_ID;
+
     this._dissolveAssembly(assembly, dimension);
 
     if (!creative) {
-      dimension.spawnItem(new ItemStack(HINGE_BLOCK_ID, 1), hingePos);
+      dimension.spawnItem(new ItemStack(dropId, 1), hingePos);
     }
   }
 
