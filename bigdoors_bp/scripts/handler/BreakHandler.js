@@ -1,6 +1,14 @@
-import { GameMode, ItemStack } from "@minecraft/server";
+import { ItemStack } from "@minecraft/server";
 import { typeIdForIndex, blockStatesToMaterial } from "../domain/MaterialRegistry.js";
 import { HINGE_BLOCK_ID, PANEL_BLOCK_ID } from "../util/Constants.js";
+
+function isCreativeMode(player) {
+  try {
+    return player?.getGameMode() === "creative";
+  } catch {
+    return false;
+  }
+}
 
 export class BreakHandler {
   constructor(manager) {
@@ -13,7 +21,7 @@ export class BreakHandler {
     const group = event.brokenBlockPermutation.getState("bigdoors:material_group");
     const id = event.brokenBlockPermutation.getState("bigdoors:material_id");
     const materialIndex = blockStatesToMaterial(group, id);
-    const creative = event.player?.getGameMode?.() === GameMode.creative;
+    const creative = isCreativeMode(event.player);
 
     const assembly = this._manager.findByPosition(pos);
     if (!assembly) return;
@@ -31,7 +39,7 @@ export class BreakHandler {
   handleHingeBreak(event) {
     const hingePos = event.block.location;
     const dimension = event.block.dimension;
-    const creative = event.player?.getGameMode?.() === GameMode.creative;
+    const creative = isCreativeMode(event.player);
 
     const assembly = this._manager.findByPosition(hingePos);
     if (!assembly) return;
