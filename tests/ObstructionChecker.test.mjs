@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   classifyBlock,
   checkPath,
+  checkClose,
 } from "../bigdoors_bp/scripts/domain/ObstructionChecker.js";
 
 describe("classifyBlock", () => {
@@ -180,5 +181,78 @@ describe("checkPath", () => {
 
     const result = checkPath(panels, hinge, "cw", blockQuery, "vertical", "east");
     assert.equal(result.canOpen, true);
+  });
+});
+
+describe("checkClose", () => {
+  it("returns canClose:true when all closed positions are air", () => {
+    const closedPositions = [{ x: 1, y: 0, z: 0 }, { x: 2, y: 0, z: 0 }];
+    const currentPosSet = new Set();
+    const blockQuery = () => null;
+
+    const result = checkClose(closedPositions, currentPosSet, blockQuery);
+    assert.equal(result.canClose, true);
+    assert.equal(result.obstructedPositions.length, 0);
+    assert.equal(result.softBlocks.length, 0);
+    assert.equal(result.passableBlocks.length, 0);
+  });
+
+  it("returns canClose:true with soft block in softBlocks list", () => {
+    const closedPositions = [{ x: 1, y: 0, z: 0 }];
+    const currentPosSet = new Set();
+    const blockQuery = () => "minecraft:short_grass";
+
+    const result = checkClose(closedPositions, currentPosSet, blockQuery);
+    assert.equal(result.canClose, true);
+    assert.equal(result.softBlocks.length, 1);
+    assert.deepEqual(result.softBlocks[0], { x: 1, y: 0, z: 0 });
+  });
+
+  it("returns canClose:true with passable block in passableBlocks list", () => {
+    const closedPositions = [{ x: 1, y: 0, z: 0 }];
+    const currentPosSet = new Set();
+    const blockQuery = () => "minecraft:torch";
+
+    const result = checkClose(closedPositions, currentPosSet, blockQuery);
+    assert.equal(result.canClose, true);
+    assert.equal(result.passableBlocks.length, 1);
+  });
+
+  it("returns canClose:false when solid block obstructs", () => {
+    const closedPositions = [{ x: 1, y: 0, z: 0 }];
+    const currentPosSet = new Set();
+    const blockQuery = () => "minecraft:stone";
+
+    const result = checkClose(closedPositions, currentPosSet, blockQuery);
+    assert.equal(result.canClose, false);
+    assert.equal(result.obstructedPositions.length, 1);
+  });
+
+  it("excludes positions in currentPositionSet (self-exclusion)", () => {
+    const closedPositions = [{ x: 1, y: 0, z: 0 }, { x: 2, y: 0, z: 0 }];
+    const currentPosSet = new Set(["1,0,0"]);
+    const blockQuery = (pos) => {
+      if (pos.x === 1) return "minecraft:stone";
+      return null;
+    };
+
+    const result = checkClose(closedPositions, currentPosSet, blockQuery);
+    assert.equal(result.canClose, true);
+    assert.equal(result.obstructedPositions.length, 0);
+  });
+
+  it("solid wins over soft — canClose:false with mixed obstructions", () => {
+    const closedPositions = [{ x: 1, y: 0, z: 0 }, { x: 2, y: 0, z: 0 }];
+    const currentPosSet = new Set();
+    const blockQuery = (pos) => {
+      if (pos.x === 1) return "minecraft:short_grass";
+      if (pos.x === 2) return "minecraft:stone";
+      return null;
+    };
+
+    const result = checkClose(closedPositions, currentPosSet, blockQuery);
+    assert.equal(result.canClose, false);
+    assert.equal(result.softBlocks.length, 1);
+    assert.equal(result.obstructedPositions.length, 1);
   });
 });

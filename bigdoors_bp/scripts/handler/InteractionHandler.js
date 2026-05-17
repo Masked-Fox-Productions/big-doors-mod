@@ -1,6 +1,6 @@
 import { BlockPermutation, ItemStack, system } from "@minecraft/server";
 import { getRotateFn } from "../domain/RotationMath.js";
-import { checkPath } from "../domain/ObstructionChecker.js";
+import { checkPath, checkClose } from "../domain/ObstructionChecker.js";
 import { sweep } from "../subsystem/EntitySweeper.js";
 import { PANEL_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, DIR_OFFSETS, OPPOSITE_DIR, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB } from "../util/Constants.js";
 import {
@@ -170,10 +170,45 @@ export class InteractionHandler {
   }
 
   _close(assembly, dimension) {
-    this._manager.clearRedstoneSource(assembly.id);
-
     const currentPositions = assembly.getAllCurrentPositions();
     const closedPositions = assembly.panelPositions.map((p) => p.closedPos);
+
+    // Validate all closed positions are loaded
+    for (const pos of closedPositions) {
+      if (dimension.getBlock(pos) == null) return false;
+    }
+
+    // Build exclusion set from current (open) positions being vacated
+    const currentPosSet = new Set(
+      currentPositions.map((p) => `${p.x},${p.y},${p.z}`)
+    );
+
+    const blockQueryFn = (pos) => {
+      const b = dimension.getBlock(pos);
+      return b?.typeId ?? null;
+    };
+
+    const result = checkClose(closedPositions, currentPosSet, blockQueryFn);
+    if (!result.canClose) return false;
+
+    // Destroy soft blocks (no drops)
+    for (const pos of result.softBlocks) {
+      const b = dimension.getBlock(pos);
+      if (b) b.setType("minecraft:air");
+    }
+
+    // Destroy passable blocks (with drops)
+    for (const pos of result.passableBlocks) {
+      const b = dimension.getBlock(pos);
+      if (b) {
+        try {
+          dimension.spawnItem(new ItemStack(b.typeId, 1), pos);
+        } catch {
+          // spawnItem may not be available in all contexts
+        }
+        b.setType("minecraft:air");
+      }
+    }
 
     const tuples = [];
     for (let i = 0; i < currentPositions.length; i++) {
@@ -204,6 +239,8 @@ export class InteractionHandler {
     }
 
     this._manager.closeDoor(assembly.id);
+    this._manager.clearRedstoneSource(assembly.id);
+    return true;
   }
 
   _resolveGeoForPanel(assembly, panelIndex, isOpen) {

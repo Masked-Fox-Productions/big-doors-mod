@@ -6,7 +6,7 @@ import {
   geometryClassForMaterial,
 } from "../domain/MaterialRegistry.js";
 import { closedRotation, openRotation } from "../domain/PanelRotation.js";
-import { checkPath } from "../domain/ObstructionChecker.js";
+import { checkPath, checkClose } from "../domain/ObstructionChecker.js";
 import { getRotateFn } from "../domain/RotationMath.js";
 import { sweep } from "./EntitySweeper.js";
 
@@ -66,17 +66,22 @@ export class RedstoneSubsystem {
         const now = system.currentTick;
         if (this._manager.isRedstoneDebounced(assemblyId, now)) return;
         this._manager.setRedstoneDebounce(assemblyId, now + REDSTONE_DEBOUNCE_TICKS);
-        this._manager.clearRedstoneSource(assemblyId);
-        this._stopSourceMonitor(assemblyId);
-        this._closeSingleAssembly(asm, dimension);
+
+        const closed = this._closeSingleAssembly(asm, dimension);
+        if (closed) {
+          this._manager.clearRedstoneSource(assemblyId);
+          this._stopSourceMonitor(assemblyId);
+        }
 
         if (asm.partnerAssemblyId) {
           const partner = this._manager.getAssembly(asm.partnerAssemblyId);
           if (partner && partner.isOpen) {
             this._manager.setRedstoneDebounce(partner.id, now + REDSTONE_DEBOUNCE_TICKS);
-            this._manager.clearRedstoneSource(partner.id);
-            this._stopSourceMonitor(partner.id);
-            this._closeSingleAssembly(partner, dimension);
+            const partnerClosed = this._closeSingleAssembly(partner, dimension);
+            if (partnerClosed) {
+              this._manager.clearRedstoneSource(partner.id);
+              this._stopSourceMonitor(partner.id);
+            }
           }
         }
       }
@@ -262,6 +267,45 @@ export class RedstoneSubsystem {
   }
 
   _closeSingleAssembly(assembly, dimension) {
+    const closedPositions = assembly.panelPositions.map((p) => p.closedPos);
+    const currentPositions = assembly.panelPositions.map((p) => p.currentPos);
+
+    // Validate all closed positions are loaded
+    for (const pos of closedPositions) {
+      if (dimension.getBlock(pos) == null) return false;
+    }
+
+    const currentPosSet = new Set(
+      currentPositions.map((p) => `${p.x},${p.y},${p.z}`)
+    );
+
+    const blockQueryFn = (pos) => {
+      const b = dimension.getBlock(pos);
+      return b?.typeId ?? null;
+    };
+
+    const result = checkClose(closedPositions, currentPosSet, blockQueryFn);
+    if (!result.canClose) return false;
+
+    // Destroy soft blocks (no drops)
+    for (const pos of result.softBlocks) {
+      const b = dimension.getBlock(pos);
+      if (b) b.setType("minecraft:air");
+    }
+
+    // Destroy passable blocks (with drops)
+    for (const pos of result.passableBlocks) {
+      const b = dimension.getBlock(pos);
+      if (b) {
+        try {
+          dimension.spawnItem(new ItemStack(b.typeId, 1), pos);
+        } catch {
+          // spawnItem may not be available in all contexts
+        }
+        b.setType("minecraft:air");
+      }
+    }
+
     const tuples = assembly.panelPositions.map((panel, i) => ({
       source: panel.currentPos,
       dest: panel.closedPos,
@@ -280,6 +324,7 @@ export class RedstoneSubsystem {
     }
 
     this._manager.closeDoor(assembly.id);
+    return true;
   }
 
   _panelStates(assembly, panelIndex, isOpen, direction) {
