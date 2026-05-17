@@ -34,6 +34,8 @@ export class DoorAssembly {
     this.isOpen = false;
     this.openDirection = "";  // 'cw' or 'ccw', set when opened
     this.partnerAssemblyId = null;
+    /** @type {{x:number,y:number,z:number}|null} */
+    this.redstoneSource = null;
   }
 
   /**
@@ -130,6 +132,7 @@ export class DoorAssembly {
       isOpen: this.isOpen,
       openDirection: this.openDirection,
       partnerAssemblyId: this.partnerAssemblyId,
+      ...(this.redstoneSource ? { redstoneSource: this.redstoneSource } : {}),
     };
   }
 
@@ -162,6 +165,7 @@ export class DoorAssembly {
     assembly.isOpen = json.isOpen ?? false;
     assembly.openDirection = json.openDirection || "";
     assembly.partnerAssemblyId = json.partnerAssemblyId ?? null;
+    assembly.redstoneSource = json.redstoneSource ? { ...json.redstoneSource } : null;
     return assembly;
   }
 }

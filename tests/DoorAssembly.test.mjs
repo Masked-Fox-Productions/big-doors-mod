@@ -189,4 +189,37 @@ describe("DoorAssembly", () => {
     const restored = DoorAssembly.fromJSON(json);
     assert.equal(restored.panelPositions[0].geometryId, undefined);
   });
+
+  it("new assembly has redstoneSource === null", () => {
+    assert.equal(assembly.redstoneSource, null);
+  });
+
+  it("toJSON includes redstoneSource when set, omits when null", () => {
+    const jsonWithout = assembly.toJSON();
+    assert.equal("redstoneSource" in jsonWithout, false);
+
+    assembly.redstoneSource = { x: 5, y: 0, z: 3 };
+    const jsonWith = assembly.toJSON();
+    assert.deepEqual(jsonWith.redstoneSource, { x: 5, y: 0, z: 3 });
+  });
+
+  it("fromJSON restores a saved redstoneSource position correctly", () => {
+    assembly.redstoneSource = { x: 2, y: 1, z: -1 };
+    const json = assembly.toJSON();
+    const restored = DoorAssembly.fromJSON(json);
+    assert.deepEqual(restored.redstoneSource, { x: 2, y: 1, z: -1 });
+  });
+
+  it("fromJSON on legacy data without redstoneSource defaults to null", () => {
+    const legacy = {
+      id: "legacy-rs",
+      primaryHingePos: { x: 0, y: 0, z: 0 },
+      hingePositions: [{ x: 0, y: 0, z: 0 }],
+      panelPositions: [],
+      facing: "north",
+      mode: "horizontal",
+    };
+    const restored = DoorAssembly.fromJSON(legacy);
+    assert.equal(restored.redstoneSource, null);
+  });
 });

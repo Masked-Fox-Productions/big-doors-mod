@@ -339,4 +339,28 @@ describe("InteractionHandler", () => {
       assert.equal(updated.isOpen, false);
     });
   });
+
+  it("manual close clears redstoneSource", () => {
+    const assembly = setupDoor(manager);
+    const dim = buildDimension(assembly);
+    const player = { location: { x: 0, y: 0, z: -2 } };
+    const block = dim.getBlock({ x: 0, y: 0, z: 0 });
+
+    // Open the door
+    handler.handleInteract(block, player, dim);
+    const opened = manager.getAssembly(assembly.id);
+    assert.equal(opened.isOpen, true);
+
+    // Simulate a redstone source being tracked
+    manager.setRedstoneSource(assembly.id, { x: -1, y: 0, z: 0 });
+    assert.deepEqual(manager.getAssembly(assembly.id).redstoneSource, { x: -1, y: 0, z: 0 });
+
+    // Close via interaction
+    const panelBlock = dim.getBlock(opened.panelPositions[0].currentPos);
+    handler.handleInteract(panelBlock, player, dim);
+
+    const closed = manager.getAssembly(assembly.id);
+    assert.equal(closed.isOpen, false);
+    assert.equal(closed.redstoneSource, null);
+  });
 });
