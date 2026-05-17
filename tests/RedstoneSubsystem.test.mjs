@@ -398,6 +398,192 @@ describe("RedstoneSubsystem", () => {
     assert.equal(closed.isOpen, false);
   });
 
+  describe("close obstruction check", () => {
+    it("door stays open when obstructed but signal is consumed (source cleared, monitor stopped)", () => {
+      const assembly = setupDoor(manager);
+      const dim = buildDimension();
+      const hingeBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
+      hingeBlock.dimension = dim;
+
+      // Source west of hinge
+      const sourceBlock = placeBlock(dim, "minecraft:repeater", { x: -1, y: 0, z: 0 });
+      sourceBlock.getRedstonePower = () => 15;
+
+      subsystem.handleRedstoneUpdate({ block: hingeBlock, powerLevel: 15 });
+      assert.equal(manager.getAssembly(assembly.id).isOpen, true);
+
+      // Place solid block at closed position (1,0,0)
+      placeBlock(dim, "minecraft:stone", { x: 1, y: 0, z: 0 });
+
+      // Depower source
+      sourceBlock.getRedstonePower = () => 0;
+      system.advanceTicks(REDSTONE_DEBOUNCE_TICKS + 1);
+      system.advanceTicks(REDSTONE_SOURCE_POLL_TICKS);
+
+      const result = manager.getAssembly(assembly.id);
+      assert.equal(result.isOpen, true, "Door should stay open when obstructed");
+      assert.equal(result.redstoneSource, null, "Signal consumed — source cleared");
+      assert.equal(subsystem._sourceMonitors.has(assembly.id), false, "Monitor stopped after signal consumed");
+    });
+
+    it("new signal after blocked close re-adopts source for retry", () => {
+      const assembly = setupDoor(manager);
+      const dim = buildDimension();
+      const hingeBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
+      hingeBlock.dimension = dim;
+
+      const sourceBlock = placeBlock(dim, "minecraft:repeater", { x: -1, y: 0, z: 0 });
+      sourceBlock.getRedstonePower = () => 15;
+
+      subsystem.handleRedstoneUpdate({ block: hingeBlock, powerLevel: 15 });
+      assert.equal(manager.getAssembly(assembly.id).isOpen, true);
+
+      // Obstruct and depower — signal consumed
+      placeBlock(dim, "minecraft:stone", { x: 1, y: 0, z: 0 });
+      sourceBlock.getRedstonePower = () => 0;
+      system.advanceTicks(REDSTONE_DEBOUNCE_TICKS + 1);
+      system.advanceTicks(REDSTONE_SOURCE_POLL_TICKS);
+      assert.equal(manager.getAssembly(assembly.id).isOpen, true);
+      assert.equal(manager.getAssembly(assembly.id).redstoneSource, null);
+
+      // Remove obstruction, send new signal (re-power source)
+      placeBlock(dim, "minecraft:air", { x: 1, y: 0, z: 0 });
+      sourceBlock.getRedstonePower = () => 15;
+      system.advanceTicks(REDSTONE_DEBOUNCE_TICKS + 1);
+
+      // New signal on open door with no source → adopts
+      subsystem.handleRedstoneUpdate({ block: hingeBlock, powerLevel: 15 });
+      assert.deepEqual(manager.getAssembly(assembly.id).redstoneSource, { x: -1, y: 0, z: 0 });
+
+      // Depower again — this time close succeeds
+      sourceBlock.getRedstonePower = () => 0;
+      system.advanceTicks(REDSTONE_DEBOUNCE_TICKS + 1);
+      system.advanceTicks(REDSTONE_SOURCE_POLL_TICKS);
+
+      const result = manager.getAssembly(assembly.id);
+      assert.equal(result.isOpen, false, "Door closes on retry via new signal");
+    });
+
+    it("soft+solid in closed footprint — no movement, no soft destruction", () => {
+      const assemblyObj = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assemblyObj.id, "east");
+      manager.addPanelToAssembly(assemblyObj.id, { x: 1, y: 0, z: 0 }, 12);
+      manager.addPanelToAssembly(assemblyObj.id, { x: 2, y: 0, z: 0 }, 12);
+
+      const dim = makeMockDimension(new Map());
+      dim.spawnItem = () => {};
+      dim.getEntities = () => [];
+      for (let x = -2; x <= 4; x++) {
+        for (let z = -2; z <= 2; z++) {
+          placeBlock(dim, "minecraft:air", { x, y: 0, z });
+        }
+      }
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 }, { "bigdoors:material": 12 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 2, y: 0, z: 0 }, { "bigdoors:material": 12 });
+
+      const sourceBlock = placeBlock(dim, "minecraft:repeater", { x: -1, y: 0, z: 0 });
+      sourceBlock.getRedstonePower = () => 15;
+
+      const hingeBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
+      hingeBlock.dimension = dim;
+
+      subsystem.handleRedstoneUpdate({ block: hingeBlock, powerLevel: 15 });
+      const opened = manager.getAssembly(assemblyObj.id);
+      assert.equal(opened.isOpen, true);
+
+      // Place soft at closed pos 1 and solid at closed pos 2
+      placeBlock(dim, "minecraft:short_grass", { x: 1, y: 0, z: 0 });
+      placeBlock(dim, "minecraft:stone", { x: 2, y: 0, z: 0 });
+
+      sourceBlock.getRedstonePower = () => 0;
+      system.advanceTicks(REDSTONE_DEBOUNCE_TICKS + 1);
+      system.advanceTicks(REDSTONE_SOURCE_POLL_TICKS);
+
+      const result = manager.getAssembly(assemblyObj.id);
+      assert.equal(result.isOpen, true, "Door stays open");
+      // Soft block should NOT be destroyed
+      const grassBlock = dim.getBlock({ x: 1, y: 0, z: 0 });
+      assert.equal(grassBlock.typeId, "minecraft:short_grass", "Soft block preserved");
+    });
+
+    it("close aborts when closed position is unloaded, signal still consumed", () => {
+      const assembly = setupDoor(manager);
+      const dim = buildDimension();
+      const hingeBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
+      hingeBlock.dimension = dim;
+
+      const sourceBlock = placeBlock(dim, "minecraft:repeater", { x: -1, y: 0, z: 0 });
+      sourceBlock.getRedstonePower = () => 15;
+
+      subsystem.handleRedstoneUpdate({ block: hingeBlock, powerLevel: 15 });
+      assert.equal(manager.getAssembly(assembly.id).isOpen, true);
+
+      // Remove closed position to simulate unloaded chunk
+      dim._blocks.delete(posKey({ x: 1, y: 0, z: 0 }));
+
+      sourceBlock.getRedstonePower = () => 0;
+      system.advanceTicks(REDSTONE_DEBOUNCE_TICKS + 1);
+      system.advanceTicks(REDSTONE_SOURCE_POLL_TICKS);
+
+      const result = manager.getAssembly(assembly.id);
+      assert.equal(result.isOpen, true, "Door stays open when unloaded");
+      assert.equal(result.redstoneSource, null, "Signal consumed");
+      assert.equal(subsystem._sourceMonitors.has(assembly.id), false, "Monitor stopped");
+    });
+
+    it("double door: obstructed partner stays open, both signals consumed", () => {
+      const assemblyA = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assemblyA.id, "east");
+      manager.addPanelToAssembly(assemblyA.id, { x: 1, y: 0, z: 0 }, 12);
+
+      const assemblyB = manager.createAssembly({ x: 3, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assemblyB.id, "west");
+      manager.addPanelToAssembly(assemblyB.id, { x: 2, y: 0, z: 0 }, 12);
+
+      manager.pairAssemblies(assemblyA.id, assemblyB.id);
+
+      const dim = makeMockDimension(new Map());
+      dim.spawnItem = () => {};
+      dim.getEntities = () => [];
+      for (let x = -2; x <= 5; x++) {
+        for (let z = -2; z <= 2; z++) {
+          placeBlock(dim, "minecraft:air", { x, y: 0, z });
+        }
+      }
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 }, { "bigdoors:material": 12 });
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 3, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 2, y: 0, z: 0 }, { "bigdoors:material": 12 });
+
+      const sourceBlock = placeBlock(dim, "minecraft:repeater", { x: -1, y: 0, z: 0 });
+      sourceBlock.getRedstonePower = () => 15;
+
+      const hingeBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
+      hingeBlock.dimension = dim;
+
+      subsystem.handleRedstoneUpdate({ block: hingeBlock, powerLevel: 15 });
+      assert.equal(manager.getAssembly(assemblyA.id).isOpen, true);
+      assert.equal(manager.getAssembly(assemblyB.id).isOpen, true);
+
+      // Obstruct partner B's closed position (2,0,0)
+      placeBlock(dim, "minecraft:stone", { x: 2, y: 0, z: 0 });
+      // Keep A's closed position (1,0,0) clear
+      placeBlock(dim, "minecraft:air", { x: 1, y: 0, z: 0 });
+
+      sourceBlock.getRedstonePower = () => 0;
+      system.advanceTicks(REDSTONE_DEBOUNCE_TICKS + 1);
+      system.advanceTicks(REDSTONE_SOURCE_POLL_TICKS);
+
+      const a = manager.getAssembly(assemblyA.id);
+      const b = manager.getAssembly(assemblyB.id);
+      assert.equal(a.isOpen, false, "Primary should close (unobstructed)");
+      assert.equal(a.redstoneSource, null, "Primary source cleared");
+      assert.equal(b.isOpen, true, "Partner stays open (obstructed)");
+      assert.equal(b.redstoneSource, null, "Partner signal consumed too");
+    });
+  });
+
   it("no monitor started for manually-opened door on restore", () => {
     const assembly = setupDoor(manager);
     const dim = buildDimension();

@@ -70,3 +70,32 @@ export function checkPath(panelPositions, hingePos, direction, blockQueryFn, mod
     passableBlocks,
   };
 }
+
+export function checkClose(closedPositions, currentPositionSet, blockQueryFn) {
+  const obstructedPositions = [];
+  const softBlocks = [];
+  const passableBlocks = [];
+
+  for (const dest of closedPositions) {
+    const destKey = `${dest.x},${dest.y},${dest.z}`;
+    if (currentPositionSet.has(destKey)) continue;
+
+    const typeId = blockQueryFn(dest);
+    const classification = classifyBlock(typeId);
+
+    if (classification === "solid") {
+      obstructedPositions.push(dest);
+    } else if (classification === "soft") {
+      softBlocks.push(dest);
+    } else if (classification === "passable") {
+      passableBlocks.push(dest);
+    }
+  }
+
+  return {
+    canClose: obstructedPositions.length === 0,
+    obstructedPositions,
+    softBlocks,
+    passableBlocks,
+  };
+}

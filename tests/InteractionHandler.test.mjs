@@ -364,6 +364,156 @@ describe("InteractionHandler", () => {
     assert.equal(closed.redstoneSource, null);
   });
 
+  describe("close obstruction check", () => {
+    it("door stays open when solid block occupies closed position", () => {
+      const assembly = setupDoor(manager);
+      const dim = buildDimension(assembly);
+      const player = { location: { x: 0, y: 0, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: 0, z: 0 });
+
+      // Open the door
+      handler.handleInteract(block, player, dim);
+      const opened = manager.getAssembly(assembly.id);
+      assert.equal(opened.isOpen, true);
+
+      // Place solid block at closed position (1,0,0)
+      placeBlock(dim, "minecraft:stone", { x: 1, y: 0, z: 0 });
+
+      // Try to close
+      const panelBlock = dim.getBlock(opened.panelPositions[0].currentPos);
+      handler.handleInteract(panelBlock, player, dim);
+
+      const result = manager.getAssembly(assembly.id);
+      assert.equal(result.isOpen, true, "Door should stay open when closed position is solidly obstructed");
+    });
+
+    it("door closes normally when closed position has soft block", () => {
+      const assembly = setupDoor(manager);
+      const dim = buildDimension(assembly);
+      const player = { location: { x: 0, y: 0, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: 0, z: 0 });
+
+      handler.handleInteract(block, player, dim);
+      const opened = manager.getAssembly(assembly.id);
+      assert.equal(opened.isOpen, true);
+
+      // Place soft block at closed position
+      placeBlock(dim, "minecraft:short_grass", { x: 1, y: 0, z: 0 });
+
+      const panelBlock = dim.getBlock(opened.panelPositions[0].currentPos);
+      handler.handleInteract(panelBlock, player, dim);
+
+      const result = manager.getAssembly(assembly.id);
+      assert.equal(result.isOpen, false, "Soft blocks should not prevent closing");
+    });
+
+    it("passable blocks drop items when door closes over them", () => {
+      const assembly = setupDoor(manager);
+      const dim = buildDimension(assembly);
+      dim.spawnItem = dim.spawnItem || (() => {});
+      const player = { location: { x: 0, y: 0, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: 0, z: 0 });
+
+      handler.handleInteract(block, player, dim);
+      const opened = manager.getAssembly(assembly.id);
+
+      // Place passable block at closed position
+      placeBlock(dim, "minecraft:torch", { x: 1, y: 0, z: 0 });
+
+      let spawnedItems = [];
+      dim.spawnItem = (item, pos) => { spawnedItems.push({ item, pos }); };
+
+      const panelBlock = dim.getBlock(opened.panelPositions[0].currentPos);
+      handler.handleInteract(panelBlock, player, dim);
+
+      const result = manager.getAssembly(assembly.id);
+      assert.equal(result.isOpen, false);
+      assert.equal(spawnedItems.length, 1);
+      assert.equal(spawnedItems[0].item.typeId, "minecraft:torch");
+    });
+
+    it("solid block prevents close — no soft blocks destroyed (solid wins)", () => {
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assembly.id, "east");
+      manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 12);
+      manager.addPanelToAssembly(assembly.id, { x: 2, y: 0, z: 0 }, 12);
+
+      const dim = makeMockDimension(new Map());
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 }, { "bigdoors:material": 12 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 2, y: 0, z: 0 }, { "bigdoors:material": 12 });
+      for (let x = -2; x <= 3; x++) {
+        for (let z = -2; z <= 2; z++) {
+          const key = posKey({ x, y: 0, z });
+          if (!dim._blocks.has(key)) placeBlock(dim, "minecraft:air", { x, y: 0, z });
+        }
+      }
+
+      const player = { location: { x: 0, y: 0, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: 0, z: 0 });
+      handler.handleInteract(block, player, dim);
+
+      const opened = manager.getAssembly(assembly.id);
+      assert.equal(opened.isOpen, true);
+
+      // Place soft at closedPos(1,0,0) and solid at closedPos(2,0,0)
+      placeBlock(dim, "minecraft:short_grass", { x: 1, y: 0, z: 0 });
+      placeBlock(dim, "minecraft:stone", { x: 2, y: 0, z: 0 });
+
+      const panelBlock = dim.getBlock(opened.panelPositions[0].currentPos);
+      handler.handleInteract(panelBlock, player, dim);
+
+      const result = manager.getAssembly(assembly.id);
+      assert.equal(result.isOpen, true, "Solid obstruction prevents close");
+      // Soft block should NOT have been destroyed
+      const grassBlock = dim.getBlock({ x: 1, y: 0, z: 0 });
+      assert.equal(grassBlock.typeId, "minecraft:short_grass", "Soft block preserved when solid prevents close");
+    });
+
+    it("close aborts when closed position is unloaded (null)", () => {
+      const assembly = setupDoor(manager);
+      const dim = buildDimension(assembly);
+      const player = { location: { x: 0, y: 0, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: 0, z: 0 });
+
+      handler.handleInteract(block, player, dim);
+      const opened = manager.getAssembly(assembly.id);
+      assert.equal(opened.isOpen, true);
+
+      // Remove the closed position block to simulate unloaded chunk
+      dim._blocks.delete(posKey({ x: 1, y: 0, z: 0 }));
+
+      const panelBlock = dim.getBlock(opened.panelPositions[0].currentPos);
+      handler.handleInteract(panelBlock, player, dim);
+
+      const result = manager.getAssembly(assembly.id);
+      assert.equal(result.isOpen, true, "Door should stay open when closed position is unloaded");
+    });
+
+    it("redstone source NOT cleared when close is blocked", () => {
+      const assembly = setupDoor(manager);
+      const dim = buildDimension(assembly);
+      const player = { location: { x: 0, y: 0, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: 0, z: 0 });
+
+      handler.handleInteract(block, player, dim);
+      const opened = manager.getAssembly(assembly.id);
+
+      // Set a redstone source
+      manager.setRedstoneSource(assembly.id, { x: -1, y: 0, z: 0 });
+
+      // Place solid block at closed position
+      placeBlock(dim, "minecraft:stone", { x: 1, y: 0, z: 0 });
+
+      const panelBlock = dim.getBlock(opened.panelPositions[0].currentPos);
+      handler.handleInteract(panelBlock, player, dim);
+
+      const result = manager.getAssembly(assembly.id);
+      assert.equal(result.isOpen, true);
+      assert.deepEqual(result.redstoneSource, { x: -1, y: 0, z: 0 }, "Redstone source should be preserved when close is blocked");
+    });
+  });
+
   it("preserves overlay=1 on panels when opening a strapped door", () => {
     const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
     manager.setDoorSide(assembly.id, "east");
