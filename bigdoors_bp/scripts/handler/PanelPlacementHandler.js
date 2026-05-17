@@ -99,6 +99,11 @@ export class PanelPlacementHandler {
     return typeId === HINGE_BLOCK_ID || typeId === HIDDEN_HINGE_BLOCK_ID;
   }
 
+  _matchesAssemblyMaterial(assembly, matIdx) {
+    if (assembly.panelPositions.length === 0) return true;
+    return assembly.panelPositions[0].materialIndex === matIdx;
+  }
+
   _isCoplanar(assembly, pos) {
     const hinge = assembly.primaryHingePos;
     const side = assembly.doorSide;
@@ -143,6 +148,7 @@ export class PanelPlacementHandler {
     }
 
     if (placedDir !== assembly.doorSide) return false;
+    if (!this._matchesAssemblyMaterial(assembly, matIdx)) return false;
 
     this._placePanel(block, pos, matIdx, assembly, dimension);
     if (assembly.partnerAssemblyId) {
@@ -170,6 +176,8 @@ export class PanelPlacementHandler {
       const dirFromHinge = directionFromTo(hingePos, pos);
       if (dirFromHinge === wallSide) return false;
     }
+
+    if (!this._matchesAssemblyMaterial(assembly, matIdx)) return false;
 
     this._placePanel(block, pos, matIdx, assembly, dimension);
     if (assembly.partnerAssemblyId) {

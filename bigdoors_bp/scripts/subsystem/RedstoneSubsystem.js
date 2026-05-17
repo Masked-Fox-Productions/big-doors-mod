@@ -36,10 +36,7 @@ export class RedstoneSubsystem {
       return;
     }
 
-    console.warn(`[redstone] event: typeId=${block.typeId} pos=(${loc.x},${loc.y},${loc.z}) power=${powerLevel} assembly=${assembly.id} isOpen=${assembly.isOpen}`);
-
     if (powerLevel > 0 && !assembly.isOpen) {
-      console.warn(`[redstone]   -> OPENING door`);
       this._manager.setRedstoneDebounce(assembly.id, now + REDSTONE_DEBOUNCE_TICKS);
       this._openWithRedstone(assembly, block.dimension, block);
     } else if (powerLevel > 0 && assembly.isOpen && !assembly.redstoneSource) {
@@ -68,7 +65,6 @@ export class RedstoneSubsystem {
       if (!(power != null && power > 0)) {
         const now = system.currentTick;
         if (this._manager.isRedstoneDebounced(assemblyId, now)) return;
-        console.warn(`[redstone] source depowered for assembly=${assemblyId}`);
         this._manager.setRedstoneDebounce(assemblyId, now + REDSTONE_DEBOUNCE_TICKS);
         this._manager.clearRedstoneSource(assemblyId);
         this._stopSourceMonitor(assemblyId);
