@@ -87,7 +87,11 @@ export class PanelPlacementHandler {
     const side = assembly.doorSide;
     if (side === "east" || side === "west") return pos.z === hinge.z;
     if (side === "north" || side === "south") return pos.x === hinge.x;
-    if (side === "up" || side === "down") return pos.x === hinge.x && pos.z === hinge.z;
+    if (side === "up" || side === "down") {
+      const facing = assembly.facing;
+      if (facing === "north" || facing === "south") return pos.z === hinge.z;
+      return pos.x === hinge.x;
+    }
     return true;
   }
 

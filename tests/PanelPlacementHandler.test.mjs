@@ -418,7 +418,7 @@ describe("PanelPlacementHandler", () => {
       assert.equal(block.typeId, PANEL_BLOCK_ID);
     });
 
-    it("vertical door: off-plane (wrong X) NOT converted via panel neighbor", () => {
+    it("vertical door (north-facing): off-plane (wrong Z) NOT converted", () => {
       const dim = makeMockDimension();
       const assembly = setupHingeAssembly(
         dim, { x: 0, y: 0, z: 0 }, "north", "vertical", "up"
@@ -427,11 +427,46 @@ describe("PanelPlacementHandler", () => {
       placeBlock(dim, PANEL_BLOCK_ID, { x: 0, y: 1, z: 0 });
       manager.addPanelToAssembly(assembly.id, { x: 0, y: 1, z: 0 }, 12);
 
-      const block = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 1, z: 0 });
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 0, y: 1, z: 1 });
 
       const result = handler.onPlace(block, dim);
       assert.equal(result, false);
       assert.equal(block.typeId, "minecraft:cobblestone");
+    });
+
+    it("vertical door (east-facing): off-plane (wrong X) NOT converted", () => {
+      const dim = makeMockDimension();
+      const assembly = setupHingeAssembly(
+        dim, { x: 0, y: 0, z: 0 }, "east", "vertical", "down"
+      );
+
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 0, y: -1, z: 0 });
+      manager.addPanelToAssembly(assembly.id, { x: 0, y: -1, z: 0 }, 12);
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: -1, z: 0 });
+
+      const result = handler.onPlace(block, dim);
+      assert.equal(result, false);
+      assert.equal(block.typeId, "minecraft:cobblestone");
+    });
+
+    it("vertical door with merged hinge: panel below second hinge IS converted", () => {
+      const dim = makeMockDimension();
+      const assembly = setupHingeAssembly(
+        dim, { x: 0, y: 5, z: 0 }, "north", "vertical", "down"
+      );
+      manager.addHingeToAssembly(assembly.id, { x: 1, y: 5, z: 0 });
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 1, y: 5, z: 0 });
+
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 0, y: 4, z: 0 });
+      manager.addPanelToAssembly(assembly.id, { x: 0, y: 4, z: 0 }, 12);
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 4, z: 0 });
+
+      const result = handler.onPlace(block, dim);
+      assert.equal(result, true);
+      assert.equal(block.typeId, PANEL_BLOCK_ID);
+      assert.equal(assembly.panelPositions.length, 2);
     });
   });
 });
