@@ -1,10 +1,12 @@
 import { world, BlockPermutation } from "@minecraft/server";
 import {
   HINGE_BLOCK_ID,
+  HIDDEN_HINGE_BLOCK_ID,
   PANEL_BLOCK_ID,
   DIR_OFFSETS,
   DIRECTIONS,
   OPPOSITE_DIR,
+  UNMATCHED_MATERIAL_INDEX,
 } from "../util/Constants.js";
 
 
@@ -26,27 +28,38 @@ export class HingePlacementHandler {
 
   register() {
     world.afterEvents.playerPlaceBlock.subscribe((event) => {
-      if (event.block.typeId !== HINGE_BLOCK_ID) return;
+      if (event.block.typeId !== HINGE_BLOCK_ID && event.block.typeId !== HIDDEN_HINGE_BLOCK_ID) return;
       this.onPlace(event.block, event.player, event.block.dimension);
     });
+  }
+
+  _hingeTypeFromBlockId(typeId) {
+    return typeId === HIDDEN_HINGE_BLOCK_ID ? "hidden" : "hinge";
+  }
+
+  _blockIdForHingeType(type) {
+    return type === "hidden" ? HIDDEN_HINGE_BLOCK_ID : HINGE_BLOCK_ID;
   }
 
   onPlace(block, player, dimension) {
     const pos = block.location;
     const facing = block.permutation.getState("bigdoors:facing");
     const mode = block.permutation.getState("bigdoors:mode");
+    const hingeType = this._hingeTypeFromBlockId(block.typeId);
 
-    let assembly = this._mergeWithAdjacentHinge(pos, dimension);
+    let assembly = this._mergeWithAdjacentHinge(pos, dimension, hingeType);
     if (assembly) {
       block.setPermutation(
-        BlockPermutation.resolve(HINGE_BLOCK_ID, {
+        BlockPermutation.resolve(block.typeId, {
           "bigdoors:facing": assembly.facing,
           "bigdoors:mode": assembly.mode,
           "bigdoors:door_side": assembly.doorSide || "none",
+          "bigdoors:material_group": Math.floor(UNMATCHED_MATERIAL_INDEX / 16),
+          "bigdoors:material_id": UNMATCHED_MATERIAL_INDEX % 16,
         })
       );
     } else {
-      assembly = this._manager.createAssembly(pos, facing, mode);
+      assembly = this._manager.createAssembly(pos, facing, mode, hingeType);
     }
 
     const doubleDoorResult = this._detectDoubleDoor(assembly, pos, dimension);
@@ -55,10 +68,12 @@ export class HingePlacementHandler {
       this._manager.setDoorSide(assembly.id, doorSide);
 
       block.setPermutation(
-        BlockPermutation.resolve(HINGE_BLOCK_ID, {
+        BlockPermutation.resolve(block.typeId, {
           "bigdoors:facing": assembly.facing,
           "bigdoors:mode": assembly.mode,
           "bigdoors:door_side": doorSide,
+          "bigdoors:material_group": Math.floor(UNMATCHED_MATERIAL_INDEX / 16),
+          "bigdoors:material_id": UNMATCHED_MATERIAL_INDEX % 16,
         })
       );
 
@@ -66,15 +81,19 @@ export class HingePlacementHandler {
     }
   }
 
-  _mergeWithAdjacentHinge(pos, dimension) {
+  _isHingeBlock(typeId) {
+    return typeId === HINGE_BLOCK_ID || typeId === HIDDEN_HINGE_BLOCK_ID;
+  }
+
+  _mergeWithAdjacentHinge(pos, dimension, hingeType) {
     // Vertical stacking (both modes)
     for (const dy of [1, -1]) {
       const neighborPos = { x: pos.x, y: pos.y + dy, z: pos.z };
       const neighborBlock = dimension.getBlock(neighborPos);
-      if (neighborBlock && neighborBlock.typeId === HINGE_BLOCK_ID) {
+      if (neighborBlock && this._isHingeBlock(neighborBlock.typeId)) {
         const existing = this._manager.findByPosition(neighborPos);
         if (existing) {
-          this._manager.addHingeToAssembly(existing.id, pos);
+          this._manager.addHingeToAssembly(existing.id, pos, hingeType);
           return existing;
         }
       }
@@ -84,10 +103,10 @@ export class HingePlacementHandler {
       const offset = DIR_OFFSETS[dir];
       const neighborPos = posAdd(pos, offset);
       const neighborBlock = dimension.getBlock(neighborPos);
-      if (neighborBlock && neighborBlock.typeId === HINGE_BLOCK_ID) {
+      if (neighborBlock && this._isHingeBlock(neighborBlock.typeId)) {
         const existing = this._manager.findByPosition(neighborPos);
         if (existing && existing.mode === "vertical") {
-          this._manager.addHingeToAssembly(existing.id, pos);
+          this._manager.addHingeToAssembly(existing.id, pos, hingeType);
           return existing;
         }
       }

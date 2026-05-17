@@ -1,6 +1,6 @@
 import { world } from "@minecraft/server";
 import { DoorAssembly } from "./domain/DoorAssembly.js";
-import { PERSISTENCE_KEY } from "./util/Constants.js";
+import { PERSISTENCE_KEY, UNMATCHED_MATERIAL_INDEX } from "./util/Constants.js";
 
 function posKey(pos) {
   return `${pos.x},${pos.y},${pos.z}`;
@@ -69,19 +69,19 @@ export class DoorManager {
     }
   }
 
-  createAssembly(hingePos, facing, mode) {
+  createAssembly(hingePos, facing, mode, hingeType = "hinge") {
     const id = `door_${this._nextId++}`;
-    const assembly = new DoorAssembly(id, hingePos, facing, mode);
+    const assembly = new DoorAssembly(id, hingePos, facing, mode, hingeType);
     this._assemblies.set(id, assembly);
     this._positionIndex.set(posKey(hingePos), id);
     this.save();
     return assembly;
   }
 
-  addHingeToAssembly(assemblyId, hingePos) {
+  addHingeToAssembly(assemblyId, hingePos, hingeType = "hinge") {
     const assembly = this._assemblies.get(assemblyId);
     if (!assembly) return;
-    assembly.addHinge(hingePos);
+    assembly.addHinge(hingePos, hingeType);
     this._positionIndex.set(posKey(hingePos), assemblyId);
     this.save();
   }
@@ -100,10 +100,10 @@ export class DoorManager {
     this.save();
   }
 
-  addPanelToAssembly(assemblyId, panelPos, materialIndex, geometryId) {
+  addPanelToAssembly(assemblyId, panelPos, materialIndex, geometryId, overlay = 0) {
     const assembly = this._assemblies.get(assemblyId);
     if (!assembly) return;
-    assembly.addPanel(panelPos, materialIndex, geometryId);
+    assembly.addPanel(panelPos, materialIndex, geometryId, overlay);
     this._positionIndex.set(posKey(panelPos), assemblyId);
     this.save();
   }
@@ -167,6 +167,9 @@ export class DoorManager {
     assembly.isOpen = false;
     assembly.openDirection = "";
     assembly.redstoneSource = null;
+    for (const hinge of assembly.hingePositions) {
+      hinge.materialIndex = UNMATCHED_MATERIAL_INDEX;
+    }
 
     this.save();
   }
@@ -290,6 +293,15 @@ export class DoorManager {
       this._positionIndex.set(posKey(p.currentPos), assemblyIdA);
     }
 
+    this.save();
+  }
+
+  setHingeMaterialIndex(assemblyId, materialIndex) {
+    const assembly = this._assemblies.get(assemblyId);
+    if (!assembly) return;
+    for (const hinge of assembly.hingePositions) {
+      hinge.materialIndex = materialIndex;
+    }
     this.save();
   }
 
