@@ -1,5 +1,5 @@
 import { BlockPermutation, ItemStack, system } from "@minecraft/server";
-import { PANEL_BLOCK_ID, HINGE_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, REDSTONE_SOURCE_POLL_TICKS, DIR_OFFSETS, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB } from "../util/Constants.js";
+import { PANEL_BLOCK_ID, HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, REDSTONE_SOURCE_POLL_TICKS, DIR_OFFSETS, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB } from "../util/Constants.js";
 import {
   panelBlockStates,
   resolveGeometryId,
@@ -36,10 +36,7 @@ export class RedstoneSubsystem {
       return;
     }
 
-    console.warn(`[redstone] event: typeId=${block.typeId} pos=(${loc.x},${loc.y},${loc.z}) power=${powerLevel} assembly=${assembly.id} isOpen=${assembly.isOpen}`);
-
     if (powerLevel > 0 && !assembly.isOpen) {
-      console.warn(`[redstone]   -> OPENING door`);
       this._manager.setRedstoneDebounce(assembly.id, now + REDSTONE_DEBOUNCE_TICKS);
       this._openWithRedstone(assembly, block.dimension, block);
     } else if (powerLevel > 0 && assembly.isOpen && !assembly.redstoneSource) {
@@ -68,7 +65,6 @@ export class RedstoneSubsystem {
       if (!(power != null && power > 0)) {
         const now = system.currentTick;
         if (this._manager.isRedstoneDebounced(assemblyId, now)) return;
-        console.warn(`[redstone] source depowered for assembly=${assemblyId}`);
         this._manager.setRedstoneDebounce(assemblyId, now + REDSTONE_DEBOUNCE_TICKS);
         this._manager.clearRedstoneSource(assemblyId);
         this._stopSourceMonitor(assemblyId);
@@ -180,7 +176,7 @@ export class RedstoneSubsystem {
       const neighborPos = { x: loc.x + off.x, y: loc.y + off.y, z: loc.z + off.z };
       const nb = dimension.getBlock(neighborPos);
       if (!nb) continue;
-      if (nb.typeId === HINGE_BLOCK_ID || nb.typeId === PANEL_BLOCK_ID) continue;
+      if (nb.typeId === HINGE_BLOCK_ID || nb.typeId === HIDDEN_HINGE_BLOCK_ID || nb.typeId === PANEL_BLOCK_ID) continue;
       const power = nb.getRedstonePower();
       if (power != null && power > 0) {
         return neighborPos;
@@ -307,7 +303,7 @@ export class RedstoneSubsystem {
     const rotation = isOpen
       ? openRotation(assembly.mode, assembly.doorSide, assembly.facing, direction, geoClass)
       : closedRotation(assembly.doorSide, assembly.facing, geoClass);
-    return panelBlockStates(matIdx, geoId, rotation);
+    return panelBlockStates(matIdx, geoId, rotation, panel.overlay ?? 0);
   }
 
   _resolveVerticalFenceGeo(assembly, panelIndex) {

@@ -7,7 +7,7 @@ import {
   makeMockDimension,
   placeBlock,
 } from "./helpers/mock-dimension.mjs";
-import { HINGE_BLOCK_ID, PANEL_BLOCK_ID, GEOMETRY_CLASS_SLAB, GEOMETRY_ID_SLAB_TOP } from "../bigdoors_bp/scripts/util/Constants.js";
+import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, PANEL_BLOCK_ID, GEOMETRY_CLASS_SLAB, GEOMETRY_ID_SLAB_TOP, UNMATCHED_MATERIAL_INDEX } from "../bigdoors_bp/scripts/util/Constants.js";
 
 describe("PanelPlacementHandler", () => {
   let manager;
@@ -467,6 +467,164 @@ describe("PanelPlacementHandler", () => {
       assert.equal(result, true);
       assert.equal(block.typeId, PANEL_BLOCK_ID);
       assert.equal(assembly.panelPositions.length, 2);
+    });
+  });
+
+  describe("overlay and hinge material matching", () => {
+    it("panel placed next to strapped hinge gets overlay=1", () => {
+      const dim = makeMockDimension();
+      setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 0 });
+      handler.onPlace(block, dim);
+
+      const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
+      assert.equal(assembly.panelPositions[0].overlay, 1);
+    });
+
+    it("panel placed next to hidden hinge gets overlay=0", () => {
+      const dim = makeMockDimension();
+      placeBlock(dim, HIDDEN_HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 }, {
+        "bigdoors:facing": "north",
+        "bigdoors:mode": "horizontal",
+        "bigdoors:door_side": "east",
+      });
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal", "hidden");
+      manager.setDoorSide(assembly.id, "east");
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 0 });
+      handler.onPlace(block, dim);
+
+      assert.equal(assembly.panelPositions[0].overlay, 0);
+    });
+
+    it("first panel sets hinge material to match panel material", () => {
+      const dim = makeMockDimension();
+      setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
+
+      const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
+      assert.equal(assembly.hingePositions[0].materialIndex, UNMATCHED_MATERIAL_INDEX);
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 0 });
+      handler.onPlace(block, dim);
+
+      assert.notEqual(assembly.hingePositions[0].materialIndex, UNMATCHED_MATERIAL_INDEX);
+    });
+
+    it("second panel does not change hinge material", () => {
+      const dim = makeMockDimension();
+      setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
+
+      const block1 = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 0 });
+      handler.onPlace(block1, dim);
+
+      const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
+      const firstMatIdx = assembly.hingePositions[0].materialIndex;
+
+      const block2 = placeBlock(dim, "minecraft:cobblestone", { x: 2, y: 0, z: 0 });
+      handler.onPlace(block2, dim);
+
+      assert.equal(assembly.hingePositions[0].materialIndex, firstMatIdx);
+    });
+
+    it("all hinges in assembly get material set on first panel", () => {
+      const dim = makeMockDimension();
+      const assembly = setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
+      manager.addHingeToAssembly(assembly.id, { x: 0, y: 1, z: 0 });
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 1, z: 0 });
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 0 });
+      handler.onPlace(block, dim);
+
+      assert.notEqual(assembly.hingePositions[0].materialIndex, UNMATCHED_MATERIAL_INDEX);
+      assert.notEqual(assembly.hingePositions[1].materialIndex, UNMATCHED_MATERIAL_INDEX);
+      assert.equal(assembly.hingePositions[0].materialIndex, assembly.hingePositions[1].materialIndex);
+    });
+  });
+
+  describe("material matching", () => {
+    it("mismatched material next to hinge with existing panels is rejected", () => {
+      const dim = makeMockDimension();
+      const assembly = setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
+
+      const block1 = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 0 });
+      handler.onPlace(block1, dim);
+      assert.equal(assembly.panelPositions.length, 1);
+
+      const block2 = placeBlock(dim, "minecraft:oak_planks", { x: 2, y: 0, z: 0 });
+      const result = handler.onPlace(block2, dim);
+      assert.equal(result, false);
+      assert.equal(block2.typeId, "minecraft:oak_planks");
+      assert.equal(assembly.panelPositions.length, 1);
+    });
+
+    it("matching material next to existing panel is accepted", () => {
+      const dim = makeMockDimension();
+      const assembly = setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
+
+      const block1 = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 0 });
+      handler.onPlace(block1, dim);
+
+      const block2 = placeBlock(dim, "minecraft:cobblestone", { x: 2, y: 0, z: 0 });
+      const result = handler.onPlace(block2, dim);
+      assert.equal(result, true);
+      assert.equal(block2.typeId, PANEL_BLOCK_ID);
+      assert.equal(assembly.panelPositions.length, 2);
+    });
+
+    it("first panel of any supported material is accepted", () => {
+      const dim = makeMockDimension();
+      setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
+
+      const block = placeBlock(dim, "minecraft:birch_planks", { x: 1, y: 0, z: 0 });
+      const result = handler.onPlace(block, dim);
+      assert.equal(result, true);
+      assert.equal(block.typeId, PANEL_BLOCK_ID);
+    });
+
+    it("mismatched material adjacent to panel neighbor is rejected", () => {
+      const dim = makeMockDimension();
+      const assembly = setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
+
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 });
+      manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 12);
+
+      const block = placeBlock(dim, "minecraft:oak_planks", { x: 2, y: 0, z: 0 });
+      const result = handler.onPlace(block, dim);
+      assert.equal(result, false);
+      assert.equal(block.typeId, "minecraft:oak_planks");
+      assert.equal(assembly.panelPositions.length, 1);
+    });
+  });
+
+  describe("boundary panel overlay suppression", () => {
+    it("boundary panels get overlay=0 after double-door pairing", () => {
+      const dim = makeMockDimension();
+      const assemblyA = setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
+
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 4, y: 0, z: 0 }, {
+        "bigdoors:facing": "north",
+        "bigdoors:mode": "horizontal",
+        "bigdoors:door_side": "west",
+      });
+      const assemblyB = manager.createAssembly({ x: 4, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assemblyB.id, "west");
+
+      for (let x = 1; x <= 3; x++) {
+        placeBlock(dim, PANEL_BLOCK_ID, { x, y: 0, z: 0 });
+        manager.addPanelToAssembly(assemblyA.id, { x, y: 0, z: 0 }, 12, undefined, 1);
+      }
+      for (let x = 3; x >= 1; x--) {
+        placeBlock(dim, PANEL_BLOCK_ID, { x, y: 0, z: 0 });
+        manager.addPanelToAssembly(assemblyB.id, { x, y: 0, z: 0 }, 12, undefined, 1);
+      }
+
+      manager.pairAndSplitAssemblies(assemblyA.id, assemblyB.id);
+
+      assert.ok(assemblyA.boundaryPanels.length > 0, "should have boundary panels");
+      for (const bp of assemblyA.boundaryPanels) {
+        assert.equal(bp.overlay, 0, "boundary panel overlay should be 0");
+      }
     });
   });
 

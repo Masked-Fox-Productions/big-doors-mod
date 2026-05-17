@@ -1,10 +1,12 @@
 import { world, BlockPermutation } from "@minecraft/server";
 import {
   HINGE_BLOCK_ID,
+  HIDDEN_HINGE_BLOCK_ID,
   PANEL_BLOCK_ID,
   DIR_OFFSETS,
   DIRECTIONS,
   OPPOSITE_DIR,
+  UNMATCHED_MATERIAL_INDEX,
 } from "../util/Constants.js";
 
 
@@ -26,27 +28,38 @@ export class HingePlacementHandler {
 
   register() {
     world.afterEvents.playerPlaceBlock.subscribe((event) => {
-      if (event.block.typeId !== HINGE_BLOCK_ID) return;
+      if (event.block.typeId !== HINGE_BLOCK_ID && event.block.typeId !== HIDDEN_HINGE_BLOCK_ID) return;
       this.onPlace(event.block, event.player, event.block.dimension);
     });
+  }
+
+  _hingeTypeFromBlockId(typeId) {
+    return typeId === HIDDEN_HINGE_BLOCK_ID ? "hidden" : "hinge";
+  }
+
+  _blockIdForHingeType(type) {
+    return type === "hidden" ? HIDDEN_HINGE_BLOCK_ID : HINGE_BLOCK_ID;
   }
 
   onPlace(block, player, dimension) {
     const pos = block.location;
     const facing = block.permutation.getState("bigdoors:facing");
     const mode = block.permutation.getState("bigdoors:mode");
+    const hingeType = this._hingeTypeFromBlockId(block.typeId);
 
-    let assembly = this._mergeWithAdjacentHinge(pos, dimension);
+    let assembly = this._mergeWithAdjacentHinge(pos, dimension, hingeType);
     if (assembly) {
       block.setPermutation(
-        BlockPermutation.resolve(HINGE_BLOCK_ID, {
+        BlockPermutation.resolve(block.typeId, {
           "bigdoors:facing": assembly.facing,
           "bigdoors:mode": assembly.mode,
           "bigdoors:door_side": assembly.doorSide || "none",
+          "bigdoors:material_group": Math.floor(UNMATCHED_MATERIAL_INDEX / 16),
+          "bigdoors:material_id": UNMATCHED_MATERIAL_INDEX % 16,
         })
       );
     } else {
-      assembly = this._manager.createAssembly(pos, facing, mode);
+      assembly = this._manager.createAssembly(pos, facing, mode, hingeType);
     }
 
     const doubleDoorResult = this._detectDoubleDoor(assembly, pos, dimension);
@@ -55,44 +68,63 @@ export class HingePlacementHandler {
       this._manager.setDoorSide(assembly.id, doorSide);
 
       block.setPermutation(
-        BlockPermutation.resolve(HINGE_BLOCK_ID, {
+        BlockPermutation.resolve(block.typeId, {
           "bigdoors:facing": assembly.facing,
           "bigdoors:mode": assembly.mode,
           "bigdoors:door_side": doorSide,
+          "bigdoors:material_group": Math.floor(UNMATCHED_MATERIAL_INDEX / 16),
+          "bigdoors:material_id": UNMATCHED_MATERIAL_INDEX % 16,
         })
       );
 
       this._manager.pairAndSplitAssemblies(assembly.id, otherAssembly.id);
+      this._clearBoundaryOverlays(assembly, dimension);
     }
   }
 
-  _mergeWithAdjacentHinge(pos, dimension) {
-    // Vertical stacking (both modes)
+  _isHingeBlock(typeId) {
+    return typeId === HINGE_BLOCK_ID || typeId === HIDDEN_HINGE_BLOCK_ID;
+  }
+
+  _mergeWithAdjacentHinge(pos, dimension, hingeType) {
+    const adjacent = new Map();
+
     for (const dy of [1, -1]) {
       const neighborPos = { x: pos.x, y: pos.y + dy, z: pos.z };
       const neighborBlock = dimension.getBlock(neighborPos);
-      if (neighborBlock && neighborBlock.typeId === HINGE_BLOCK_ID) {
+      if (neighborBlock && this._isHingeBlock(neighborBlock.typeId)) {
         const existing = this._manager.findByPosition(neighborPos);
-        if (existing) {
-          this._manager.addHingeToAssembly(existing.id, pos);
-          return existing;
-        }
+        if (existing) adjacent.set(existing.id, existing);
       }
     }
-    // Horizontal neighbors — merge along the rotation axis for vertical-mode hinges
     for (const dir of HORIZONTAL_DIRS) {
       const offset = DIR_OFFSETS[dir];
       const neighborPos = posAdd(pos, offset);
       const neighborBlock = dimension.getBlock(neighborPos);
-      if (neighborBlock && neighborBlock.typeId === HINGE_BLOCK_ID) {
+      if (neighborBlock && this._isHingeBlock(neighborBlock.typeId)) {
         const existing = this._manager.findByPosition(neighborPos);
         if (existing && existing.mode === "vertical") {
-          this._manager.addHingeToAssembly(existing.id, pos);
-          return existing;
+          adjacent.set(existing.id, existing);
         }
       }
     }
-    return null;
+
+    if (adjacent.size === 0) return null;
+
+    const sorted = [...adjacent.values()].sort((a, b) => {
+      const numA = parseInt(a.id.replace("door_", ""), 10);
+      const numB = parseInt(b.id.replace("door_", ""), 10);
+      return numA - numB;
+    });
+
+    const canonical = sorted[0];
+    this._manager.addHingeToAssembly(canonical.id, pos, hingeType);
+
+    if (sorted.length > 1) {
+      this._manager.mergeAssemblies(canonical.id, ...sorted.slice(1).map(a => a.id));
+    }
+
+    return canonical;
   }
 
   _detectDoubleDoor(newAssembly, hingePos, dimension) {
@@ -112,6 +144,23 @@ export class HingePlacementHandler {
       return { otherAssembly, doorSide: dir };
     }
     return null;
+  }
+
+  _clearBoundaryOverlays(assembly, dimension) {
+    for (const bp of assembly.boundaryPanels) {
+      const block = dimension.getBlock(bp.currentPos);
+      if (!block || block.typeId !== PANEL_BLOCK_ID) continue;
+      const perm = block.permutation;
+      block.setPermutation(
+        BlockPermutation.resolve(PANEL_BLOCK_ID, {
+          "bigdoors:material_group": perm.getState("bigdoors:material_group"),
+          "bigdoors:material_id": perm.getState("bigdoors:material_id"),
+          "bigdoors:geometry_id": perm.getState("bigdoors:geometry_id"),
+          "bigdoors:panel_rotation": perm.getState("bigdoors:panel_rotation"),
+          "bigdoors:overlay": 0,
+        })
+      );
+    }
   }
 
 }

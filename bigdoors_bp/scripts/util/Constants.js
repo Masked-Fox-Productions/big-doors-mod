@@ -5,7 +5,11 @@
 
 // Block identifiers
 export const HINGE_BLOCK_ID = "bigdoors:hinge";
+export const HIDDEN_HINGE_BLOCK_ID = "bigdoors:hidden_hinge";
 export const PANEL_BLOCK_ID = "bigdoors:door_panel";
+
+// Reserved material index for hinges that haven't been matched to a panel yet
+export const UNMATCHED_MATERIAL_INDEX = 255;
 
 // Persistence
 export const PERSISTENCE_KEY = "bigdoors:state";
@@ -306,7 +310,7 @@ export const MATERIAL_INDEX = [
   /* 136 */ "minecraft:bamboo_slab",
   /* 137 */ "minecraft:crimson_slab",
   /* 138 */ "minecraft:warped_slab",
-  /* 139 */ "minecraft:stone_slab",
+  /* 139 */ "minecraft:normal_stone_slab",
   /* 140 */ "minecraft:cobblestone_slab",
   /* 141 */ "minecraft:stone_brick_slab",
   /* 142 */ "minecraft:brick_slab",
@@ -371,15 +375,15 @@ export const MATERIAL_INDEX = [
   /* 193 */ "minecraft:bamboo_mosaic_slab",
   /* 194 */ "minecraft:pale_oak_slab",
   /* 195 */ "minecraft:resin_brick_slab",
-  /* 196 */ "",
-  /* 197 */ "",
-  /* 198 */ "",
-  /* 199 */ "",
-  /* 200 */ "",
-  /* 201 */ "",
-  /* 202 */ "",
-  /* 203 */ "",
-  /* 204 */ "",
+  /* 196 */ "minecraft:purpur_slab",
+  /* 197 */ "minecraft:cut_copper_slab",
+  /* 198 */ "minecraft:exposed_cut_copper_slab",
+  /* 199 */ "minecraft:weathered_cut_copper_slab",
+  /* 200 */ "minecraft:oxidized_cut_copper_slab",
+  /* 201 */ "minecraft:waxed_cut_copper_slab",
+  /* 202 */ "minecraft:waxed_exposed_cut_copper_slab",
+  /* 203 */ "minecraft:waxed_weathered_cut_copper_slab",
+  /* 204 */ "minecraft:waxed_oxidized_cut_copper_slab",
   /* 205 */ "",
   /* 206 */ "",
   /* 207 */ "",
@@ -465,5 +469,8 @@ export const MATERIAL_GEOMETRY_CLASS = new Map([
   [191, GEOMETRY_CLASS_SLAB],
   // Slabs batch 4
   [192, GEOMETRY_CLASS_SLAB], [193, GEOMETRY_CLASS_SLAB], [194, GEOMETRY_CLASS_SLAB],
-  [195, GEOMETRY_CLASS_SLAB],
+  [195, GEOMETRY_CLASS_SLAB], [196, GEOMETRY_CLASS_SLAB], [197, GEOMETRY_CLASS_SLAB],
+  [198, GEOMETRY_CLASS_SLAB], [199, GEOMETRY_CLASS_SLAB], [200, GEOMETRY_CLASS_SLAB],
+  [201, GEOMETRY_CLASS_SLAB], [202, GEOMETRY_CLASS_SLAB], [203, GEOMETRY_CLASS_SLAB],
+  [204, GEOMETRY_CLASS_SLAB],
 ]);

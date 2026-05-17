@@ -1,6 +1,6 @@
 import { world } from "@minecraft/server";
 import { DoorAssembly } from "./domain/DoorAssembly.js";
-import { PERSISTENCE_KEY } from "./util/Constants.js";
+import { PERSISTENCE_KEY, UNMATCHED_MATERIAL_INDEX } from "./util/Constants.js";
 
 function posKey(pos) {
   return `${pos.x},${pos.y},${pos.z}`;
@@ -69,19 +69,19 @@ export class DoorManager {
     }
   }
 
-  createAssembly(hingePos, facing, mode) {
+  createAssembly(hingePos, facing, mode, hingeType = "hinge") {
     const id = `door_${this._nextId++}`;
-    const assembly = new DoorAssembly(id, hingePos, facing, mode);
+    const assembly = new DoorAssembly(id, hingePos, facing, mode, hingeType);
     this._assemblies.set(id, assembly);
     this._positionIndex.set(posKey(hingePos), id);
     this.save();
     return assembly;
   }
 
-  addHingeToAssembly(assemblyId, hingePos) {
+  addHingeToAssembly(assemblyId, hingePos, hingeType = "hinge") {
     const assembly = this._assemblies.get(assemblyId);
     if (!assembly) return;
-    assembly.addHinge(hingePos);
+    assembly.addHinge(hingePos, hingeType);
     this._positionIndex.set(posKey(hingePos), assemblyId);
     this.save();
   }
@@ -100,10 +100,10 @@ export class DoorManager {
     this.save();
   }
 
-  addPanelToAssembly(assemblyId, panelPos, materialIndex, geometryId) {
+  addPanelToAssembly(assemblyId, panelPos, materialIndex, geometryId, overlay = 0) {
     const assembly = this._assemblies.get(assemblyId);
     if (!assembly) return;
-    assembly.addPanel(panelPos, materialIndex, geometryId);
+    assembly.addPanel(panelPos, materialIndex, geometryId, overlay);
     this._positionIndex.set(posKey(panelPos), assemblyId);
     this.save();
   }
@@ -145,6 +145,87 @@ export class DoorManager {
     this.save();
   }
 
+  mergeAssemblies(canonicalId, ...otherIds) {
+    const canonical = this._assemblies.get(canonicalId);
+    if (!canonical) return;
+
+    for (const otherId of otherIds) {
+      const absorbed = this._assemblies.get(otherId);
+      if (!absorbed) continue;
+
+      if (absorbed.partnerAssemblyId) {
+        if (canonical.partnerAssemblyId && canonical.partnerAssemblyId !== absorbed.partnerAssemblyId) {
+          this.unpairAssembly(otherId);
+        } else if (!canonical.partnerAssemblyId) {
+          const partner = this._assemblies.get(absorbed.partnerAssemblyId);
+          if (partner) partner.partnerAssemblyId = canonicalId;
+          canonical.partnerAssemblyId = absorbed.partnerAssemblyId;
+          absorbed.partnerAssemblyId = null;
+        }
+      }
+
+      for (const hinge of absorbed.hingePositions) {
+        canonical.addHingeRecord(hinge);
+        this._positionIndex.set(posKey(hinge), canonicalId);
+      }
+
+      for (const panel of absorbed.panelPositions) {
+        canonical.panelPositions.push(panel);
+        this._positionIndex.set(posKey(panel.currentPos), canonicalId);
+      }
+
+      for (const panel of absorbed.boundaryPanels) {
+        canonical.boundaryPanels.push(panel);
+        this._positionIndex.set(posKey(panel.currentPos), canonicalId);
+      }
+
+      this._assemblies.delete(otherId);
+    }
+
+    const axis = canonical.mode === "horizontal" ? "y" : (canonical.facing === "north" || canonical.facing === "south" ? "x" : "z");
+    let min = canonical.hingePositions[0];
+    for (const h of canonical.hingePositions) {
+      if (h[axis] < min[axis]) min = h;
+    }
+    canonical.primaryHingePos = { x: min.x, y: min.y, z: min.z };
+
+    this.save();
+  }
+
+  removeHingeFromAssembly(assemblyId, hingePos) {
+    const assembly = this._assemblies.get(assemblyId);
+    if (!assembly) return { status: "kept", assembly: null };
+
+    assembly.removeHinge(hingePos);
+    this._positionIndex.delete(posKey(hingePos));
+
+    if (assembly.hingePositions.length === 0) {
+      if (assembly.partnerAssemblyId) this.unpairAssembly(assemblyId);
+      return { status: "dissolve_required", assembly };
+    }
+
+    const axis = assembly.mode === "horizontal" ? "y" : (assembly.facing === "north" || assembly.facing === "south" ? "x" : "z");
+    const sorted = assembly.hingePositions.map(h => h[axis]).sort((a, b) => a - b);
+    let contiguous = true;
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i] - sorted[i - 1] !== 1) { contiguous = false; break; }
+    }
+
+    if (!contiguous) {
+      if (assembly.partnerAssemblyId) this.unpairAssembly(assemblyId);
+      return { status: "dissolve_required", assembly };
+    }
+
+    let min = assembly.hingePositions[0];
+    for (const h of assembly.hingePositions) {
+      if (h[axis] < min[axis]) min = h;
+    }
+    assembly.primaryHingePos = { x: min.x, y: min.y, z: min.z };
+
+    this.save();
+    return { status: "kept", assembly };
+  }
+
   resetAssembly(assemblyId) {
     const assembly = this._assemblies.get(assemblyId);
     if (!assembly) return;
@@ -167,6 +248,9 @@ export class DoorManager {
     assembly.isOpen = false;
     assembly.openDirection = "";
     assembly.redstoneSource = null;
+    for (const hinge of assembly.hingePositions) {
+      hinge.materialIndex = UNMATCHED_MATERIAL_INDEX;
+    }
 
     this.save();
   }
@@ -285,11 +369,86 @@ export class DoorManager {
       this._positionIndex.set(posKey(p.currentPos), assemblyIdB);
     }
 
+    for (const p of droppedPanels) {
+      p.overlay = 0;
+    }
     a.boundaryPanels = droppedPanels;
     for (const p of droppedPanels) {
       this._positionIndex.set(posKey(p.currentPos), assemblyIdA);
     }
 
+    this.save();
+  }
+
+  resplitAssemblies(assemblyIdA, assemblyIdB) {
+    const a = this._assemblies.get(assemblyIdA);
+    const b = this._assemblies.get(assemblyIdB);
+    if (!a || !b) return;
+
+    const hingeA = a.primaryHingePos;
+    const hingeB = b.primaryHingePos;
+    const axis = hingeA.x !== hingeB.x ? "x" : "z";
+    const minVal = Math.min(hingeA[axis], hingeB[axis]);
+    const maxVal = Math.max(hingeA[axis], hingeB[axis]);
+    const midpoint = (minVal + maxVal) / 2;
+
+    const allPanels = [...a.panelPositions, ...b.panelPositions, ...a.boundaryPanels, ...b.boundaryPanels];
+    const seen = new Set();
+    const unique = [];
+    for (const p of allPanels) {
+      const key = posKey(p.closedPos);
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(p);
+      }
+    }
+
+    for (const p of allPanels) {
+      this._positionIndex.delete(posKey(p.currentPos));
+    }
+
+    const panelsA = [];
+    const panelsB = [];
+    const droppedPanels = [];
+    for (const p of unique) {
+      const v = p.closedPos[axis];
+      if (v <= minVal || v >= maxVal) {
+        droppedPanels.push(p);
+        continue;
+      }
+      if (v < midpoint) panelsA.push(p);
+      else if (v > midpoint) panelsB.push(p);
+      else droppedPanels.push(p);
+    }
+
+    const aIsMin = hingeA[axis] < hingeB[axis];
+    a.panelPositions = aIsMin ? panelsA : panelsB;
+    b.panelPositions = aIsMin ? panelsB : panelsA;
+
+    for (const p of a.panelPositions) {
+      this._positionIndex.set(posKey(p.currentPos), assemblyIdA);
+    }
+    for (const p of b.panelPositions) {
+      this._positionIndex.set(posKey(p.currentPos), assemblyIdB);
+    }
+
+    for (const p of droppedPanels) {
+      p.overlay = 0;
+    }
+    a.boundaryPanels = droppedPanels;
+    for (const p of droppedPanels) {
+      this._positionIndex.set(posKey(p.currentPos), assemblyIdA);
+    }
+
+    this.save();
+  }
+
+  setHingeMaterialIndex(assemblyId, materialIndex) {
+    const assembly = this._assemblies.get(assemblyId);
+    if (!assembly) return;
+    for (const hinge of assembly.hingePositions) {
+      hinge.materialIndex = materialIndex;
+    }
     this.save();
   }
 
