@@ -1,10 +1,11 @@
 import { BlockPermutation, ItemStack, system } from "@minecraft/server";
-import { PANEL_BLOCK_ID, HINGE_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, DIR_OFFSETS, GEOMETRY_CLASS_FENCE } from "../util/Constants.js";
+import { PANEL_BLOCK_ID, HINGE_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, DIR_OFFSETS, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB } from "../util/Constants.js";
 import {
   panelBlockStates,
   resolveGeometryId,
   geometryClassForMaterial,
 } from "../domain/MaterialRegistry.js";
+import { closedRotation, openRotation } from "../domain/PanelRotation.js";
 import { checkPath } from "../domain/ObstructionChecker.js";
 import { getRotateFn } from "../domain/RotationMath.js";
 import { sweep } from "./EntitySweeper.js";
@@ -233,46 +234,16 @@ export class RedstoneSubsystem {
     this._manager.closeDoor(assembly.id);
   }
 
-  _closedRotation(assembly, geoClass) {
-    const side = assembly.doorSide;
-    if (side === "up" || side === "down") {
-      if (geoClass === GEOMETRY_CLASS_FENCE) {
-        const facing = assembly.facing;
-        if (facing === "north" || facing === "south") return 2;
-        return 1;
-      }
-      const facing = assembly.facing;
-      if (facing === "north" || facing === "south") return 5;
-      return 4;
-    }
-    if (side === "east") return 2;
-    if (side === "south") return 1;
-    if (side === "west") return 0;
-    return 3;
-  }
-
-  _openRotation(assembly, direction, geoClass) {
-    if (assembly.mode === "vertical") {
-      if (geoClass === GEOMETRY_CLASS_FENCE) {
-        const facing = assembly.facing;
-        if (facing === "north" || facing === "south") return 6;
-        return 5;
-      }
-      const facing = assembly.facing;
-      if (facing === "north" || facing === "south") return 1;
-      return 0;
-    }
-    const closed = this._closedRotation(assembly, geoClass);
-    return direction === "cw" ? (closed + 3) % 4 : (closed + 1) % 4;
-  }
-
   _panelStates(assembly, panelIndex, isOpen, direction) {
-    const matIdx = assembly.panelPositions[panelIndex].materialIndex;
+    const panel = assembly.panelPositions[panelIndex];
+    const matIdx = panel.materialIndex;
     const geoClass = geometryClassForMaterial(matIdx);
 
     let geoId;
     if (geoClass === 0) {
       geoId = 0;
+    } else if (geoClass === GEOMETRY_CLASS_SLAB && panel.geometryId !== undefined) {
+      geoId = panel.geometryId;
     } else if (assembly.mode === "vertical" && geoClass === GEOMETRY_CLASS_FENCE) {
       geoId = this._resolveVerticalFenceGeo(assembly, panelIndex);
     } else {
@@ -282,8 +253,8 @@ export class RedstoneSubsystem {
     }
 
     const rotation = isOpen
-      ? this._openRotation(assembly, direction, geoClass)
-      : this._closedRotation(assembly, geoClass);
+      ? openRotation(assembly.mode, assembly.doorSide, assembly.facing, direction, geoClass)
+      : closedRotation(assembly.doorSide, assembly.facing, geoClass);
     return panelBlockStates(matIdx, geoId, rotation);
   }
 

@@ -6,6 +6,8 @@ import {
   DIRECTIONS,
   OPPOSITE_DIR,
   GEOMETRY_CLASS_FENCE,
+  GEOMETRY_CLASS_SLAB,
+  GEOMETRY_ID_SLAB_TOP,
 } from "../util/Constants.js";
 import {
   indexForTypeId,
@@ -13,6 +15,7 @@ import {
   resolveGeometryId,
   geometryClassForMaterial,
 } from "../domain/MaterialRegistry.js";
+import { closedRotation } from "../domain/PanelRotation.js";
 
 const HORIZONTAL_DIRS = [
   DIRECTIONS.NORTH,
@@ -166,15 +169,24 @@ export class PanelPlacementHandler {
     const hasNeighborBefore = this._hasAssemblyBlockAt(dimension, posAdd(pos, beforeOffset), assembly);
     const hasNeighborAfter = this._hasAssemblyBlockAt(dimension, posAdd(pos, afterOffset), assembly);
 
-    const geoId = resolveGeometryId(matIdx, hasNeighborBefore, hasNeighborAfter);
-    const rotation = this._panelRotation(assembly, geoClass);
+    let geoId = resolveGeometryId(matIdx, hasNeighborBefore, hasNeighborAfter);
+    let storedGeoId;
+    if (geoClass === GEOMETRY_CLASS_SLAB) {
+      const verticalHalf = block.permutation.getState("minecraft:vertical_half");
+      if (verticalHalf === "top") {
+        geoId = GEOMETRY_ID_SLAB_TOP;
+      }
+      storedGeoId = geoId;
+    }
+
+    const rotation = closedRotation(assembly.doorSide, assembly.facing, geoClass);
     block.setPermutation(
       BlockPermutation.resolve(PANEL_BLOCK_ID, {
         ...materialToBlockStates(matIdx, geoId),
         "bigdoors:panel_rotation": rotation,
       })
     );
-    this._manager.addPanelToAssembly(assembly.id, pos, matIdx);
+    this._manager.addPanelToAssembly(assembly.id, pos, matIdx, storedGeoId);
 
     if (geoClass > 0) {
       this._updateNeighborGeometry(dimension, posAdd(pos, beforeOffset), assembly);
@@ -217,23 +229,6 @@ export class PanelPlacementHandler {
     };
   }
 
-  _panelRotation(assembly, geoClass) {
-    const side = assembly.doorSide;
-    if (side === "up" || side === "down") {
-      if (geoClass === GEOMETRY_CLASS_FENCE) {
-        const facing = assembly.facing;
-        if (facing === "north" || facing === "south") return 2;
-        return 1;
-      }
-      const facing = assembly.facing;
-      if (facing === "north" || facing === "south") return 5;
-      return 4;
-    }
-    if (side === "east") return 2;
-    if (side === "south") return 1;
-    if (side === "west") return 0;
-    return 3;
-  }
 
   _updateNeighborGeometry(dimension, pos, assembly) {
     const block = dimension.getBlock(pos);
@@ -256,7 +251,7 @@ export class PanelPlacementHandler {
     const hasAfter = this._hasAssemblyBlockAt(dimension, posAdd(pos, afterOffset), assembly);
 
     const newGeoId = resolveGeometryId(neighborMatIdx, hasBefore, hasAfter);
-    const rotation = this._panelRotation(assembly, neighborGeoClass);
+    const rotation = closedRotation(assembly.doorSide, assembly.facing, neighborGeoClass);
     block.setPermutation(
       BlockPermutation.resolve(PANEL_BLOCK_ID, {
         ...materialToBlockStates(neighborMatIdx, newGeoId),

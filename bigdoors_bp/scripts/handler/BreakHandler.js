@@ -1,4 +1,4 @@
-import { ItemStack } from "@minecraft/server";
+import { BlockPermutation, ItemStack } from "@minecraft/server";
 import { typeIdForIndex, blockStatesToMaterial } from "../domain/MaterialRegistry.js";
 import { HINGE_BLOCK_ID, PANEL_BLOCK_ID } from "../util/Constants.js";
 
@@ -19,6 +19,21 @@ export class BreakHandler {
     if (!assembly) return;
 
     this._manager.removePanelFromAssembly(assembly.id, pos);
+
+    if (assembly.panelPositions.length === 0) {
+      for (const hPos of assembly.hingePositions) {
+        const hBlock = dimension.getBlock(hPos);
+        if (hBlock) {
+          hBlock.setPermutation(
+            BlockPermutation.resolve(HINGE_BLOCK_ID, {
+              "bigdoors:facing": assembly.facing,
+              "bigdoors:mode": "",
+              "bigdoors:door_side": "none",
+            })
+          );
+        }
+      }
+    }
 
     if (!creative) {
       const vanillaTypeId = typeIdForIndex(materialIndex);

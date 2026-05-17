@@ -79,17 +79,80 @@ describe("BreakHandler", () => {
       assert.deepEqual(spawnedItems[0].pos, { x: 1, y: 0, z: 0 });
     });
 
-    it("dissolves assembly when last panel is broken", () => {
+    it("resets assembly when last panel is broken (hinge stays, panels cleared)", () => {
       const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assembly.id, "east");
       manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 0);
 
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 }, {
+        "bigdoors:facing": "north",
+        "bigdoors:mode": "horizontal",
+        "bigdoors:door_side": "east",
+      });
       placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 }, { "bigdoors:material": 0 });
 
       const event = makePanelBreakEvent({ x: 1, y: 0, z: 0 }, 0, dim);
       handler.handlePanelBreak(event);
 
-      assert.equal(manager.getAssembly(assembly.id), null);
+      const updated = manager.getAssembly(assembly.id);
+      assert.ok(updated, "assembly still exists after reset");
+      assert.equal(updated.panelPositions.length, 0);
+      assert.equal(updated.doorSide, "");
+      assert.equal(updated.mode, "");
+
+      const hingeBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
+      assert.equal(hingeBlock.permutation.getState("bigdoors:door_side"), "none");
+      assert.equal(hingeBlock.permutation.getState("bigdoors:mode"), "");
+
       assert.equal(spawnedItems[0].typeId, "minecraft:oak_planks");
+    });
+
+    it("resets all hinge blocks when last panel is broken (multi-hinge)", () => {
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.addHingeToAssembly(assembly.id, { x: 0, y: 1, z: 0 });
+      manager.setDoorSide(assembly.id, "east");
+      manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 0);
+
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 }, {
+        "bigdoors:facing": "north",
+        "bigdoors:mode": "horizontal",
+        "bigdoors:door_side": "east",
+      });
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 1, z: 0 }, {
+        "bigdoors:facing": "north",
+        "bigdoors:mode": "horizontal",
+        "bigdoors:door_side": "east",
+      });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 }, { "bigdoors:material": 0 });
+
+      const event = makePanelBreakEvent({ x: 1, y: 0, z: 0 }, 0, dim);
+      handler.handlePanelBreak(event);
+
+      const h0 = dim.getBlock({ x: 0, y: 0, z: 0 });
+      const h1 = dim.getBlock({ x: 0, y: 1, z: 0 });
+      assert.equal(h0.permutation.getState("bigdoors:door_side"), "none");
+      assert.equal(h1.permutation.getState("bigdoors:door_side"), "none");
+    });
+
+    it("does not reset hinge when non-last panel is broken", () => {
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assembly.id, "east");
+      manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 12);
+      manager.addPanelToAssembly(assembly.id, { x: 2, y: 0, z: 0 }, 0);
+
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 }, {
+        "bigdoors:facing": "north",
+        "bigdoors:mode": "horizontal",
+        "bigdoors:door_side": "east",
+      });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 }, { "bigdoors:material": 12 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 2, y: 0, z: 0 }, { "bigdoors:material": 0 });
+
+      const event = makePanelBreakEvent({ x: 1, y: 0, z: 0 }, 12, dim);
+      handler.handlePanelBreak(event);
+
+      const hingeBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
+      assert.equal(hingeBlock.permutation.getState("bigdoors:door_side"), "east");
     });
 
     it("does nothing if panel position is not in any assembly", () => {

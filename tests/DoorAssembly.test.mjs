@@ -157,4 +157,36 @@ describe("DoorAssembly", () => {
     pos.x = 999;
     assert.equal(assembly.panelPositions[0].closedPos.x, 5);
   });
+
+  it("addPanel with geometryId stores and round-trips through toJSON/fromJSON", () => {
+    assembly.addPanel({ x: 1, y: 0, z: 0 }, 128, 8);
+    assert.equal(assembly.panelPositions[0].geometryId, 8);
+
+    const json = assembly.toJSON();
+    assert.equal(json.panelPositions[0].geometryId, 8);
+
+    const restored = DoorAssembly.fromJSON(json);
+    assert.equal(restored.panelPositions[0].geometryId, 8);
+  });
+
+  it("addPanel without geometryId omits it from JSON", () => {
+    assembly.addPanel({ x: 1, y: 0, z: 0 }, 128);
+    assert.equal(assembly.panelPositions[0].geometryId, undefined);
+
+    const json = assembly.toJSON();
+    assert.equal("geometryId" in json.panelPositions[0], false);
+  });
+
+  it("fromJSON with missing geometryId sets undefined", () => {
+    const json = {
+      id: "legacy-1",
+      primaryHingePos: { x: 0, y: 0, z: 0 },
+      hingePositions: [{ x: 0, y: 0, z: 0 }],
+      panelPositions: [{ materialIndex: 128, closedPos: { x: 1, y: 0, z: 0 }, currentPos: { x: 1, y: 0, z: 0 } }],
+      facing: "north",
+      mode: "horizontal",
+    };
+    const restored = DoorAssembly.fromJSON(json);
+    assert.equal(restored.panelPositions[0].geometryId, undefined);
+  });
 });
