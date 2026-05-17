@@ -288,6 +288,9 @@ export class DoorManager {
       this._positionIndex.set(posKey(p.currentPos), assemblyIdB);
     }
 
+    for (const p of droppedPanels) {
+      p.overlay = 0;
+    }
     a.boundaryPanels = droppedPanels;
     for (const p of droppedPanels) {
       this._positionIndex.set(posKey(p.currentPos), assemblyIdA);

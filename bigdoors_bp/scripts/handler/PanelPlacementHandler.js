@@ -311,10 +311,28 @@ export class PanelPlacementHandler {
         if (other.doorSide !== OPPOSITE_DIR[assembly.doorSide]) break;
 
         this._manager.pairAndSplitAssemblies(assembly.id, other.id);
+        this._clearBoundaryOverlays(assembly, dimension);
         return;
       }
 
       if (block.typeId !== PANEL_BLOCK_ID) break;
+    }
+  }
+
+  _clearBoundaryOverlays(assembly, dimension) {
+    for (const bp of assembly.boundaryPanels) {
+      const block = dimension.getBlock(bp.currentPos);
+      if (!block || block.typeId !== PANEL_BLOCK_ID) continue;
+      const perm = block.permutation;
+      block.setPermutation(
+        BlockPermutation.resolve(PANEL_BLOCK_ID, {
+          "bigdoors:material_group": perm.getState("bigdoors:material_group"),
+          "bigdoors:material_id": perm.getState("bigdoors:material_id"),
+          "bigdoors:geometry_id": perm.getState("bigdoors:geometry_id"),
+          "bigdoors:panel_rotation": perm.getState("bigdoors:panel_rotation"),
+          "bigdoors:overlay": 0,
+        })
+      );
     }
   }
 

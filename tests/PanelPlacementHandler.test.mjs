@@ -542,6 +542,37 @@ describe("PanelPlacementHandler", () => {
     });
   });
 
+  describe("boundary panel overlay suppression", () => {
+    it("boundary panels get overlay=0 after double-door pairing", () => {
+      const dim = makeMockDimension();
+      const assemblyA = setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
+
+      placeBlock(dim, HINGE_BLOCK_ID, { x: 4, y: 0, z: 0 }, {
+        "bigdoors:facing": "north",
+        "bigdoors:mode": "horizontal",
+        "bigdoors:door_side": "west",
+      });
+      const assemblyB = manager.createAssembly({ x: 4, y: 0, z: 0 }, "north", "horizontal");
+      manager.setDoorSide(assemblyB.id, "west");
+
+      for (let x = 1; x <= 3; x++) {
+        placeBlock(dim, PANEL_BLOCK_ID, { x, y: 0, z: 0 });
+        manager.addPanelToAssembly(assemblyA.id, { x, y: 0, z: 0 }, 12, undefined, 1);
+      }
+      for (let x = 3; x >= 1; x--) {
+        placeBlock(dim, PANEL_BLOCK_ID, { x, y: 0, z: 0 });
+        manager.addPanelToAssembly(assemblyB.id, { x, y: 0, z: 0 }, 12, undefined, 1);
+      }
+
+      manager.pairAndSplitAssemblies(assemblyA.id, assemblyB.id);
+
+      assert.ok(assemblyA.boundaryPanels.length > 0, "should have boundary panels");
+      for (const bp of assemblyA.boundaryPanels) {
+        assert.equal(bp.overlay, 0, "boundary panel overlay should be 0");
+      }
+    });
+  });
+
   describe("slab placement", () => {
     it("bottom slab stores default geometry_id (GEOMETRY_CLASS_SLAB)", () => {
       const dim = makeMockDimension();
