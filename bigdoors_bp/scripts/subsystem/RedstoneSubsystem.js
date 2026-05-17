@@ -1,5 +1,5 @@
 import { BlockPermutation, ItemStack, system } from "@minecraft/server";
-import { PANEL_BLOCK_ID, HINGE_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, REDSTONE_SOURCE_POLL_TICKS, DIR_OFFSETS, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB } from "../util/Constants.js";
+import { PANEL_BLOCK_ID, HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, REDSTONE_SOURCE_POLL_TICKS, DIR_OFFSETS, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB } from "../util/Constants.js";
 import {
   panelBlockStates,
   resolveGeometryId,
@@ -180,7 +180,7 @@ export class RedstoneSubsystem {
       const neighborPos = { x: loc.x + off.x, y: loc.y + off.y, z: loc.z + off.z };
       const nb = dimension.getBlock(neighborPos);
       if (!nb) continue;
-      if (nb.typeId === HINGE_BLOCK_ID || nb.typeId === PANEL_BLOCK_ID) continue;
+      if (nb.typeId === HINGE_BLOCK_ID || nb.typeId === HIDDEN_HINGE_BLOCK_ID || nb.typeId === PANEL_BLOCK_ID) continue;
       const power = nb.getRedstonePower();
       if (power != null && power > 0) {
         return neighborPos;

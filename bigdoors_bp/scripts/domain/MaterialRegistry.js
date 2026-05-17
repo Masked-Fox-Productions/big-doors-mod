@@ -59,11 +59,12 @@ export function blockStatesToMaterial(group, id) {
  * @param {number} geoId - resolved geometry_id
  * @param {number} rotation - panel_rotation (0-3, representing 0/90/180/270 Y degrees)
  */
-export function panelBlockStates(matIdx, geoId, rotation) {
+export function panelBlockStates(matIdx, geoId, rotation, overlay = 0) {
   return {
     "bigdoors:material_group": Math.floor(matIdx / 16),
     "bigdoors:material_id": matIdx % 16,
     "bigdoors:geometry_id": geoId,
     "bigdoors:panel_rotation": rotation,
+    "bigdoors:overlay": overlay,
   };
 }

@@ -1,6 +1,7 @@
 import { world, BlockPermutation } from "@minecraft/server";
 import {
   HINGE_BLOCK_ID,
+  HIDDEN_HINGE_BLOCK_ID,
   PANEL_BLOCK_ID,
   DIR_OFFSETS,
   DIRECTIONS,
@@ -8,10 +9,12 @@ import {
   GEOMETRY_CLASS_FENCE,
   GEOMETRY_CLASS_SLAB,
   GEOMETRY_ID_SLAB_TOP,
+  UNMATCHED_MATERIAL_INDEX,
 } from "../util/Constants.js";
 import {
   indexForTypeId,
   materialToBlockStates,
+  panelBlockStates,
   resolveGeometryId,
   geometryClassForMaterial,
 } from "../domain/MaterialRegistry.js";
@@ -54,6 +57,7 @@ export class PanelPlacementHandler {
     world.afterEvents.playerPlaceBlock.subscribe((event) => {
       if (
         event.block.typeId === HINGE_BLOCK_ID ||
+        event.block.typeId === HIDDEN_HINGE_BLOCK_ID ||
         event.block.typeId === PANEL_BLOCK_ID
       ) {
         return;
@@ -73,7 +77,7 @@ export class PanelPlacementHandler {
       const neighborBlock = dimension.getBlock(neighborPos);
       if (!neighborBlock) continue;
 
-      if (neighborBlock.typeId === HINGE_BLOCK_ID) {
+      if (this._isHingeBlock(neighborBlock.typeId)) {
         const result = this._handleHingeNeighbor(
           block, pos, matIdx, neighborBlock, neighborPos, dimension
         );
@@ -89,6 +93,10 @@ export class PanelPlacementHandler {
     }
 
     return false;
+  }
+
+  _isHingeBlock(typeId) {
+    return typeId === HINGE_BLOCK_ID || typeId === HIDDEN_HINGE_BLOCK_ID;
   }
 
   _isCoplanar(assembly, pos) {
@@ -124,10 +132,12 @@ export class PanelPlacementHandler {
       this._manager.setMode(assembly.id, mode);
 
       hingeBlock.setPermutation(
-        BlockPermutation.resolve(HINGE_BLOCK_ID, {
+        BlockPermutation.resolve(hingeBlock.typeId, {
           "bigdoors:facing": assembly.facing,
           "bigdoors:mode": mode,
           "bigdoors:door_side": placedDir,
+          "bigdoors:material_group": Math.floor(UNMATCHED_MATERIAL_INDEX / 16),
+          "bigdoors:material_id": UNMATCHED_MATERIAL_INDEX % 16,
         })
       );
     }
@@ -179,14 +189,17 @@ export class PanelPlacementHandler {
       storedGeoId = geoId;
     }
 
+    const overlay = assembly.hingeType === "hinge" ? 1 : 0;
     const rotation = closedRotation(assembly.doorSide, assembly.facing, geoClass);
     block.setPermutation(
-      BlockPermutation.resolve(PANEL_BLOCK_ID, {
-        ...materialToBlockStates(matIdx, geoId),
-        "bigdoors:panel_rotation": rotation,
-      })
+      BlockPermutation.resolve(PANEL_BLOCK_ID, panelBlockStates(matIdx, geoId, rotation, overlay))
     );
-    this._manager.addPanelToAssembly(assembly.id, pos, matIdx, storedGeoId);
+    this._manager.addPanelToAssembly(assembly.id, pos, matIdx, storedGeoId, overlay);
+
+    if (assembly.hingePositions[0].materialIndex === UNMATCHED_MATERIAL_INDEX) {
+      this._manager.setHingeMaterialIndex(assembly.id, matIdx);
+      this._updateHingeBlocks(assembly, dimension);
+    }
 
     if (geoClass > 0) {
       this._updateNeighborGeometry(dimension, posAdd(pos, beforeOffset), assembly);
@@ -194,10 +207,27 @@ export class PanelPlacementHandler {
     }
   }
 
+  _updateHingeBlocks(assembly, dimension) {
+    for (const hinge of assembly.hingePositions) {
+      const hingeBlock = dimension.getBlock(hinge);
+      if (!hingeBlock) continue;
+      const blockId = hinge.type === "hidden" ? HIDDEN_HINGE_BLOCK_ID : HINGE_BLOCK_ID;
+      hingeBlock.setPermutation(
+        BlockPermutation.resolve(blockId, {
+          "bigdoors:facing": assembly.facing,
+          "bigdoors:mode": assembly.mode,
+          "bigdoors:door_side": assembly.doorSide || "none",
+          "bigdoors:material_group": Math.floor(hinge.materialIndex / 16),
+          "bigdoors:material_id": hinge.materialIndex % 16,
+        })
+      );
+    }
+  }
+
   _hasAssemblyBlockAt(dimension, pos, assembly) {
     const block = dimension.getBlock(pos);
     if (!block) return false;
-    if (block.typeId === PANEL_BLOCK_ID || block.typeId === HINGE_BLOCK_ID) {
+    if (block.typeId === PANEL_BLOCK_ID || this._isHingeBlock(block.typeId)) {
       const found = this._manager.findByPosition(pos);
       if (!found || found.id !== assembly.id) return false;
       if (found.boundaryPanels) {
@@ -252,11 +282,9 @@ export class PanelPlacementHandler {
 
     const newGeoId = resolveGeometryId(neighborMatIdx, hasBefore, hasAfter);
     const rotation = closedRotation(assembly.doorSide, assembly.facing, neighborGeoClass);
+    const overlay = panel.overlay ?? 0;
     block.setPermutation(
-      BlockPermutation.resolve(PANEL_BLOCK_ID, {
-        ...materialToBlockStates(neighborMatIdx, newGeoId),
-        "bigdoors:panel_rotation": rotation,
-      })
+      BlockPermutation.resolve(PANEL_BLOCK_ID, panelBlockStates(neighborMatIdx, newGeoId, rotation, overlay))
     );
   }
 
@@ -276,7 +304,7 @@ export class PanelPlacementHandler {
       const block = dimension.getBlock(scanPos);
       if (!block) break;
 
-      if (block.typeId === HINGE_BLOCK_ID) {
+      if (this._isHingeBlock(block.typeId)) {
         const other = this._manager.findByPosition(scanPos);
         if (!other || other.id === assembly.id) break;
         if (other.partnerAssemblyId) break;
