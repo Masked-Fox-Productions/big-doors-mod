@@ -87,19 +87,16 @@ export class HingePlacementHandler {
   }
 
   _mergeWithAdjacentHinge(pos, dimension, hingeType) {
-    // Vertical stacking (both modes)
+    const adjacent = new Map();
+
     for (const dy of [1, -1]) {
       const neighborPos = { x: pos.x, y: pos.y + dy, z: pos.z };
       const neighborBlock = dimension.getBlock(neighborPos);
       if (neighborBlock && this._isHingeBlock(neighborBlock.typeId)) {
         const existing = this._manager.findByPosition(neighborPos);
-        if (existing) {
-          this._manager.addHingeToAssembly(existing.id, pos, hingeType);
-          return existing;
-        }
+        if (existing) adjacent.set(existing.id, existing);
       }
     }
-    // Horizontal neighbors — merge along the rotation axis for vertical-mode hinges
     for (const dir of HORIZONTAL_DIRS) {
       const offset = DIR_OFFSETS[dir];
       const neighborPos = posAdd(pos, offset);
@@ -107,12 +104,27 @@ export class HingePlacementHandler {
       if (neighborBlock && this._isHingeBlock(neighborBlock.typeId)) {
         const existing = this._manager.findByPosition(neighborPos);
         if (existing && existing.mode === "vertical") {
-          this._manager.addHingeToAssembly(existing.id, pos, hingeType);
-          return existing;
+          adjacent.set(existing.id, existing);
         }
       }
     }
-    return null;
+
+    if (adjacent.size === 0) return null;
+
+    const sorted = [...adjacent.values()].sort((a, b) => {
+      const numA = parseInt(a.id.replace("door_", ""), 10);
+      const numB = parseInt(b.id.replace("door_", ""), 10);
+      return numA - numB;
+    });
+
+    const canonical = sorted[0];
+    this._manager.addHingeToAssembly(canonical.id, pos, hingeType);
+
+    if (sorted.length > 1) {
+      this._manager.mergeAssemblies(canonical.id, ...sorted.slice(1).map(a => a.id));
+    }
+
+    return canonical;
   }
 
   _detectDoubleDoor(newAssembly, hingePos, dimension) {

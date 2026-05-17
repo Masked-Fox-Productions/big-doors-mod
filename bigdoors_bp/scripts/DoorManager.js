@@ -145,6 +145,87 @@ export class DoorManager {
     this.save();
   }
 
+  mergeAssemblies(canonicalId, ...otherIds) {
+    const canonical = this._assemblies.get(canonicalId);
+    if (!canonical) return;
+
+    for (const otherId of otherIds) {
+      const absorbed = this._assemblies.get(otherId);
+      if (!absorbed) continue;
+
+      if (absorbed.partnerAssemblyId) {
+        if (canonical.partnerAssemblyId && canonical.partnerAssemblyId !== absorbed.partnerAssemblyId) {
+          this.unpairAssembly(otherId);
+        } else if (!canonical.partnerAssemblyId) {
+          const partner = this._assemblies.get(absorbed.partnerAssemblyId);
+          if (partner) partner.partnerAssemblyId = canonicalId;
+          canonical.partnerAssemblyId = absorbed.partnerAssemblyId;
+          absorbed.partnerAssemblyId = null;
+        }
+      }
+
+      for (const hinge of absorbed.hingePositions) {
+        canonical.addHingeRecord(hinge);
+        this._positionIndex.set(posKey(hinge), canonicalId);
+      }
+
+      for (const panel of absorbed.panelPositions) {
+        canonical.panelPositions.push(panel);
+        this._positionIndex.set(posKey(panel.currentPos), canonicalId);
+      }
+
+      for (const panel of absorbed.boundaryPanels) {
+        canonical.boundaryPanels.push(panel);
+        this._positionIndex.set(posKey(panel.currentPos), canonicalId);
+      }
+
+      this._assemblies.delete(otherId);
+    }
+
+    const axis = canonical.mode === "horizontal" ? "y" : (canonical.facing === "north" || canonical.facing === "south" ? "x" : "z");
+    let min = canonical.hingePositions[0];
+    for (const h of canonical.hingePositions) {
+      if (h[axis] < min[axis]) min = h;
+    }
+    canonical.primaryHingePos = { x: min.x, y: min.y, z: min.z };
+
+    this.save();
+  }
+
+  removeHingeFromAssembly(assemblyId, hingePos) {
+    const assembly = this._assemblies.get(assemblyId);
+    if (!assembly) return { status: "kept", assembly: null };
+
+    assembly.removeHinge(hingePos);
+    this._positionIndex.delete(posKey(hingePos));
+
+    if (assembly.hingePositions.length === 0) {
+      if (assembly.partnerAssemblyId) this.unpairAssembly(assemblyId);
+      return { status: "dissolve_required", assembly };
+    }
+
+    const axis = assembly.mode === "horizontal" ? "y" : (assembly.facing === "north" || assembly.facing === "south" ? "x" : "z");
+    const sorted = assembly.hingePositions.map(h => h[axis]).sort((a, b) => a - b);
+    let contiguous = true;
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i] - sorted[i - 1] !== 1) { contiguous = false; break; }
+    }
+
+    if (!contiguous) {
+      if (assembly.partnerAssemblyId) this.unpairAssembly(assemblyId);
+      return { status: "dissolve_required", assembly };
+    }
+
+    let min = assembly.hingePositions[0];
+    for (const h of assembly.hingePositions) {
+      if (h[axis] < min[axis]) min = h;
+    }
+    assembly.primaryHingePos = { x: min.x, y: min.y, z: min.z };
+
+    this.save();
+    return { status: "kept", assembly };
+  }
+
   resetAssembly(assemblyId) {
     const assembly = this._assemblies.get(assemblyId);
     if (!assembly) return;

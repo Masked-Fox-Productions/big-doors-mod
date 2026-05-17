@@ -236,4 +236,204 @@ describe("DoorManager", () => {
     const a3 = mgr2.createAssembly({ x: 10, y: 0, z: 0 }, "east", "vertical");
     assert.equal(a3.id, "door_3");
   });
+
+  describe("mergeAssemblies", () => {
+    it("merges two assemblies — hinges transfer and position index updated", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      mgr.addHingeToAssembly(a.id, { x: 0, y: 1, z: 0 });
+      const b = mgr.createAssembly({ x: 0, y: 3, z: 0 }, "north", "horizontal");
+
+      mgr.mergeAssemblies(a.id, b.id);
+
+      assert.equal(a.hingePositions.length, 3);
+      assert.equal(mgr.getAssembly(b.id), null);
+      assert.equal(mgr.findByPosition({ x: 0, y: 3, z: 0 }), a);
+      assert.equal(mgr.findByPosition({ x: 0, y: 0, z: 0 }), a);
+      assert.equal(mgr.findByPosition({ x: 0, y: 1, z: 0 }), a);
+    });
+
+    it("transfers panels from absorbed assembly", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      const b = mgr.createAssembly({ x: 0, y: 2, z: 0 }, "north", "horizontal");
+      mgr.addPanelToAssembly(b.id, { x: 1, y: 2, z: 0 }, 5);
+
+      mgr.mergeAssemblies(a.id, b.id);
+
+      assert.equal(a.panelPositions.length, 1);
+      assert.equal(a.panelPositions[0].materialIndex, 5);
+      assert.equal(mgr.findByPosition({ x: 1, y: 2, z: 0 }), a);
+    });
+
+    it("transfers partner from absorbed to canonical when canonical has none", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      const b = mgr.createAssembly({ x: 0, y: 2, z: 0 }, "north", "horizontal");
+      const c = mgr.createAssembly({ x: 5, y: 0, z: 0 }, "north", "horizontal");
+      mgr.pairAssemblies(b.id, c.id);
+
+      mgr.mergeAssemblies(a.id, b.id);
+
+      assert.equal(a.partnerAssemblyId, c.id);
+      assert.equal(c.partnerAssemblyId, a.id);
+    });
+
+    it("preserves materialIndex on absorbed hinges", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      const b = mgr.createAssembly({ x: 0, y: 2, z: 0 }, "north", "horizontal");
+      b.hingePositions[0].materialIndex = 7;
+
+      mgr.mergeAssemblies(a.id, b.id);
+
+      const transferred = a.hingePositions.find(h => h.y === 2);
+      assert.equal(transferred.materialIndex, 7);
+    });
+
+    it("canonical partner wins when both have different partners", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      const b = mgr.createAssembly({ x: 0, y: 2, z: 0 }, "north", "horizontal");
+      const partnerA = mgr.createAssembly({ x: 5, y: 0, z: 0 }, "north", "horizontal");
+      const partnerB = mgr.createAssembly({ x: 10, y: 0, z: 0 }, "north", "horizontal");
+      mgr.pairAssemblies(a.id, partnerA.id);
+      mgr.pairAssemblies(b.id, partnerB.id);
+
+      mgr.mergeAssemblies(a.id, b.id);
+
+      assert.equal(a.partnerAssemblyId, partnerA.id);
+      assert.equal(partnerA.partnerAssemblyId, a.id);
+      assert.equal(partnerB.partnerAssemblyId, null);
+    });
+
+    it("merges three assemblies at once", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      const b = mgr.createAssembly({ x: 0, y: 2, z: 0 }, "north", "horizontal");
+      const c = mgr.createAssembly({ x: 0, y: 4, z: 0 }, "north", "horizontal");
+
+      mgr.mergeAssemblies(a.id, b.id, c.id);
+
+      assert.equal(a.hingePositions.length, 3);
+      assert.equal(mgr.getAssembly(b.id), null);
+      assert.equal(mgr.getAssembly(c.id), null);
+      assert.equal(mgr.findByPosition({ x: 0, y: 2, z: 0 }), a);
+      assert.equal(mgr.findByPosition({ x: 0, y: 4, z: 0 }), a);
+    });
+
+    it("recalculates primaryHingePos as min after merge", () => {
+      const a = mgr.createAssembly({ x: 0, y: 5, z: 0 }, "north", "horizontal");
+      const b = mgr.createAssembly({ x: 0, y: 2, z: 0 }, "north", "horizontal");
+
+      mgr.mergeAssemblies(a.id, b.id);
+
+      assert.deepEqual(a.primaryHingePos, { x: 0, y: 2, z: 0 });
+    });
+
+    it("findByPosition returns canonical for all former absorbed positions", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      const b = mgr.createAssembly({ x: 0, y: 2, z: 0 }, "north", "horizontal");
+      mgr.addPanelToAssembly(b.id, { x: 1, y: 2, z: 0 }, 3);
+      mgr.addHingeToAssembly(b.id, { x: 0, y: 3, z: 0 });
+
+      mgr.mergeAssemblies(a.id, b.id);
+
+      assert.equal(mgr.findByPosition({ x: 0, y: 2, z: 0 }), a);
+      assert.equal(mgr.findByPosition({ x: 0, y: 3, z: 0 }), a);
+      assert.equal(mgr.findByPosition({ x: 1, y: 2, z: 0 }), a);
+    });
+  });
+
+  describe("removeHingeFromAssembly", () => {
+    it("removes hinge from contiguous column — assembly kept", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      mgr.addHingeToAssembly(a.id, { x: 0, y: 1, z: 0 });
+      mgr.addHingeToAssembly(a.id, { x: 0, y: 2, z: 0 });
+      mgr.addPanelToAssembly(a.id, { x: 1, y: 0, z: 0 }, 5);
+
+      const result = mgr.removeHingeFromAssembly(a.id, { x: 0, y: 2, z: 0 });
+
+      assert.equal(result.status, "kept");
+      assert.equal(a.hingePositions.length, 2);
+      assert.equal(a.panelPositions.length, 1);
+      assert.equal(mgr.findByPosition({ x: 0, y: 2, z: 0 }), null);
+    });
+
+    it("updates primaryHingePos to lowest remaining", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      mgr.addHingeToAssembly(a.id, { x: 0, y: 1, z: 0 });
+      mgr.addHingeToAssembly(a.id, { x: 0, y: 2, z: 0 });
+
+      mgr.removeHingeFromAssembly(a.id, { x: 0, y: 0, z: 0 });
+
+      assert.deepEqual(a.primaryHingePos, { x: 0, y: 1, z: 0 });
+    });
+
+    it("returns dissolve_required with populated assembly when last hinge removed", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      mgr.addPanelToAssembly(a.id, { x: 1, y: 0, z: 0 }, 5);
+
+      const result = mgr.removeHingeFromAssembly(a.id, { x: 0, y: 0, z: 0 });
+
+      assert.equal(result.status, "dissolve_required");
+      assert.equal(result.assembly.panelPositions.length, 1);
+    });
+
+    it("unpairs partner before returning dissolve_required on last hinge", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      const b = mgr.createAssembly({ x: 5, y: 0, z: 0 }, "north", "horizontal");
+      mgr.pairAssemblies(a.id, b.id);
+
+      const result = mgr.removeHingeFromAssembly(a.id, { x: 0, y: 0, z: 0 });
+
+      assert.equal(result.status, "dissolve_required");
+      assert.equal(b.partnerAssemblyId, null);
+    });
+
+    it("dissolve_required when middle hinge removed leaves non-contiguous remainder", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      mgr.addHingeToAssembly(a.id, { x: 0, y: 1, z: 0 });
+      mgr.addHingeToAssembly(a.id, { x: 0, y: 2, z: 0 });
+
+      const result = mgr.removeHingeFromAssembly(a.id, { x: 0, y: 1, z: 0 });
+
+      assert.equal(result.status, "dissolve_required");
+    });
+
+    it("dissolve_required for gap case [y=0,1,3,4] leaving [y=0,1,4]", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      mgr.addHingeToAssembly(a.id, { x: 0, y: 1, z: 0 });
+      mgr.addHingeToAssembly(a.id, { x: 0, y: 3, z: 0 });
+      mgr.addHingeToAssembly(a.id, { x: 0, y: 4, z: 0 });
+
+      const result = mgr.removeHingeFromAssembly(a.id, { x: 0, y: 3, z: 0 });
+
+      assert.equal(result.status, "dissolve_required");
+    });
+
+    it("recalculates primaryHingePos when it was removed", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      mgr.addHingeToAssembly(a.id, { x: 0, y: 1, z: 0 });
+
+      mgr.removeHingeFromAssembly(a.id, { x: 0, y: 0, z: 0 });
+
+      assert.deepEqual(a.primaryHingePos, { x: 0, y: 1, z: 0 });
+    });
+
+    it("preserves partner when assembly survives", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      mgr.addHingeToAssembly(a.id, { x: 0, y: 1, z: 0 });
+      const b = mgr.createAssembly({ x: 5, y: 0, z: 0 }, "north", "horizontal");
+      mgr.pairAssemblies(a.id, b.id);
+
+      const result = mgr.removeHingeFromAssembly(a.id, { x: 0, y: 1, z: 0 });
+
+      assert.equal(result.status, "kept");
+      assert.equal(a.partnerAssemblyId, b.id);
+      assert.equal(b.partnerAssemblyId, a.id);
+    });
+
+    it("single-hinge assembly returns dissolve_required", () => {
+      const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+
+      const result = mgr.removeHingeFromAssembly(a.id, { x: 0, y: 0, z: 0 });
+
+      assert.equal(result.status, "dissolve_required");
+    });
+  });
 });

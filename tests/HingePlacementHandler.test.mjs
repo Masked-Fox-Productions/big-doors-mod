@@ -258,4 +258,106 @@ describe("HingePlacementHandler", () => {
     assert.equal(assembly.panelPositions.length, 0);
     assert.equal(assembly.doorSide, "");
   });
+
+  describe("bridge merge", () => {
+    const hingeStates = { "bigdoors:facing": "north", "bigdoors:mode": "horizontal", "bigdoors:door_side": "none" };
+    const player = makeMockPlayer({ x: 0, y: 0, z: -1 });
+
+    it("out-of-order placement [y=0, y=1, y=3, y=2] produces one assembly", () => {
+      const dim = makeMockDimension();
+
+      const b0 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 }, hingeStates);
+      handler.onPlace(b0, player, dim);
+      const b1 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 1, z: 0 }, hingeStates);
+      handler.onPlace(b1, player, dim);
+      const b3 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 3, z: 0 }, hingeStates);
+      handler.onPlace(b3, player, dim);
+      const b2 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 2, z: 0 }, hingeStates);
+      handler.onPlace(b2, player, dim);
+
+      const a0 = manager.findByPosition({ x: 0, y: 0, z: 0 });
+      const a1 = manager.findByPosition({ x: 0, y: 1, z: 0 });
+      const a2 = manager.findByPosition({ x: 0, y: 2, z: 0 });
+      const a3 = manager.findByPosition({ x: 0, y: 3, z: 0 });
+
+      assert.ok(a0);
+      assert.equal(a0, a1);
+      assert.equal(a0, a2);
+      assert.equal(a0, a3);
+      assert.equal(a0.hingePositions.length, 4);
+    });
+
+    it("bridge selects lowest door_N as canonical", () => {
+      const dim = makeMockDimension();
+
+      const b0 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 }, hingeStates);
+      handler.onPlace(b0, player, dim);
+      const firstAssembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
+
+      const b2 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 2, z: 0 }, hingeStates);
+      handler.onPlace(b2, player, dim);
+
+      const b1 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 1, z: 0 }, hingeStates);
+      handler.onPlace(b1, player, dim);
+
+      const result = manager.findByPosition({ x: 0, y: 2, z: 0 });
+      assert.equal(result.id, firstAssembly.id);
+    });
+
+    it("bridge hinge with panels on both sides transfers all panels", () => {
+      const dim = makeMockDimension();
+
+      const b0 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 }, hingeStates);
+      handler.onPlace(b0, player, dim);
+      const asmLow = manager.findByPosition({ x: 0, y: 0, z: 0 });
+      manager.addPanelToAssembly(asmLow.id, { x: 1, y: 0, z: 0 }, 3);
+
+      const b2 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 2, z: 0 }, hingeStates);
+      handler.onPlace(b2, player, dim);
+      const asmHigh = manager.findByPosition({ x: 0, y: 2, z: 0 });
+      manager.addPanelToAssembly(asmHigh.id, { x: 1, y: 2, z: 0 }, 5);
+
+      const b1 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 1, z: 0 }, hingeStates);
+      handler.onPlace(b1, player, dim);
+
+      const merged = manager.findByPosition({ x: 0, y: 0, z: 0 });
+      assert.equal(merged.panelPositions.length, 2);
+      assert.equal(manager.findByPosition({ x: 1, y: 0, z: 0 }), merged);
+      assert.equal(manager.findByPosition({ x: 1, y: 2, z: 0 }), merged);
+    });
+
+    it("bridge in vertical mode merges horizontal neighbors", () => {
+      const dim = makeMockDimension();
+      const vertStates = { "bigdoors:facing": "north", "bigdoors:mode": "vertical", "bigdoors:door_side": "none" };
+
+      const b0 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 }, vertStates);
+      handler.onPlace(b0, player, dim);
+      const b2 = placeBlock(dim, HINGE_BLOCK_ID, { x: 2, y: 0, z: 0 }, vertStates);
+      handler.onPlace(b2, player, dim);
+      const b1 = placeBlock(dim, HINGE_BLOCK_ID, { x: 1, y: 0, z: 0 }, vertStates);
+      handler.onPlace(b1, player, dim);
+
+      const a0 = manager.findByPosition({ x: 0, y: 0, z: 0 });
+      const a1 = manager.findByPosition({ x: 1, y: 0, z: 0 });
+      const a2 = manager.findByPosition({ x: 2, y: 0, z: 0 });
+      assert.equal(a0, a1);
+      assert.equal(a0, a2);
+    });
+
+    it("findByPosition returns same assembly for all positions after bridge", () => {
+      const dim = makeMockDimension();
+
+      const b0 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 }, hingeStates);
+      handler.onPlace(b0, player, dim);
+      const b2 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 2, z: 0 }, hingeStates);
+      handler.onPlace(b2, player, dim);
+      const b1 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 1, z: 0 }, hingeStates);
+      handler.onPlace(b1, player, dim);
+
+      const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
+      for (const y of [0, 1, 2]) {
+        assert.equal(manager.findByPosition({ x: 0, y, z: 0 }), assembly);
+      }
+    });
+  });
 });

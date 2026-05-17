@@ -59,7 +59,12 @@ export class BreakHandler {
     );
     const dropId = hingeEntry?.type === "hidden" ? HIDDEN_HINGE_BLOCK_ID : HINGE_BLOCK_ID;
 
-    this._dissolveAssembly(assembly, dimension);
+    const result = this._manager.removeHingeFromAssembly(assembly.id, hingePos);
+
+    if (result.status === "dissolve_required") {
+      this._dissolveAssembly(result.assembly, dimension);
+      this._manager.dissolveAssembly(assembly.id);
+    }
 
     if (!creative) {
       dimension.spawnItem(new ItemStack(dropId, 1), hingePos);

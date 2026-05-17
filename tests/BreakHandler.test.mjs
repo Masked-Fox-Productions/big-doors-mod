@@ -249,5 +249,72 @@ describe("BreakHandler", () => {
       const block = dim.getBlock({ x: 1, y: 0, z: 0 });
       assert.equal(block.typeId, "minecraft:bricks");
     });
+
+    it("breaking one hinge from 3-hinge contiguous column keeps assembly", () => {
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.addHingeToAssembly(assembly.id, { x: 0, y: 1, z: 0 });
+      manager.addHingeToAssembly(assembly.id, { x: 0, y: 2, z: 0 });
+      manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 0);
+
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 });
+
+      const event = makeHingeBreakEvent({ x: 0, y: 2, z: 0 }, dim);
+      handler.handleHingeBreak(event);
+
+      const surviving = manager.getAssembly(assembly.id);
+      assert.ok(surviving);
+      assert.equal(surviving.hingePositions.length, 2);
+      assert.equal(surviving.panelPositions.length, 1);
+
+      const panelBlock = dim.getBlock({ x: 1, y: 0, z: 0 });
+      assert.equal(panelBlock.typeId, PANEL_BLOCK_ID);
+
+      assert.equal(spawnedItems.length, 1);
+      assert.equal(spawnedItems[0].typeId, HINGE_BLOCK_ID);
+    });
+
+    it("breaking hinge from 2-hinge assembly leaving 1 keeps assembly", () => {
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.addHingeToAssembly(assembly.id, { x: 0, y: 1, z: 0 });
+      manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 0);
+
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 });
+
+      const event = makeHingeBreakEvent({ x: 0, y: 1, z: 0 }, dim);
+      handler.handleHingeBreak(event);
+
+      assert.ok(manager.getAssembly(assembly.id));
+      assert.equal(assembly.hingePositions.length, 1);
+    });
+
+    it("breaking middle hinge leaving non-contiguous remainder dissolves", () => {
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.addHingeToAssembly(assembly.id, { x: 0, y: 1, z: 0 });
+      manager.addHingeToAssembly(assembly.id, { x: 0, y: 2, z: 0 });
+      manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 0);
+
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 });
+
+      const event = makeHingeBreakEvent({ x: 0, y: 1, z: 0 }, dim);
+      handler.handleHingeBreak(event);
+
+      assert.equal(manager.getAssembly(assembly.id), null);
+      const panelBlock = dim.getBlock({ x: 1, y: 0, z: 0 });
+      assert.equal(panelBlock.typeId, "minecraft:oak_planks");
+    });
+
+    it("breaking hinge on double-door assembly that survives preserves partner", () => {
+      const a = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.addHingeToAssembly(a.id, { x: 0, y: 1, z: 0 });
+      const b = manager.createAssembly({ x: 5, y: 0, z: 0 }, "north", "horizontal");
+      manager.pairAssemblies(a.id, b.id);
+
+      const event = makeHingeBreakEvent({ x: 0, y: 1, z: 0 }, dim);
+      handler.handleHingeBreak(event);
+
+      assert.ok(manager.getAssembly(a.id));
+      assert.equal(a.partnerAssemblyId, b.id);
+      assert.equal(b.partnerAssemblyId, a.id);
+    });
   });
 });

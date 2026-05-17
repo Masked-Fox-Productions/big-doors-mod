@@ -55,6 +55,18 @@ export class DoorAssembly {
     this.hingePositions.push({ ...pos, type, materialIndex: UNMATCHED_MATERIAL_INDEX });
   }
 
+  addHingeRecord(record) {
+    this.hingePositions.push({ x: record.x, y: record.y, z: record.z, type: record.type, materialIndex: record.materialIndex });
+  }
+
+  removeHinge(pos) {
+    const idx = this.hingePositions.findIndex(
+      (h) => h.x === pos.x && h.y === pos.y && h.z === pos.z
+    );
+    if (idx !== -1) this.hingePositions.splice(idx, 1);
+    return idx !== -1;
+  }
+
   /**
    * Add a panel to this assembly.
    */
