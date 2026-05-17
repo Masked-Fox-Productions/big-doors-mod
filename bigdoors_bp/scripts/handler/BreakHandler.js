@@ -10,6 +10,7 @@ export class BreakHandler {
   handlePanelBreak(event) {
     const pos = event.block.location;
     const dimension = event.block.dimension;
+    const creative = event.player?.getGameMode() === "Creative";
     const group = event.brokenBlockPermutation.getState("bigdoors:material_group");
     const id = event.brokenBlockPermutation.getState("bigdoors:material_id");
     const materialIndex = blockStatesToMaterial(group, id);
@@ -19,41 +20,29 @@ export class BreakHandler {
 
     this._manager.removePanelFromAssembly(assembly.id, pos);
 
-    const vanillaTypeId = typeIdForIndex(materialIndex);
-    if (vanillaTypeId) {
-      dimension.spawnItem(new ItemStack(vanillaTypeId, 1), pos);
+    if (!creative) {
+      const vanillaTypeId = typeIdForIndex(materialIndex);
+      if (vanillaTypeId) {
+        dimension.spawnItem(new ItemStack(vanillaTypeId, 1), pos);
+      }
     }
   }
 
   handleHingeBreak(event) {
     const hingePos = event.block.location;
     const dimension = event.block.dimension;
+    const creative = event.player?.getGameMode() === "Creative";
 
     const assembly = this._manager.findByPosition(hingePos);
     if (!assembly) return;
 
     this._dissolveAssembly(assembly, dimension);
 
-    dimension.spawnItem(new ItemStack(HINGE_BLOCK_ID, 1), hingePos);
+    if (!creative) {
+      dimension.spawnItem(new ItemStack(HINGE_BLOCK_ID, 1), hingePos);
+    }
   }
 
-  handleCreativePanelBreak(pos, dimension, brokenBlockPermutation) {
-    const group = brokenBlockPermutation.getState("bigdoors:material_group");
-    const id = brokenBlockPermutation.getState("bigdoors:material_id");
-    const materialIndex = blockStatesToMaterial(group, id);
-
-    const assembly = this._manager.findByPosition(pos);
-    if (!assembly) return;
-
-    this._manager.removePanelFromAssembly(assembly.id, pos);
-  }
-
-  handleCreativeHingeBreak(pos, dimension) {
-    const assembly = this._manager.findByPosition(pos);
-    if (!assembly) return;
-
-    this._dissolveAssembly(assembly, dimension);
-  }
 
   _dissolveAssembly(assembly, dimension) {
     if (assembly.isOpen) {

@@ -6,6 +6,10 @@ import { BreakHandler } from "../bigdoors_bp/scripts/handler/BreakHandler.js";
 import { HINGE_BLOCK_ID, PANEL_BLOCK_ID } from "../bigdoors_bp/scripts/util/Constants.js";
 import { makeMockDimension, placeBlock } from "./helpers/mock-dimension.mjs";
 
+function makeSurvivalPlayer() {
+  return { name: "TestPlayer", getGameMode() { return "Survival"; } };
+}
+
 function makePanelBreakEvent(location, materialIndex, dimension) {
   const group = Math.floor(materialIndex / 16);
   const id = materialIndex % 16;
@@ -20,7 +24,7 @@ function makePanelBreakEvent(location, materialIndex, dimension) {
       },
       getAllStates() { return { "bigdoors:material_group": group, "bigdoors:material_id": id }; },
     },
-    player: { name: "TestPlayer" },
+    player: makeSurvivalPlayer(),
   };
 }
 
@@ -32,7 +36,7 @@ function makeHingeBreakEvent(location, dimension) {
       getState() { return undefined; },
       getAllStates() { return {}; },
     },
-    player: { name: "TestPlayer" },
+    player: makeSurvivalPlayer(),
   };
 }
 

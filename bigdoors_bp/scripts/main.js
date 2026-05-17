@@ -1,5 +1,5 @@
 import { world, system, BlockPermutation } from "@minecraft/server";
-import { HINGE_BLOCK_ID, PANEL_BLOCK_ID } from "./util/Constants.js";
+import { HINGE_BLOCK_ID } from "./util/Constants.js";
 import { DoorManager } from "./DoorManager.js";
 import { HingePlacementHandler } from "./handler/HingePlacementHandler.js";
 import { PanelPlacementHandler } from "./handler/PanelPlacementHandler.js";
@@ -66,31 +66,6 @@ system.run(() => {
   manager.load();
 });
 
-// Creative mode: cancel break to suppress engine drops, then destroy manually next tick
-world.beforeEvents.playerBreakBlock.subscribe((event) => {
-  if (event.player.getGameMode() !== "creative") return;
-
-  const typeId = event.block.typeId;
-  if (typeId !== HINGE_BLOCK_ID && typeId !== PANEL_BLOCK_ID) return;
-
-  event.cancel = true;
-
-  const pos = { ...event.block.location };
-  const dimension = event.dimension;
-  const permutation = event.block.permutation;
-  const isHinge = typeId === HINGE_BLOCK_ID;
-
-  system.run(() => {
-    const b = dimension.getBlock(pos);
-    if (b) b.setType("minecraft:air");
-
-    if (isHinge) {
-      breakHandler.handleCreativeHingeBreak(pos, dimension);
-    } else {
-      breakHandler.handleCreativePanelBreak(pos, dimension, permutation);
-    }
-  });
-});
 
 const hingePlacement = new HingePlacementHandler(manager);
 hingePlacement.register();
