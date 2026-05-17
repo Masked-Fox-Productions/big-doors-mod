@@ -59,6 +59,24 @@
         "components": { "minecraft:geometry": "geometry.bigdoors.pane" }
       },
       {
+        "condition": "q.block_state('bigdoors:geometry_id') == 8",
+        "components": { "minecraft:geometry": "geometry.bigdoors.slab_top" }
+      },
+      {
+        "condition": "q.block_state('bigdoors:geometry_id') == 6 && q.block_state('bigdoors:panel_rotation') < 4",
+        "components": {
+          "minecraft:collision_box": { "origin": [-8, 0, -8], "size": [16, 8, 16] },
+          "minecraft:selection_box": { "origin": [-8, 0, -8], "size": [16, 8, 16] }
+        }
+      },
+      {
+        "condition": "q.block_state('bigdoors:geometry_id') == 8 && q.block_state('bigdoors:panel_rotation') < 4",
+        "components": {
+          "minecraft:collision_box": { "origin": [-8, 8, -8], "size": [16, 8, 16] },
+          "minecraft:selection_box": { "origin": [-8, 8, -8], "size": [16, 8, 16] }
+        }
+      },
+      {
         "condition": "q.block_state('bigdoors:panel_rotation') == 1",
         "components": { "minecraft:transformation": { "rotation": [0, 90, 0] } }
       },
@@ -725,6 +743,150 @@
       {
         "condition": "q.block_state('bigdoors:material_group') == 9 && q.block_state('bigdoors:material_id') == 15",
         "components": { "minecraft:material_instances": { "*": { "texture": "red_stained_glass", "render_method": "alpha_test" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 0",
+        "components": { "minecraft:material_instances": { "*": { "texture": "smooth_stone", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 1",
+        "components": { "minecraft:material_instances": { "*": { "texture": "nether_bricks", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 2",
+        "components": { "minecraft:material_instances": { "*": { "texture": "quartz_block_top", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 3",
+        "components": { "minecraft:material_instances": { "*": { "texture": "red_sandstone", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 4",
+        "components": { "minecraft:material_instances": { "*": { "texture": "prismarine", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 5",
+        "components": { "minecraft:material_instances": { "*": { "texture": "dark_prismarine", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 6",
+        "components": { "minecraft:material_instances": { "*": { "texture": "prismarine_bricks", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 7",
+        "components": { "minecraft:material_instances": { "*": { "texture": "mossy_cobblestone", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 8",
+        "components": { "minecraft:material_instances": { "*": { "texture": "sandstone_top", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 9",
+        "components": { "minecraft:material_instances": { "*": { "texture": "red_nether_brick", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 10",
+        "components": { "minecraft:material_instances": { "*": { "texture": "end_bricks", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 11",
+        "components": { "minecraft:material_instances": { "*": { "texture": "andesite", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 12",
+        "components": { "minecraft:material_instances": { "*": { "texture": "polished_andesite", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 13",
+        "components": { "minecraft:material_instances": { "*": { "texture": "diorite", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 14",
+        "components": { "minecraft:material_instances": { "*": { "texture": "polished_diorite", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 10 && q.block_state('bigdoors:material_id') == 15",
+        "components": { "minecraft:material_instances": { "*": { "texture": "granite", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 0",
+        "components": { "minecraft:material_instances": { "*": { "texture": "polished_granite", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 1",
+        "components": { "minecraft:material_instances": { "*": { "texture": "mossy_stone_bricks", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 2",
+        "components": { "minecraft:material_instances": { "*": { "texture": "quartz_block_bottom", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 3",
+        "components": { "minecraft:material_instances": { "*": { "texture": "cut_sandstone", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 4",
+        "components": { "minecraft:material_instances": { "*": { "texture": "cut_red_sandstone", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 5",
+        "components": { "minecraft:material_instances": { "*": { "texture": "red_sandstone_top", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 6",
+        "components": { "minecraft:material_instances": { "*": { "texture": "cobbled_deepslate", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 7",
+        "components": { "minecraft:material_instances": { "*": { "texture": "polished_deepslate", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 8",
+        "components": { "minecraft:material_instances": { "*": { "texture": "deepslate_tiles", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 9",
+        "components": { "minecraft:material_instances": { "*": { "texture": "deepslate_bricks", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 10",
+        "components": { "minecraft:material_instances": { "*": { "texture": "mud_bricks", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 11",
+        "components": { "minecraft:material_instances": { "*": { "texture": "blackstone", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 12",
+        "components": { "minecraft:material_instances": { "*": { "texture": "polished_blackstone", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 13",
+        "components": { "minecraft:material_instances": { "*": { "texture": "polished_blackstone_bricks", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 14",
+        "components": { "minecraft:material_instances": { "*": { "texture": "tuff", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 11 && q.block_state('bigdoors:material_id') == 15",
+        "components": { "minecraft:material_instances": { "*": { "texture": "tuff_bricks", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 12 && q.block_state('bigdoors:material_id') == 0",
+        "components": { "minecraft:material_instances": { "*": { "texture": "polished_tuff", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 12 && q.block_state('bigdoors:material_id') == 1",
+        "components": { "minecraft:material_instances": { "*": { "texture": "bamboo_mosaic", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 12 && q.block_state('bigdoors:material_id') == 2",
+        "components": { "minecraft:material_instances": { "*": { "texture": "pale_oak_planks", "render_method": "opaque" } } }
+      },
+      {
+        "condition": "q.block_state('bigdoors:material_group') == 12 && q.block_state('bigdoors:material_id') == 3",
+        "components": { "minecraft:material_instances": { "*": { "texture": "resin_bricks", "render_method": "opaque" } } }
       }
     ]
   }

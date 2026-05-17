@@ -46,12 +46,14 @@ export class DoorAssembly {
   /**
    * Add a panel to this assembly.
    */
-  addPanel(pos, materialIndex) {
-    this.panelPositions.push({
+  addPanel(pos, materialIndex, geometryId) {
+    const panel = {
       materialIndex,
       closedPos: { ...pos },
       currentPos: { ...pos },
-    });
+    };
+    if (geometryId !== undefined) panel.geometryId = geometryId;
+    this.panelPositions.push(panel);
   }
 
   /**
@@ -112,11 +114,11 @@ export class DoorAssembly {
       id: this.id,
       primaryHingePos: this.primaryHingePos,
       hingePositions: this.hingePositions,
-      panelPositions: this.panelPositions.map((p) => ({
-        materialIndex: p.materialIndex,
-        closedPos: p.closedPos,
-        currentPos: p.currentPos,
-      })),
+      panelPositions: this.panelPositions.map((p) => {
+        const obj = { materialIndex: p.materialIndex, closedPos: p.closedPos, currentPos: p.currentPos };
+        if (p.geometryId !== undefined) obj.geometryId = p.geometryId;
+        return obj;
+      }),
       boundaryPanels: this.boundaryPanels.map((p) => ({
         materialIndex: p.materialIndex,
         closedPos: p.closedPos,
@@ -142,11 +144,15 @@ export class DoorAssembly {
       json.mode
     );
     assembly.hingePositions = json.hingePositions.map((p) => ({ ...p }));
-    assembly.panelPositions = (json.panelPositions || []).map((p) => ({
-      materialIndex: p.materialIndex,
-      closedPos: { ...p.closedPos },
-      currentPos: { ...p.currentPos },
-    }));
+    assembly.panelPositions = (json.panelPositions || []).map((p) => {
+      const panel = {
+        materialIndex: p.materialIndex,
+        closedPos: { ...p.closedPos },
+        currentPos: { ...p.currentPos },
+      };
+      if (p.geometryId !== undefined) panel.geometryId = p.geometryId;
+      return panel;
+    });
     assembly.boundaryPanels = (json.boundaryPanels || []).map((p) => ({
       materialIndex: p.materialIndex,
       closedPos: { ...p.closedPos },

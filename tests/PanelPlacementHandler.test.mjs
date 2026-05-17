@@ -7,7 +7,7 @@ import {
   makeMockDimension,
   placeBlock,
 } from "./helpers/mock-dimension.mjs";
-import { HINGE_BLOCK_ID, PANEL_BLOCK_ID } from "../bigdoors_bp/scripts/util/Constants.js";
+import { HINGE_BLOCK_ID, PANEL_BLOCK_ID, GEOMETRY_CLASS_SLAB, GEOMETRY_ID_SLAB_TOP } from "../bigdoors_bp/scripts/util/Constants.js";
 
 describe("PanelPlacementHandler", () => {
   let manager;
@@ -467,6 +467,52 @@ describe("PanelPlacementHandler", () => {
       assert.equal(result, true);
       assert.equal(block.typeId, PANEL_BLOCK_ID);
       assert.equal(assembly.panelPositions.length, 2);
+    });
+  });
+
+  describe("slab placement", () => {
+    it("bottom slab stores default geometry_id (GEOMETRY_CLASS_SLAB)", () => {
+      const dim = makeMockDimension();
+      setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
+
+      const block = placeBlock(dim, "minecraft:oak_slab", { x: 1, y: 0, z: 0 }, {
+        "minecraft:vertical_half": "bottom",
+      });
+
+      const result = handler.onPlace(block, dim);
+      assert.equal(result, true);
+      assert.equal(block.typeId, PANEL_BLOCK_ID);
+
+      const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
+      assert.equal(assembly.panelPositions[0].geometryId, GEOMETRY_CLASS_SLAB);
+    });
+
+    it("top slab stores GEOMETRY_ID_SLAB_TOP", () => {
+      const dim = makeMockDimension();
+      setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
+
+      const block = placeBlock(dim, "minecraft:oak_slab", { x: 1, y: 0, z: 0 }, {
+        "minecraft:vertical_half": "top",
+      });
+
+      const result = handler.onPlace(block, dim);
+      assert.equal(result, true);
+      assert.equal(block.typeId, PANEL_BLOCK_ID);
+
+      const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
+      assert.equal(assembly.panelPositions[0].geometryId, GEOMETRY_ID_SLAB_TOP);
+    });
+
+    it("non-slab material does not store geometryId", () => {
+      const dim = makeMockDimension();
+      setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 0 });
+
+      handler.onPlace(block, dim);
+
+      const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
+      assert.equal(assembly.panelPositions[0].geometryId, undefined);
     });
   });
 });

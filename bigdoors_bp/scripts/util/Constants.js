@@ -328,6 +328,60 @@ export const MATERIAL_INDEX = [
   /* 157 */ "minecraft:brown_stained_glass_pane",
   /* 158 */ "minecraft:green_stained_glass_pane",
   /* 159 */ "minecraft:red_stained_glass_pane",
+
+  // Group 10: Slabs batch 2 (indices 160–175)
+  /* 160 */ "minecraft:smooth_stone_slab",
+  /* 161 */ "minecraft:nether_brick_slab",
+  /* 162 */ "minecraft:quartz_slab",
+  /* 163 */ "minecraft:red_sandstone_slab",
+  /* 164 */ "minecraft:prismarine_slab",
+  /* 165 */ "minecraft:dark_prismarine_slab",
+  /* 166 */ "minecraft:prismarine_brick_slab",
+  /* 167 */ "minecraft:mossy_cobblestone_slab",
+  /* 168 */ "minecraft:smooth_sandstone_slab",
+  /* 169 */ "minecraft:red_nether_brick_slab",
+  /* 170 */ "minecraft:end_stone_brick_slab",
+  /* 171 */ "minecraft:andesite_slab",
+  /* 172 */ "minecraft:polished_andesite_slab",
+  /* 173 */ "minecraft:diorite_slab",
+  /* 174 */ "minecraft:polished_diorite_slab",
+  /* 175 */ "minecraft:granite_slab",
+
+  // Group 11: Slabs batch 3 (indices 176–191)
+  /* 176 */ "minecraft:polished_granite_slab",
+  /* 177 */ "minecraft:mossy_stone_brick_slab",
+  /* 178 */ "minecraft:smooth_quartz_slab",
+  /* 179 */ "minecraft:cut_sandstone_slab",
+  /* 180 */ "minecraft:cut_red_sandstone_slab",
+  /* 181 */ "minecraft:smooth_red_sandstone_slab",
+  /* 182 */ "minecraft:cobbled_deepslate_slab",
+  /* 183 */ "minecraft:polished_deepslate_slab",
+  /* 184 */ "minecraft:deepslate_tile_slab",
+  /* 185 */ "minecraft:deepslate_brick_slab",
+  /* 186 */ "minecraft:mud_brick_slab",
+  /* 187 */ "minecraft:blackstone_slab",
+  /* 188 */ "minecraft:polished_blackstone_slab",
+  /* 189 */ "minecraft:polished_blackstone_brick_slab",
+  /* 190 */ "minecraft:tuff_slab",
+  /* 191 */ "minecraft:tuff_brick_slab",
+
+  // Group 12: Slabs batch 4 (indices 192–207)
+  /* 192 */ "minecraft:polished_tuff_slab",
+  /* 193 */ "minecraft:bamboo_mosaic_slab",
+  /* 194 */ "minecraft:pale_oak_slab",
+  /* 195 */ "minecraft:resin_brick_slab",
+  /* 196 */ "",
+  /* 197 */ "",
+  /* 198 */ "",
+  /* 199 */ "",
+  /* 200 */ "",
+  /* 201 */ "",
+  /* 202 */ "",
+  /* 203 */ "",
+  /* 204 */ "",
+  /* 205 */ "",
+  /* 206 */ "",
+  /* 207 */ "",
 ];
 
 // --------------------------------------------------------------------------
@@ -344,12 +398,18 @@ export const GEOMETRY_INDEX = [
   /* 5 */ "geometry.bigdoors.bars",
   /* 6 */ "geometry.bigdoors.slab",
   /* 7 */ "geometry.bigdoors.pane",
+  /* 8 */ "geometry.bigdoors.slab_top",
 ];
 
 export const GEOMETRY_CLASS_FENCE = 1;
 export const GEOMETRY_CLASS_BARS = 5;
 export const GEOMETRY_CLASS_SLAB = 6;
 export const GEOMETRY_CLASS_PANE = 7;
+export const GEOMETRY_ID_SLAB_TOP = 8;
+
+export function isSlabGeometryId(geoId) {
+  return geoId === GEOMETRY_CLASS_SLAB || geoId === GEOMETRY_ID_SLAB_TOP;
+}
 
 // --------------------------------------------------------------------------
 // Material-to-geometry-class mapping — which geometry family a material uses.
@@ -387,5 +447,22 @@ export const MATERIAL_GEOMETRY_CLASS = new Map([
   [150, GEOMETRY_CLASS_PANE], [151, GEOMETRY_CLASS_PANE], [152, GEOMETRY_CLASS_PANE],
   [153, GEOMETRY_CLASS_PANE], [154, GEOMETRY_CLASS_PANE], [155, GEOMETRY_CLASS_PANE],
   [156, GEOMETRY_CLASS_PANE], [157, GEOMETRY_CLASS_PANE], [158, GEOMETRY_CLASS_PANE],
-  [159, GEOMETRY_CLASS_PANE]
+  [159, GEOMETRY_CLASS_PANE],
+  // Slabs batch 2
+  [160, GEOMETRY_CLASS_SLAB], [161, GEOMETRY_CLASS_SLAB], [162, GEOMETRY_CLASS_SLAB],
+  [163, GEOMETRY_CLASS_SLAB], [164, GEOMETRY_CLASS_SLAB], [165, GEOMETRY_CLASS_SLAB],
+  [166, GEOMETRY_CLASS_SLAB], [167, GEOMETRY_CLASS_SLAB], [168, GEOMETRY_CLASS_SLAB],
+  [169, GEOMETRY_CLASS_SLAB], [170, GEOMETRY_CLASS_SLAB], [171, GEOMETRY_CLASS_SLAB],
+  [172, GEOMETRY_CLASS_SLAB], [173, GEOMETRY_CLASS_SLAB], [174, GEOMETRY_CLASS_SLAB],
+  [175, GEOMETRY_CLASS_SLAB],
+  // Slabs batch 3
+  [176, GEOMETRY_CLASS_SLAB], [177, GEOMETRY_CLASS_SLAB], [178, GEOMETRY_CLASS_SLAB],
+  [179, GEOMETRY_CLASS_SLAB], [180, GEOMETRY_CLASS_SLAB], [181, GEOMETRY_CLASS_SLAB],
+  [182, GEOMETRY_CLASS_SLAB], [183, GEOMETRY_CLASS_SLAB], [184, GEOMETRY_CLASS_SLAB],
+  [185, GEOMETRY_CLASS_SLAB], [186, GEOMETRY_CLASS_SLAB], [187, GEOMETRY_CLASS_SLAB],
+  [188, GEOMETRY_CLASS_SLAB], [189, GEOMETRY_CLASS_SLAB], [190, GEOMETRY_CLASS_SLAB],
+  [191, GEOMETRY_CLASS_SLAB],
+  // Slabs batch 4
+  [192, GEOMETRY_CLASS_SLAB], [193, GEOMETRY_CLASS_SLAB], [194, GEOMETRY_CLASS_SLAB],
+  [195, GEOMETRY_CLASS_SLAB],
 ]);

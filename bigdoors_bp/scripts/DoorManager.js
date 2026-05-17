@@ -100,10 +100,10 @@ export class DoorManager {
     this.save();
   }
 
-  addPanelToAssembly(assemblyId, panelPos, materialIndex) {
+  addPanelToAssembly(assemblyId, panelPos, materialIndex, geometryId) {
     const assembly = this._assemblies.get(assemblyId);
     if (!assembly) return;
-    assembly.addPanel(panelPos, materialIndex);
+    assembly.addPanel(panelPos, materialIndex, geometryId);
     this._positionIndex.set(posKey(panelPos), assemblyId);
     this.save();
   }
