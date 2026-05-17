@@ -1,7 +1,7 @@
 ---
 title: "fix: Correct strap overlay texture and geometry assignments"
 type: fix
-status: active
+status: completed
 date: 2026-05-17
 origin: docs/plans/2026-05-16-001-feat-strapped-hinge-overlay-plan.md
 ---
