@@ -67,21 +67,17 @@ export class RedstoneSubsystem {
         if (this._manager.isRedstoneDebounced(assemblyId, now)) return;
         this._manager.setRedstoneDebounce(assemblyId, now + REDSTONE_DEBOUNCE_TICKS);
 
-        const closed = this._closeSingleAssembly(asm, dimension);
-        if (closed) {
-          this._manager.clearRedstoneSource(assemblyId);
-          this._stopSourceMonitor(assemblyId);
-        }
+        this._closeSingleAssembly(asm, dimension);
+        this._manager.clearRedstoneSource(assemblyId);
+        this._stopSourceMonitor(assemblyId);
 
         if (asm.partnerAssemblyId) {
           const partner = this._manager.getAssembly(asm.partnerAssemblyId);
           if (partner && partner.isOpen) {
             this._manager.setRedstoneDebounce(partner.id, now + REDSTONE_DEBOUNCE_TICKS);
-            const partnerClosed = this._closeSingleAssembly(partner, dimension);
-            if (partnerClosed) {
-              this._manager.clearRedstoneSource(partner.id);
-              this._stopSourceMonitor(partner.id);
-            }
+            this._closeSingleAssembly(partner, dimension);
+            this._manager.clearRedstoneSource(partner.id);
+            this._stopSourceMonitor(partner.id);
           }
         }
       }

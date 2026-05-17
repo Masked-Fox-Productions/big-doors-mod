@@ -399,7 +399,7 @@ describe("RedstoneSubsystem", () => {
   });
 
   describe("close obstruction check", () => {
-    it("door stays open when closed position is solidly obstructed, monitor keeps running", () => {
+    it("door stays open when obstructed but signal is consumed (source cleared, monitor stopped)", () => {
       const assembly = setupDoor(manager);
       const dim = buildDimension();
       const hingeBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
@@ -422,11 +422,11 @@ describe("RedstoneSubsystem", () => {
 
       const result = manager.getAssembly(assembly.id);
       assert.equal(result.isOpen, true, "Door should stay open when obstructed");
-      assert.notEqual(result.redstoneSource, null, "Redstone source should NOT be cleared");
-      assert.equal(subsystem._sourceMonitors.has(assembly.id), true, "Monitor should keep running");
+      assert.equal(result.redstoneSource, null, "Signal consumed — source cleared");
+      assert.equal(subsystem._sourceMonitors.has(assembly.id), false, "Monitor stopped after signal consumed");
     });
 
-    it("obstruction removed before next poll — door closes on retry", () => {
+    it("new signal after blocked close re-adopts source for retry", () => {
       const assembly = setupDoor(manager);
       const dim = buildDimension();
       const hingeBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
@@ -438,26 +438,30 @@ describe("RedstoneSubsystem", () => {
       subsystem.handleRedstoneUpdate({ block: hingeBlock, powerLevel: 15 });
       assert.equal(manager.getAssembly(assembly.id).isOpen, true);
 
-      // Obstruct closed position
+      // Obstruct and depower — signal consumed
       placeBlock(dim, "minecraft:stone", { x: 1, y: 0, z: 0 });
-
-      // Depower — first poll fails
       sourceBlock.getRedstonePower = () => 0;
       system.advanceTicks(REDSTONE_DEBOUNCE_TICKS + 1);
       system.advanceTicks(REDSTONE_SOURCE_POLL_TICKS);
       assert.equal(manager.getAssembly(assembly.id).isOpen, true);
+      assert.equal(manager.getAssembly(assembly.id).redstoneSource, null);
 
-      // Remove obstruction
+      // Remove obstruction, send new signal (re-power source)
       placeBlock(dim, "minecraft:air", { x: 1, y: 0, z: 0 });
+      sourceBlock.getRedstonePower = () => 15;
+      system.advanceTicks(REDSTONE_DEBOUNCE_TICKS + 1);
 
-      // Next poll succeeds
+      // New signal on open door with no source → adopts
+      subsystem.handleRedstoneUpdate({ block: hingeBlock, powerLevel: 15 });
+      assert.deepEqual(manager.getAssembly(assembly.id).redstoneSource, { x: -1, y: 0, z: 0 });
+
+      // Depower again — this time close succeeds
+      sourceBlock.getRedstonePower = () => 0;
       system.advanceTicks(REDSTONE_DEBOUNCE_TICKS + 1);
       system.advanceTicks(REDSTONE_SOURCE_POLL_TICKS);
 
       const result = manager.getAssembly(assembly.id);
-      assert.equal(result.isOpen, false, "Door should close after obstruction removed");
-      assert.equal(result.redstoneSource, null, "Source should be cleared after successful close");
-      assert.equal(subsystem._sourceMonitors.has(assembly.id), false, "Monitor should be stopped");
+      assert.equal(result.isOpen, false, "Door closes on retry via new signal");
     });
 
     it("soft+solid in closed footprint — no movement, no soft destruction", () => {
@@ -503,7 +507,7 @@ describe("RedstoneSubsystem", () => {
       assert.equal(grassBlock.typeId, "minecraft:short_grass", "Soft block preserved");
     });
 
-    it("close aborts when closed position is unloaded, monitor keeps running", () => {
+    it("close aborts when closed position is unloaded, signal still consumed", () => {
       const assembly = setupDoor(manager);
       const dim = buildDimension();
       const hingeBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
@@ -524,10 +528,11 @@ describe("RedstoneSubsystem", () => {
 
       const result = manager.getAssembly(assembly.id);
       assert.equal(result.isOpen, true, "Door stays open when unloaded");
-      assert.equal(subsystem._sourceMonitors.has(assembly.id), true, "Monitor keeps running");
+      assert.equal(result.redstoneSource, null, "Signal consumed");
+      assert.equal(subsystem._sourceMonitors.has(assembly.id), false, "Monitor stopped");
     });
 
-    it("double door: obstructed partner stays open while primary closes", () => {
+    it("double door: obstructed partner stays open, both signals consumed", () => {
       const assemblyA = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
       manager.setDoorSide(assemblyA.id, "east");
       manager.addPanelToAssembly(assemblyA.id, { x: 1, y: 0, z: 0 }, 12);
@@ -575,7 +580,7 @@ describe("RedstoneSubsystem", () => {
       assert.equal(a.isOpen, false, "Primary should close (unobstructed)");
       assert.equal(a.redstoneSource, null, "Primary source cleared");
       assert.equal(b.isOpen, true, "Partner stays open (obstructed)");
-      assert.notEqual(b.redstoneSource, null, "Partner source preserved");
+      assert.equal(b.redstoneSource, null, "Partner signal consumed too");
     });
   });
 
