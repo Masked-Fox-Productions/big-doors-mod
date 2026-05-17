@@ -5,7 +5,11 @@
 
 // Block identifiers
 export const HINGE_BLOCK_ID = "bigdoors:hinge";
+export const HIDDEN_HINGE_BLOCK_ID = "bigdoors:hidden_hinge";
 export const PANEL_BLOCK_ID = "bigdoors:door_panel";
+
+// Reserved material index for hinges that haven't been matched to a panel yet
+export const UNMATCHED_MATERIAL_INDEX = 255;
 
 // Persistence
 export const PERSISTENCE_KEY = "bigdoors:state";

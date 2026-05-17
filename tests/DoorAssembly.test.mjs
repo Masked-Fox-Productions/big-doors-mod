@@ -1,6 +1,7 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { DoorAssembly } from "../bigdoors_bp/scripts/domain/DoorAssembly.js";
+import { UNMATCHED_MATERIAL_INDEX } from "../bigdoors_bp/scripts/util/Constants.js";
 
 describe("DoorAssembly", () => {
   let assembly;
@@ -221,5 +222,109 @@ describe("DoorAssembly", () => {
     };
     const restored = DoorAssembly.fromJSON(legacy);
     assert.equal(restored.redstoneSource, null);
+  });
+
+  describe("hinge type and material tracking", () => {
+    it("constructor defaults to hinge type with unmatched material", () => {
+      assert.equal(assembly.hingePositions[0].type, "hinge");
+      assert.equal(assembly.hingePositions[0].materialIndex, UNMATCHED_MATERIAL_INDEX);
+    });
+
+    it("constructor accepts hidden hinge type", () => {
+      const hidden = new DoorAssembly("h-1", { x: 0, y: 0, z: 0 }, "north", "horizontal", "hidden");
+      assert.equal(hidden.hingePositions[0].type, "hidden");
+      assert.equal(hidden.hingeType, "hidden");
+    });
+
+    it("hingeType getter returns primary hinge type", () => {
+      assert.equal(assembly.hingeType, "hinge");
+      assembly.addHinge({ x: 0, y: 1, z: 0 }, "hidden");
+      assert.equal(assembly.hingeType, "hinge");
+    });
+
+    it("addHinge stores type and unmatched materialIndex", () => {
+      assembly.addHinge({ x: 0, y: 1, z: 0 }, "hidden");
+      assert.equal(assembly.hingePositions[1].type, "hidden");
+      assert.equal(assembly.hingePositions[1].materialIndex, UNMATCHED_MATERIAL_INDEX);
+    });
+
+    it("hinge type and materialIndex round-trip through toJSON/fromJSON", () => {
+      assembly.addHinge({ x: 0, y: 1, z: 0 }, "hidden");
+      assembly.hingePositions[0].materialIndex = 5;
+
+      const json = assembly.toJSON();
+      assert.equal(json.hingePositions[0].type, "hinge");
+      assert.equal(json.hingePositions[0].materialIndex, 5);
+      assert.equal(json.hingePositions[1].type, "hidden");
+
+      const restored = DoorAssembly.fromJSON(json);
+      assert.equal(restored.hingePositions[0].type, "hinge");
+      assert.equal(restored.hingePositions[0].materialIndex, 5);
+      assert.equal(restored.hingePositions[1].type, "hidden");
+      assert.equal(restored.hingePositions[1].materialIndex, UNMATCHED_MATERIAL_INDEX);
+      assert.equal(restored.hingeType, "hinge");
+    });
+
+    it("fromJSON with legacy hinge data defaults type to hinge", () => {
+      const legacy = {
+        id: "legacy-hinge",
+        primaryHingePos: { x: 0, y: 0, z: 0 },
+        hingePositions: [{ x: 0, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }],
+        panelPositions: [],
+        facing: "north",
+        mode: "horizontal",
+      };
+      const restored = DoorAssembly.fromJSON(legacy);
+      assert.equal(restored.hingePositions[0].type, "hinge");
+      assert.equal(restored.hingePositions[0].materialIndex, UNMATCHED_MATERIAL_INDEX);
+      assert.equal(restored.hingePositions[1].type, "hinge");
+      assert.equal(restored.hingeType, "hinge");
+    });
+
+    it("assembly with only hidden hinges returns hidden from hingeType", () => {
+      const hidden = new DoorAssembly("hh-1", { x: 0, y: 0, z: 0 }, "north", "horizontal", "hidden");
+      hidden.addHinge({ x: 0, y: 1, z: 0 }, "hidden");
+      assert.equal(hidden.hingeType, "hidden");
+    });
+  });
+
+  describe("panel overlay tracking", () => {
+    it("addPanel defaults overlay to 0", () => {
+      assembly.addPanel({ x: 1, y: 0, z: 0 }, 12);
+      assert.equal(assembly.panelPositions[0].overlay, 0);
+    });
+
+    it("addPanel accepts overlay parameter", () => {
+      assembly.addPanel({ x: 1, y: 0, z: 0 }, 12, undefined, 1);
+      assert.equal(assembly.panelPositions[0].overlay, 1);
+    });
+
+    it("overlay round-trips through toJSON/fromJSON", () => {
+      assembly.addPanel({ x: 1, y: 0, z: 0 }, 12, undefined, 1);
+      assembly.addPanel({ x: 2, y: 0, z: 0 }, 11, undefined, 0);
+
+      const json = assembly.toJSON();
+      assert.equal(json.panelPositions[0].overlay, 1);
+      assert.equal(json.panelPositions[1].overlay, 0);
+
+      const restored = DoorAssembly.fromJSON(json);
+      assert.equal(restored.panelPositions[0].overlay, 1);
+      assert.equal(restored.panelPositions[1].overlay, 0);
+    });
+
+    it("fromJSON with legacy panel data defaults overlay to 0", () => {
+      const legacy = {
+        id: "legacy-panel",
+        primaryHingePos: { x: 0, y: 0, z: 0 },
+        hingePositions: [{ x: 0, y: 0, z: 0 }],
+        panelPositions: [{ materialIndex: 12, closedPos: { x: 1, y: 0, z: 0 }, currentPos: { x: 1, y: 0, z: 0 } }],
+        boundaryPanels: [{ materialIndex: 5, closedPos: { x: 2, y: 0, z: 0 }, currentPos: { x: 2, y: 0, z: 0 } }],
+        facing: "north",
+        mode: "horizontal",
+      };
+      const restored = DoorAssembly.fromJSON(legacy);
+      assert.equal(restored.panelPositions[0].overlay, 0);
+      assert.equal(restored.boundaryPanels[0].overlay, 0);
+    });
   });
 });

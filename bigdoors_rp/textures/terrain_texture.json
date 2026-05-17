@@ -8,6 +8,21 @@
     "bigdoors_hinge_active": {
       "textures": "textures/blocks/hinge_active"
     },
+    "bigdoors_hinge_unmatched": {
+      "textures": "textures/blocks/hinge_unmatched"
+    },
+    "bigdoors_hinge_overlay_h": {
+      "textures": "textures/blocks/hinge_overlay_h"
+    },
+    "bigdoors_hinge_overlay_v": {
+      "textures": "textures/blocks/hinge_overlay_v"
+    },
+    "bigdoors_panel_overlay_h": {
+      "textures": "textures/blocks/door_panel_overlay_h"
+    },
+    "bigdoors_panel_overlay_v": {
+      "textures": "textures/blocks/door_panel_overlay_v"
+    },
     "bricks": {
       "textures": "textures/blocks/brick"
     },
