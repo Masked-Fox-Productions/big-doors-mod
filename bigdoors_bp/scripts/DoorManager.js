@@ -115,7 +115,7 @@ export class DoorManager {
     this._positionIndex.delete(posKey(panelPos));
 
     if (assembly.panelPositions.length === 0) {
-      this.dissolveAssembly(assemblyId);
+      this.resetAssembly(assemblyId);
     } else {
       this.save();
     }
@@ -142,6 +142,31 @@ export class DoorManager {
     }
 
     this._assemblies.delete(assemblyId);
+    this.save();
+  }
+
+  resetAssembly(assemblyId) {
+    const assembly = this._assemblies.get(assemblyId);
+    if (!assembly) return;
+
+    if (assembly.partnerAssemblyId) {
+      this.unpairAssembly(assemblyId);
+    }
+
+    for (const panel of assembly.panelPositions) {
+      this._positionIndex.delete(posKey(panel.currentPos));
+    }
+    for (const panel of assembly.boundaryPanels) {
+      this._positionIndex.delete(posKey(panel.currentPos));
+    }
+
+    assembly.panelPositions = [];
+    assembly.boundaryPanels = [];
+    assembly.doorSide = "";
+    assembly.mode = "";
+    assembly.isOpen = false;
+    assembly.openDirection = "";
+
     this.save();
   }
 

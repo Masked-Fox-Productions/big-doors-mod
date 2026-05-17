@@ -59,13 +59,60 @@ describe("DoorManager", () => {
     assert.equal(mgr.findByPosition({ x: 2, y: 0, z: 0 }), assembly);
   });
 
-  it("removePanelFromAssembly on last panel dissolves the assembly", () => {
+  it("removePanelFromAssembly on last panel resets the assembly", () => {
     const assembly = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+    mgr.setDoorSide(assembly.id, "east");
+    mgr.setMode(assembly.id, "horizontal");
     mgr.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 5);
     mgr.removePanelFromAssembly(assembly.id, { x: 1, y: 0, z: 0 });
 
-    assert.equal(mgr.getAssembly(assembly.id), null);
-    assert.equal(mgr.findByPosition({ x: 0, y: 0, z: 0 }), null);
+    assert.notEqual(mgr.getAssembly(assembly.id), null);
+    assert.equal(mgr.findByPosition({ x: 0, y: 0, z: 0 }), assembly);
+    assert.equal(assembly.panelPositions.length, 0);
+    assert.equal(assembly.doorSide, "");
+    assert.equal(assembly.mode, "");
+    assert.equal(assembly.isOpen, false);
+  });
+
+  it("after reset, a new panel can be placed on a different side", () => {
+    const assembly = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+    mgr.setDoorSide(assembly.id, "east");
+    mgr.setMode(assembly.id, "horizontal");
+    mgr.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 5);
+    mgr.removePanelFromAssembly(assembly.id, { x: 1, y: 0, z: 0 });
+
+    mgr.setDoorSide(assembly.id, "south");
+    mgr.setMode(assembly.id, "horizontal");
+    mgr.addPanelToAssembly(assembly.id, { x: 0, y: 0, z: 1 }, 3);
+
+    assert.equal(assembly.doorSide, "south");
+    assert.equal(assembly.panelPositions.length, 1);
+  });
+
+  it("reset on last panel of paired assembly unpairs both", () => {
+    const a = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+    const b = mgr.createAssembly({ x: 5, y: 0, z: 0 }, "north", "horizontal");
+    mgr.addPanelToAssembly(a.id, { x: 1, y: 0, z: 0 }, 5);
+    mgr.pairAssemblies(a.id, b.id);
+
+    mgr.removePanelFromAssembly(a.id, { x: 1, y: 0, z: 0 });
+
+    assert.equal(a.partnerAssemblyId, null);
+    assert.equal(b.partnerAssemblyId, null);
+    assert.equal(a.panelPositions.length, 0);
+    assert.equal(a.doorSide, "");
+  });
+
+  it("reset on last panel of open door clears isOpen", () => {
+    const assembly = mgr.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+    mgr.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 5);
+    mgr.openDoor(assembly.id, "cw", [{ x: 0, y: 0, z: 1 }]);
+
+    mgr.removePanelFromAssembly(assembly.id, { x: 0, y: 0, z: 1 });
+
+    assert.equal(assembly.isOpen, false);
+    assert.equal(assembly.openDirection, "");
+    assert.equal(assembly.panelPositions.length, 0);
   });
 
   it("openDoor/closeDoor updates assembly isOpen state", () => {
