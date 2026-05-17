@@ -15,6 +15,7 @@ export const MAX_DOOR_SCAN_RADIUS = 16;
 
 // Tick intervals (20 ticks = 1 second)
 export const REDSTONE_DEBOUNCE_TICKS = 4;
+export const REDSTONE_SOURCE_POLL_TICKS = 4;
 
 // Direction helpers — cardinal direction labels used by assemblies
 export const DIRECTIONS = {

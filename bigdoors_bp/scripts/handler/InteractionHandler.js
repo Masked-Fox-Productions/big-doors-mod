@@ -169,6 +169,8 @@ export class InteractionHandler {
   }
 
   _close(assembly, dimension) {
+    this._manager.clearRedstoneSource(assembly.id);
+
     const currentPositions = assembly.getAllCurrentPositions();
     const closedPositions = assembly.panelPositions.map((p) => p.closedPos);
 

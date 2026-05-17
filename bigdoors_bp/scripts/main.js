@@ -59,11 +59,13 @@ redstone = new RedstoneSubsystem(manager);
 world.afterEvents.worldLoad.subscribe(() => {
   console.warn("[bigdoors] worldLoad fired — loading persistence");
   manager.load();
+  redstone.restoreMonitors(world.getDimension("overworld"));
 });
 
 system.run(() => {
   console.warn("[bigdoors] Fallback load triggered");
   manager.load();
+  redstone.restoreMonitors(world.getDimension("overworld"));
 });
 
 

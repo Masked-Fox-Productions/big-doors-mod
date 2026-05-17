@@ -52,25 +52,44 @@ function makeDefaultWorld() {
 }
 
 function makeDefaultSystem() {
+  let nextHandle = 1;
   const sys = {
     currentTick: 0,
     _scheduled: [],
-    runInterval(_fn, _ticks) { return 0; },
+    _intervals: new Map(),
+    runInterval(fn, ticks) {
+      const id = nextHandle++;
+      sys._intervals.set(id, { fn, interval: ticks, nextFire: sys.currentTick + ticks });
+      return id;
+    },
     runTimeout(fn, ticks) {
-      sys._scheduled.push({ fn, fireAt: sys.currentTick + ticks });
-      return sys._scheduled.length;
+      const id = nextHandle++;
+      sys._scheduled.push({ fn, fireAt: sys.currentTick + ticks, id });
+      return id;
     },
     run(fn) {
-      sys._scheduled.push({ fn, fireAt: sys.currentTick });
-      return sys._scheduled.length;
+      const id = nextHandle++;
+      sys._scheduled.push({ fn, fireAt: sys.currentTick, id });
+      return id;
     },
-    runJob(_gen) { return 0; },
-    clearRun(_id) {},
+    runJob(_gen) { return nextHandle++; },
+    clearRun(id) {
+      sys._intervals.delete(id);
+      sys._scheduled = sys._scheduled.filter(s => s.id !== id);
+    },
     advanceTicks(n) {
       sys.currentTick += n;
       const ready = sys._scheduled.filter(s => s.fireAt <= sys.currentTick);
       sys._scheduled = sys._scheduled.filter(s => s.fireAt > sys.currentTick);
       for (const s of ready) s.fn();
+
+      for (const [id, entry] of sys._intervals) {
+        while (entry.nextFire <= sys.currentTick) {
+          entry.fn();
+          if (!sys._intervals.has(id)) break;
+          entry.nextFire += entry.interval;
+        }
+      }
     },
     afterEvents: {
       scriptEventReceive: makeNoopSubscribable(),

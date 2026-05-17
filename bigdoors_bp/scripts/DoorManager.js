@@ -166,12 +166,17 @@ export class DoorManager {
     assembly.mode = "";
     assembly.isOpen = false;
     assembly.openDirection = "";
+    assembly.redstoneSource = null;
 
     this.save();
   }
 
   getAssembly(assemblyId) {
     return this._assemblies.get(assemblyId) ?? null;
+  }
+
+  getAllAssemblies() {
+    return this._assemblies.values();
   }
 
   openDoor(assemblyId, direction, newPositions) {
@@ -285,6 +290,20 @@ export class DoorManager {
       this._positionIndex.set(posKey(p.currentPos), assemblyIdA);
     }
 
+    this.save();
+  }
+
+  setRedstoneSource(assemblyId, pos) {
+    const assembly = this._assemblies.get(assemblyId);
+    if (!assembly) return;
+    assembly.redstoneSource = pos ? { ...pos } : null;
+    this.save();
+  }
+
+  clearRedstoneSource(assemblyId) {
+    const assembly = this._assemblies.get(assemblyId);
+    if (!assembly) return;
+    assembly.redstoneSource = null;
     this.save();
   }
 
