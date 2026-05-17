@@ -98,22 +98,22 @@ export class PanelPlacementHandler {
     const placedDir = directionFromTo(hingePos, pos);
     if (!placedDir) return false;
 
-    if (assembly.mode === "vertical" && !VERTICAL_DIRS.has(placedDir)) return false;
-    if (assembly.mode === "horizontal" && VERTICAL_DIRS.has(placedDir)) return false;
+    if (assembly.doorSide) {
+      if (assembly.mode === "vertical" && !VERTICAL_DIRS.has(placedDir)) return false;
+      if (assembly.mode === "horizontal" && VERTICAL_DIRS.has(placedDir)) return false;
+      if (!this._isCoplanar(assembly, pos)) return false;
 
-    if (assembly.doorSide && !this._isCoplanar(assembly, pos)) return false;
-
-    const wallSide = OPPOSITE_DIR[assembly.doorSide];
-    if (assembly.doorSide && placedDir === wallSide) return false;
-
-    if (!assembly.doorSide) {
+      const wallSide = OPPOSITE_DIR[assembly.doorSide];
+      if (placedDir === wallSide) return false;
+    } else {
+      const mode = VERTICAL_DIRS.has(placedDir) ? "vertical" : "horizontal";
       this._manager.setDoorSide(assembly.id, placedDir);
+      this._manager.setMode(assembly.id, mode);
 
-      const facing = assembly.facing;
       hingeBlock.setPermutation(
         BlockPermutation.resolve(HINGE_BLOCK_ID, {
-          "bigdoors:facing": facing,
-          "bigdoors:mode": assembly.mode,
+          "bigdoors:facing": assembly.facing,
+          "bigdoors:mode": mode,
           "bigdoors:door_side": placedDir,
         })
       );

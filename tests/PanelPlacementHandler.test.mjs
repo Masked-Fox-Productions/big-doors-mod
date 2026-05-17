@@ -217,15 +217,45 @@ describe("PanelPlacementHandler", () => {
     assert.equal(assembly.doorSide, "down");
   });
 
-  it("placing block horizontally adjacent to vertical-mode hinge does NOT convert", () => {
+  it("placing block horizontally adjacent to vertical-mode hinge (doorSide=up) does NOT convert", () => {
     const dim = makeMockDimension();
-    setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "vertical", "");
+    setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "vertical", "up");
 
     const block = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 0 });
 
     const result = handler.onPlace(block, dim);
     assert.equal(result, false);
     assert.equal(block.typeId, "minecraft:cobblestone");
+  });
+
+  it("first panel above hinge switches mode to vertical", () => {
+    const dim = makeMockDimension();
+    setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "");
+
+    const block = placeBlock(dim, "minecraft:cobblestone", { x: 0, y: 1, z: 0 });
+
+    const result = handler.onPlace(block, dim);
+    assert.equal(result, true);
+    assert.equal(block.typeId, PANEL_BLOCK_ID);
+
+    const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
+    assert.equal(assembly.mode, "vertical");
+    assert.equal(assembly.doorSide, "up");
+  });
+
+  it("first panel beside hinge keeps mode horizontal", () => {
+    const dim = makeMockDimension();
+    setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "");
+
+    const block = placeBlock(dim, "minecraft:cobblestone", { x: 1, y: 0, z: 0 });
+
+    const result = handler.onPlace(block, dim);
+    assert.equal(result, true);
+    assert.equal(block.typeId, PANEL_BLOCK_ID);
+
+    const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
+    assert.equal(assembly.mode, "horizontal");
+    assert.equal(assembly.doorSide, "east");
   });
 
   it("panel-adjacent expansion works vertically for vertical-mode assembly", () => {
@@ -282,9 +312,9 @@ describe("PanelPlacementHandler", () => {
     assert.equal(block.typeId, PANEL_BLOCK_ID);
   });
 
-  it("placing block above horizontal-mode hinge does NOT convert (mode gate)", () => {
+  it("placing block above horizontal-mode hinge with doorSide=east does NOT convert (mode gate)", () => {
     const dim = makeMockDimension();
-    setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "");
+    setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "east");
 
     const block = placeBlock(dim, "minecraft:cobblestone", { x: 0, y: 1, z: 0 });
 

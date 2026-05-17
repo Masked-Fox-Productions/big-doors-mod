@@ -93,6 +93,13 @@ export class DoorManager {
     this.save();
   }
 
+  setMode(assemblyId, mode) {
+    const assembly = this._assemblies.get(assemblyId);
+    if (!assembly) return;
+    assembly.mode = mode;
+    this.save();
+  }
+
   addPanelToAssembly(assemblyId, panelPos, materialIndex) {
     const assembly = this._assemblies.get(assemblyId);
     if (!assembly) return;
