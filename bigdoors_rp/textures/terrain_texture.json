@@ -2,12 +2,6 @@
   "resource_pack_name": "bigdoors",
   "texture_name": "atlas.terrain",
   "texture_data": {
-    "bigdoors_hinge": {
-      "textures": "textures/blocks/hinge"
-    },
-    "bigdoors_hinge_active": {
-      "textures": "textures/blocks/hinge_active"
-    },
     "bigdoors_hinge_unmatched": {
       "textures": "textures/blocks/hinge_unmatched"
     },
