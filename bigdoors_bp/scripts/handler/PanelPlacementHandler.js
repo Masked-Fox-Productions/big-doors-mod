@@ -5,8 +5,14 @@ import {
   DIR_OFFSETS,
   DIRECTIONS,
   OPPOSITE_DIR,
+  GEOMETRY_CLASS_FENCE,
 } from "../util/Constants.js";
-import { indexForTypeId, materialToBlockStates } from "../domain/MaterialRegistry.js";
+import {
+  indexForTypeId,
+  materialToBlockStates,
+  resolveGeometryId,
+  geometryClassForMaterial,
+} from "../domain/MaterialRegistry.js";
 
 const HORIZONTAL_DIRS = [
   DIRECTIONS.NORTH,
@@ -125,10 +131,7 @@ export class PanelPlacementHandler {
 
     if (placedDir !== assembly.doorSide) return false;
 
-    block.setPermutation(
-      BlockPermutation.resolve(PANEL_BLOCK_ID, materialToBlockStates(matIdx))
-    );
-    this._manager.addPanelToAssembly(assembly.id, pos, matIdx);
+    this._placePanel(block, pos, matIdx, assembly, dimension);
     this._checkDoubleDoor(assembly, dimension);
     return true;
   }
@@ -151,12 +154,115 @@ export class PanelPlacementHandler {
       if (dirFromHinge === wallSide) return false;
     }
 
-    block.setPermutation(
-      BlockPermutation.resolve(PANEL_BLOCK_ID, materialToBlockStates(matIdx))
-    );
-    this._manager.addPanelToAssembly(assembly.id, pos, matIdx);
+    this._placePanel(block, pos, matIdx, assembly, dimension);
     this._checkDoubleDoor(assembly, dimension);
     return true;
+  }
+
+  _placePanel(block, pos, matIdx, assembly, dimension) {
+    const geoClass = geometryClassForMaterial(matIdx);
+    const { beforeOffset, afterOffset } = this._neighborAxes(assembly, geoClass);
+
+    const hasNeighborBefore = this._hasAssemblyBlockAt(dimension, posAdd(pos, beforeOffset), assembly);
+    const hasNeighborAfter = this._hasAssemblyBlockAt(dimension, posAdd(pos, afterOffset), assembly);
+
+    const geoId = resolveGeometryId(matIdx, hasNeighborBefore, hasNeighborAfter);
+    const rotation = this._panelRotation(assembly, geoClass);
+    block.setPermutation(
+      BlockPermutation.resolve(PANEL_BLOCK_ID, {
+        ...materialToBlockStates(matIdx, geoId),
+        "bigdoors:panel_rotation": rotation,
+      })
+    );
+    this._manager.addPanelToAssembly(assembly.id, pos, matIdx);
+
+    if (geoClass > 0) {
+      this._updateNeighborGeometry(dimension, posAdd(pos, beforeOffset), assembly);
+      this._updateNeighborGeometry(dimension, posAdd(pos, afterOffset), assembly);
+    }
+  }
+
+  _hasAssemblyBlockAt(dimension, pos, assembly) {
+    const block = dimension.getBlock(pos);
+    if (!block) return false;
+    if (block.typeId === PANEL_BLOCK_ID || block.typeId === HINGE_BLOCK_ID) {
+      const found = this._manager.findByPosition(pos);
+      if (!found || found.id !== assembly.id) return false;
+      if (found.boundaryPanels) {
+        const isBoundary = found.boundaryPanels.some(
+          (bp) => bp.currentPos.x === pos.x && bp.currentPos.y === pos.y && bp.currentPos.z === pos.z
+        );
+        if (isBoundary) return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  _neighborAxes(assembly, geoClass) {
+    const doorSide = assembly.doorSide;
+    const isVertical = doorSide === "up" || doorSide === "down";
+
+    if (isVertical && geoClass === GEOMETRY_CLASS_FENCE) {
+      const facing = assembly.facing;
+      if (facing === "north" || facing === "south") {
+        return { beforeOffset: DIR_OFFSETS["west"], afterOffset: DIR_OFFSETS["east"] };
+      }
+      return { beforeOffset: DIR_OFFSETS["north"], afterOffset: DIR_OFFSETS["south"] };
+    }
+
+    return {
+      beforeOffset: DIR_OFFSETS[OPPOSITE_DIR[doorSide]],
+      afterOffset: DIR_OFFSETS[doorSide],
+    };
+  }
+
+  _panelRotation(assembly, geoClass) {
+    const side = assembly.doorSide;
+    if (side === "up" || side === "down") {
+      if (geoClass === GEOMETRY_CLASS_FENCE) {
+        const facing = assembly.facing;
+        if (facing === "north" || facing === "south") return 2;
+        return 1;
+      }
+      const facing = assembly.facing;
+      if (facing === "north" || facing === "south") return 5;
+      return 4;
+    }
+    if (side === "east") return 2;
+    if (side === "south") return 1;
+    if (side === "west") return 0;
+    return 3;
+  }
+
+  _updateNeighborGeometry(dimension, pos, assembly) {
+    const block = dimension.getBlock(pos);
+    if (!block || block.typeId !== PANEL_BLOCK_ID) return;
+    const found = this._manager.findByPosition(pos);
+    if (!found || found.id !== assembly.id) return;
+
+    const panel = found.panelPositions.find(
+      (p) => p.currentPos.x === pos.x && p.currentPos.y === pos.y && p.currentPos.z === pos.z
+    );
+    if (!panel) return;
+
+    const neighborMatIdx = panel.materialIndex;
+    const neighborGeoClass = geometryClassForMaterial(neighborMatIdx);
+    if (neighborGeoClass === 0) return;
+
+    const { beforeOffset, afterOffset } = this._neighborAxes(assembly, neighborGeoClass);
+
+    const hasBefore = this._hasAssemblyBlockAt(dimension, posAdd(pos, beforeOffset), assembly);
+    const hasAfter = this._hasAssemblyBlockAt(dimension, posAdd(pos, afterOffset), assembly);
+
+    const newGeoId = resolveGeometryId(neighborMatIdx, hasBefore, hasAfter);
+    const rotation = this._panelRotation(assembly, neighborGeoClass);
+    block.setPermutation(
+      BlockPermutation.resolve(PANEL_BLOCK_ID, {
+        ...materialToBlockStates(neighborMatIdx, newGeoId),
+        "bigdoors:panel_rotation": rotation,
+      })
+    );
   }
 
   _checkDoubleDoor(assembly, dimension) {

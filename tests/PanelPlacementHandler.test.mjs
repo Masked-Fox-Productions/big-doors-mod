@@ -51,11 +51,11 @@ describe("PanelPlacementHandler", () => {
     const dim = makeMockDimension();
     setupHingeAssembly(dim, { x: 0, y: 0, z: 0 }, "north", "horizontal", "");
 
-    const block = placeBlock(dim, "minecraft:diamond_block", { x: 1, y: 0, z: 0 });
+    const block = placeBlock(dim, "minecraft:sponge", { x: 1, y: 0, z: 0 });
 
     const result = handler.onPlace(block, dim);
     assert.equal(result, false);
-    assert.equal(block.typeId, "minecraft:diamond_block");
+    assert.equal(block.typeId, "minecraft:sponge");
   });
 
   it("placing block on door_side of hinge converts it", () => {
@@ -121,11 +121,11 @@ describe("PanelPlacementHandler", () => {
     });
     manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 12);
 
-    const newBlock = placeBlock(dim, "minecraft:diamond_block", { x: 2, y: 0, z: 0 });
+    const newBlock = placeBlock(dim, "minecraft:sponge", { x: 2, y: 0, z: 0 });
 
     const result = handler.onPlace(newBlock, dim);
     assert.equal(result, false);
-    assert.equal(newBlock.typeId, "minecraft:diamond_block");
+    assert.equal(newBlock.typeId, "minecraft:sponge");
     assert.equal(assembly.panelPositions.length, 1);
   });
 

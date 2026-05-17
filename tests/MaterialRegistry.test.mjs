@@ -24,7 +24,7 @@ describe("MaterialRegistry", () => {
   });
 
   it("returns -1 for an unsupported block type", () => {
-    assert.equal(indexForTypeId("minecraft:diamond_block"), -1);
+    assert.equal(indexForTypeId("minecraft:sponge"), -1);
   });
 
   it("returns -1 for undefined input", () => {

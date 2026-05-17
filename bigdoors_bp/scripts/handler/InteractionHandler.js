@@ -2,8 +2,17 @@ import { BlockPermutation, ItemStack, system } from "@minecraft/server";
 import { getRotateFn } from "../domain/RotationMath.js";
 import { checkPath } from "../domain/ObstructionChecker.js";
 import { sweep } from "../subsystem/EntitySweeper.js";
-import { PANEL_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS } from "../util/Constants.js";
-import { materialToBlockStates } from "../domain/MaterialRegistry.js";
+import { PANEL_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, DIR_OFFSETS, OPPOSITE_DIR, GEOMETRY_CLASS_FENCE } from "../util/Constants.js";
+import {
+  materialToBlockStates,
+  panelBlockStates,
+  resolveGeometryId,
+  geometryClassForMaterial,
+} from "../domain/MaterialRegistry.js";
+
+function posAdd(pos, offset) {
+  return { x: pos.x + offset.x, y: pos.y + offset.y, z: pos.z + offset.z };
+}
 
 export class InteractionHandler {
   constructor(manager) {
@@ -128,10 +137,14 @@ export class InteractionHandler {
     // Three-phase block movement
     const tuples = [];
     for (let i = 0; i < panelPositions.length; i++) {
+      const matIdx = assembly.panelPositions[i].materialIndex;
+      const geoClass = geometryClassForMaterial(matIdx);
+      const geoId = this._resolveGeoForPanel(assembly, i, true);
+      const rotation = this._openRotation(assembly, direction, geoClass);
       tuples.push({
         source: panelPositions[i],
         dest: destinations[i],
-        materialIndex: assembly.panelPositions[i].materialIndex,
+        states: panelBlockStates(matIdx, geoId, rotation),
       });
     }
 
@@ -145,9 +158,7 @@ export class InteractionHandler {
     for (const t of tuples) {
       const b = dimension.getBlock(t.dest);
       if (b) {
-        b.setPermutation(
-          BlockPermutation.resolve(PANEL_BLOCK_ID, materialToBlockStates(t.materialIndex))
-        );
+        b.setPermutation(BlockPermutation.resolve(PANEL_BLOCK_ID, t.states));
       }
     }
 
@@ -160,13 +171,16 @@ export class InteractionHandler {
     const currentPositions = assembly.getAllCurrentPositions();
     const closedPositions = assembly.panelPositions.map((p) => p.closedPos);
 
-    // Three-phase block movement
     const tuples = [];
     for (let i = 0; i < currentPositions.length; i++) {
+      const matIdx = assembly.panelPositions[i].materialIndex;
+      const geoClass = geometryClassForMaterial(matIdx);
+      const geoId = this._resolveGeoForPanel(assembly, i, false);
+      const rotation = this._closedRotation(assembly, geoClass);
       tuples.push({
         source: currentPositions[i],
         dest: closedPositions[i],
-        materialIndex: assembly.panelPositions[i].materialIndex,
+        states: panelBlockStates(matIdx, geoId, rotation),
       });
     }
 
@@ -180,12 +194,91 @@ export class InteractionHandler {
     for (const t of tuples) {
       const b = dimension.getBlock(t.dest);
       if (b) {
-        b.setPermutation(
-          BlockPermutation.resolve(PANEL_BLOCK_ID, materialToBlockStates(t.materialIndex))
-        );
+        b.setPermutation(BlockPermutation.resolve(PANEL_BLOCK_ID, t.states));
       }
     }
 
     this._manager.closeDoor(assembly.id);
+  }
+
+  _closedRotation(assembly, geoClass) {
+    const side = assembly.doorSide;
+    if (side === "up" || side === "down") {
+      if (geoClass === GEOMETRY_CLASS_FENCE) {
+        const facing = assembly.facing;
+        if (facing === "north" || facing === "south") return 2;
+        return 1;
+      }
+      const facing = assembly.facing;
+      if (facing === "north" || facing === "south") return 5;
+      return 4;
+    }
+    if (side === "east") return 2;
+    if (side === "south") return 1;
+    if (side === "west") return 0;
+    return 3;
+  }
+
+  _openRotation(assembly, direction, geoClass) {
+    if (assembly.mode === "vertical") {
+      if (geoClass === GEOMETRY_CLASS_FENCE) {
+        const facing = assembly.facing;
+        if (facing === "north" || facing === "south") return 6;
+        return 5;
+      }
+      const facing = assembly.facing;
+      if (facing === "north" || facing === "south") return 1;
+      return 0;
+    }
+    const closed = this._closedRotation(assembly, geoClass);
+    return direction === "cw" ? (closed + 3) % 4 : (closed + 1) % 4;
+  }
+
+  _resolveGeoForPanel(assembly, panelIndex, isOpen) {
+    const matIdx = assembly.panelPositions[panelIndex].materialIndex;
+    const geoClass = geometryClassForMaterial(matIdx);
+    if (geoClass === 0) return 0;
+
+    if (assembly.mode === "vertical" && geoClass === GEOMETRY_CLASS_FENCE) {
+      return this._resolveVerticalFenceGeo(assembly, panelIndex);
+    }
+
+    const hasNeighborBefore = true;
+    const hasNeighborAfter = panelIndex < assembly.panelPositions.length - 1;
+    return resolveGeometryId(matIdx, hasNeighborBefore, hasNeighborAfter);
+  }
+
+  _resolveVerticalFenceGeo(assembly, panelIndex) {
+    const matIdx = assembly.panelPositions[panelIndex].materialIndex;
+    const panel = assembly.panelPositions[panelIndex];
+    const pos = panel.closedPos ?? panel;
+    const facing = assembly.facing;
+
+    let beforeDir, afterDir;
+    if (facing === "north" || facing === "south") {
+      beforeDir = "west";
+      afterDir = "east";
+    } else {
+      beforeDir = "north";
+      afterDir = "south";
+    }
+
+    const beforePos = posAdd(pos, DIR_OFFSETS[beforeDir]);
+    const afterPos = posAdd(pos, DIR_OFFSETS[afterDir]);
+
+    const hasNeighborBefore = this._hasAssemblyPanelAt(assembly, beforePos);
+    const hasNeighborAfter = this._hasAssemblyPanelAt(assembly, afterPos);
+    return resolveGeometryId(matIdx, hasNeighborBefore, hasNeighborAfter);
+  }
+
+  _hasAssemblyPanelAt(assembly, pos) {
+    for (const p of assembly.panelPositions) {
+      const cp = p.closedPos ?? p;
+      if (cp.x === pos.x && cp.y === pos.y && cp.z === pos.z) return true;
+    }
+    for (const hp of assembly.hingePositions ?? []) {
+      if (hp.x === pos.x && hp.y === pos.y && hp.z === pos.z) return true;
+    }
+    return false;
   }
 }
