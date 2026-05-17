@@ -2,12 +2,31 @@
   "format_version": "1.26.0",
   "minecraft:block": {
     "description": {
-      "identifier": "bigdoors:door_panel",
+      "identifier": "bigdoors:hidden_hinge",
       "menu_category": {
         "category": "construction",
         "group": "minecraft:itemGroup.name.door"
       },
       "states": {
+        "bigdoors:facing": [
+          "north",
+          "south",
+          "east",
+          "west"
+        ],
+        "bigdoors:mode": [
+          "horizontal",
+          "vertical"
+        ],
+        "bigdoors:door_side": [
+          "none",
+          "north",
+          "south",
+          "east",
+          "west",
+          "up",
+          "down"
+        ],
         "bigdoors:material_group": [
           0,
           1,
@@ -43,38 +62,6 @@
           13,
           14,
           15
-        ],
-        "bigdoors:geometry_id": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12,
-          13,
-          14,
-          15
-        ],
-        "bigdoors:panel_rotation": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7
-        ],
-        "bigdoors:overlay": [
-          0,
-          1
         ]
       }
     },
@@ -83,8 +70,13 @@
         "seconds_to_destroy": 3
       },
       "minecraft:loot": "loot_tables/empty.json",
-      "bigdoors:panel_component": {},
-      "minecraft:redstone_consumer": {},
+      "bigdoors:hidden_hinge_component": {},
+      "minecraft:redstone_conductivity": {
+        "redstone_conductor": true
+      },
+      "minecraft:redstone_consumer": {
+        "propagates_power": true
+      },
       "minecraft:geometry": "minecraft:geometry.full_block",
       "minecraft:material_instances": {
         "*": {
@@ -95,125 +87,19 @@
     },
     "permutations": [
       {
-        "condition": "q.block_state('bigdoors:geometry_id') == 1",
-        "components": {
-          "minecraft:geometry": "geometry.bigdoors.fence_solo"
-        }
-      },
-      {
-        "condition": "q.block_state('bigdoors:geometry_id') == 2",
-        "components": {
-          "minecraft:geometry": "geometry.bigdoors.fence_before"
-        }
-      },
-      {
-        "condition": "q.block_state('bigdoors:geometry_id') == 3",
-        "components": {
-          "minecraft:geometry": "geometry.bigdoors.fence_after"
-        }
-      },
-      {
-        "condition": "q.block_state('bigdoors:geometry_id') == 4",
-        "components": {
-          "minecraft:geometry": "geometry.bigdoors.fence_both"
-        }
-      },
-      {
-        "condition": "q.block_state('bigdoors:geometry_id') == 5",
-        "components": {
-          "minecraft:geometry": "geometry.bigdoors.bars"
-        }
-      },
-      {
-        "condition": "q.block_state('bigdoors:geometry_id') == 6",
-        "components": {
-          "minecraft:geometry": "geometry.bigdoors.slab"
-        }
-      },
-      {
-        "condition": "q.block_state('bigdoors:geometry_id') == 7",
-        "components": {
-          "minecraft:geometry": "geometry.bigdoors.pane"
-        }
-      },
-      {
-        "condition": "q.block_state('bigdoors:geometry_id') == 8",
-        "components": {
-          "minecraft:geometry": "geometry.bigdoors.slab_top"
-        }
-      },
-      {
-        "condition": "q.block_state('bigdoors:geometry_id') == 6 && q.block_state('bigdoors:panel_rotation') < 4",
-        "components": {
-          "minecraft:collision_box": {
-            "origin": [
-              -8,
-              0,
-              -8
-            ],
-            "size": [
-              16,
-              8,
-              16
-            ]
-          },
-          "minecraft:selection_box": {
-            "origin": [
-              -8,
-              0,
-              -8
-            ],
-            "size": [
-              16,
-              8,
-              16
-            ]
-          }
-        }
-      },
-      {
-        "condition": "q.block_state('bigdoors:geometry_id') == 8 && q.block_state('bigdoors:panel_rotation') < 4",
-        "components": {
-          "minecraft:collision_box": {
-            "origin": [
-              -8,
-              8,
-              -8
-            ],
-            "size": [
-              16,
-              8,
-              16
-            ]
-          },
-          "minecraft:selection_box": {
-            "origin": [
-              -8,
-              8,
-              -8
-            ],
-            "size": [
-              16,
-              8,
-              16
-            ]
-          }
-        }
-      },
-      {
-        "condition": "q.block_state('bigdoors:panel_rotation') == 1",
+        "condition": "q.block_state('bigdoors:facing') == 'north'",
         "components": {
           "minecraft:transformation": {
             "rotation": [
               0,
-              90,
+              0,
               0
             ]
           }
         }
       },
       {
-        "condition": "q.block_state('bigdoors:panel_rotation') == 2",
+        "condition": "q.block_state('bigdoors:facing') == 'south'",
         "components": {
           "minecraft:transformation": {
             "rotation": [
@@ -225,60 +111,24 @@
         }
       },
       {
-        "condition": "q.block_state('bigdoors:panel_rotation') == 3",
+        "condition": "q.block_state('bigdoors:facing') == 'east'",
         "components": {
           "minecraft:transformation": {
             "rotation": [
               0,
-              270,
+              90,
               0
             ]
           }
         }
       },
       {
-        "condition": "q.block_state('bigdoors:panel_rotation') == 4",
+        "condition": "q.block_state('bigdoors:facing') == 'west'",
         "components": {
           "minecraft:transformation": {
             "rotation": [
-              90,
               0,
-              0
-            ]
-          }
-        }
-      },
-      {
-        "condition": "q.block_state('bigdoors:panel_rotation') == 5",
-        "components": {
-          "minecraft:transformation": {
-            "rotation": [
-              90,
-              90,
-              0
-            ]
-          }
-        }
-      },
-      {
-        "condition": "q.block_state('bigdoors:panel_rotation') == 6",
-        "components": {
-          "minecraft:transformation": {
-            "rotation": [
-              90,
-              180,
-              0
-            ]
-          }
-        }
-      },
-      {
-        "condition": "q.block_state('bigdoors:panel_rotation') == 7",
-        "components": {
-          "minecraft:transformation": {
-            "rotation": [
-              90,
-              270,
+              -90,
               0
             ]
           }
@@ -1169,8 +1019,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "oak_planks",
-              "render_method": "alpha_test"
+              "texture": "oak_fence",
+              "render_method": "opaque"
             }
           }
         }
@@ -1180,8 +1030,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "spruce_planks",
-              "render_method": "alpha_test"
+              "texture": "spruce_fence",
+              "render_method": "opaque"
             }
           }
         }
@@ -1191,8 +1041,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "birch_planks",
-              "render_method": "alpha_test"
+              "texture": "birch_fence",
+              "render_method": "opaque"
             }
           }
         }
@@ -1202,8 +1052,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "jungle_planks",
-              "render_method": "alpha_test"
+              "texture": "jungle_fence",
+              "render_method": "opaque"
             }
           }
         }
@@ -1213,8 +1063,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "acacia_planks",
-              "render_method": "alpha_test"
+              "texture": "acacia_fence",
+              "render_method": "opaque"
             }
           }
         }
@@ -1224,8 +1074,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "dark_oak_planks",
-              "render_method": "alpha_test"
+              "texture": "dark_oak_fence",
+              "render_method": "opaque"
             }
           }
         }
@@ -1235,8 +1085,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "mangrove_planks",
-              "render_method": "alpha_test"
+              "texture": "mangrove_fence",
+              "render_method": "opaque"
             }
           }
         }
@@ -1246,8 +1096,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "cherry_planks",
-              "render_method": "alpha_test"
+              "texture": "cherry_fence",
+              "render_method": "opaque"
             }
           }
         }
@@ -1257,8 +1107,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "bamboo_planks",
-              "render_method": "alpha_test"
+              "texture": "bamboo_fence",
+              "render_method": "opaque"
             }
           }
         }
@@ -1268,8 +1118,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "crimson_planks",
-              "render_method": "alpha_test"
+              "texture": "crimson_fence",
+              "render_method": "opaque"
             }
           }
         }
@@ -1279,8 +1129,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "warped_planks",
-              "render_method": "alpha_test"
+              "texture": "warped_fence",
+              "render_method": "opaque"
             }
           }
         }
@@ -1290,8 +1140,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "nether_bricks",
-              "render_method": "alpha_test"
+              "texture": "nether_brick_fence",
+              "render_method": "opaque"
             }
           }
         }
@@ -1302,7 +1152,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "iron_bars",
-              "render_method": "alpha_test"
+              "render_method": "opaque"
             }
           }
         }
@@ -1313,7 +1163,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "glass",
-              "render_method": "alpha_test"
+              "render_method": "opaque"
             }
           }
         }
@@ -1324,7 +1174,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "tinted_glass",
-              "render_method": "alpha_test"
+              "render_method": "opaque"
             }
           }
         }
@@ -1598,7 +1448,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "quartz_block_top",
+              "texture": "quartz_block",
               "render_method": "opaque"
             }
           }
@@ -1609,7 +1459,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "quartz_block_bottom",
+              "texture": "smooth_quartz",
               "render_method": "opaque"
             }
           }
@@ -1697,7 +1547,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "oak_planks",
+              "texture": "oak_slab",
               "render_method": "opaque"
             }
           }
@@ -1708,7 +1558,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "spruce_planks",
+              "texture": "spruce_slab",
               "render_method": "opaque"
             }
           }
@@ -1719,7 +1569,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "birch_planks",
+              "texture": "birch_slab",
               "render_method": "opaque"
             }
           }
@@ -1730,7 +1580,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "jungle_planks",
+              "texture": "jungle_slab",
               "render_method": "opaque"
             }
           }
@@ -1741,7 +1591,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "acacia_planks",
+              "texture": "acacia_slab",
               "render_method": "opaque"
             }
           }
@@ -1752,7 +1602,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "dark_oak_planks",
+              "texture": "dark_oak_slab",
               "render_method": "opaque"
             }
           }
@@ -1763,7 +1613,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "mangrove_planks",
+              "texture": "mangrove_slab",
               "render_method": "opaque"
             }
           }
@@ -1774,7 +1624,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "cherry_planks",
+              "texture": "cherry_slab",
               "render_method": "opaque"
             }
           }
@@ -1785,7 +1635,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "bamboo_planks",
+              "texture": "bamboo_slab",
               "render_method": "opaque"
             }
           }
@@ -1796,7 +1646,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "crimson_planks",
+              "texture": "crimson_slab",
               "render_method": "opaque"
             }
           }
@@ -1807,7 +1657,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "warped_planks",
+              "texture": "warped_slab",
               "render_method": "opaque"
             }
           }
@@ -1818,7 +1668,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "stone",
+              "texture": "stone_slab",
               "render_method": "opaque"
             }
           }
@@ -1829,7 +1679,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "cobblestone",
+              "texture": "cobblestone_slab",
               "render_method": "opaque"
             }
           }
@@ -1840,7 +1690,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "stone_bricks",
+              "texture": "stone_brick_slab",
               "render_method": "opaque"
             }
           }
@@ -1851,7 +1701,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "bricks",
+              "texture": "brick_slab",
               "render_method": "opaque"
             }
           }
@@ -1862,7 +1712,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "sandstone_top",
+              "texture": "sandstone_slab",
               "render_method": "opaque"
             }
           }
@@ -1873,8 +1723,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "glass",
-              "render_method": "alpha_test"
+              "texture": "glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -1884,8 +1734,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "white_stained_glass",
-              "render_method": "alpha_test"
+              "texture": "white_stained_glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -1895,8 +1745,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "orange_stained_glass",
-              "render_method": "alpha_test"
+              "texture": "orange_stained_glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -1906,8 +1756,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "magenta_stained_glass",
-              "render_method": "alpha_test"
+              "texture": "magenta_stained_glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -1917,8 +1767,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "light_blue_stained_glass",
-              "render_method": "alpha_test"
+              "texture": "light_blue_stained_glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -1928,8 +1778,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "yellow_stained_glass",
-              "render_method": "alpha_test"
+              "texture": "yellow_stained_glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -1939,8 +1789,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "lime_stained_glass",
-              "render_method": "alpha_test"
+              "texture": "lime_stained_glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -1950,8 +1800,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "pink_stained_glass",
-              "render_method": "alpha_test"
+              "texture": "pink_stained_glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -1961,8 +1811,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "gray_stained_glass",
-              "render_method": "alpha_test"
+              "texture": "gray_stained_glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -1972,8 +1822,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "light_gray_stained_glass",
-              "render_method": "alpha_test"
+              "texture": "light_gray_stained_glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -1983,8 +1833,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "cyan_stained_glass",
-              "render_method": "alpha_test"
+              "texture": "cyan_stained_glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -1994,8 +1844,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "purple_stained_glass",
-              "render_method": "alpha_test"
+              "texture": "purple_stained_glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -2005,8 +1855,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "blue_stained_glass",
-              "render_method": "alpha_test"
+              "texture": "blue_stained_glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -2016,8 +1866,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "brown_stained_glass",
-              "render_method": "alpha_test"
+              "texture": "brown_stained_glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -2027,8 +1877,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "green_stained_glass",
-              "render_method": "alpha_test"
+              "texture": "green_stained_glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -2038,8 +1888,8 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "red_stained_glass",
-              "render_method": "alpha_test"
+              "texture": "red_stained_glass_pane",
+              "render_method": "opaque"
             }
           }
         }
@@ -2049,7 +1899,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "smooth_stone",
+              "texture": "smooth_stone_slab",
               "render_method": "opaque"
             }
           }
@@ -2060,7 +1910,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "nether_bricks",
+              "texture": "nether_brick_slab",
               "render_method": "opaque"
             }
           }
@@ -2071,7 +1921,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "quartz_block_top",
+              "texture": "quartz_slab",
               "render_method": "opaque"
             }
           }
@@ -2082,7 +1932,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "red_sandstone",
+              "texture": "red_sandstone_slab",
               "render_method": "opaque"
             }
           }
@@ -2093,7 +1943,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "prismarine",
+              "texture": "prismarine_slab",
               "render_method": "opaque"
             }
           }
@@ -2104,7 +1954,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "dark_prismarine",
+              "texture": "dark_prismarine_slab",
               "render_method": "opaque"
             }
           }
@@ -2115,7 +1965,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "prismarine_bricks",
+              "texture": "prismarine_brick_slab",
               "render_method": "opaque"
             }
           }
@@ -2126,7 +1976,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "mossy_cobblestone",
+              "texture": "mossy_cobblestone_slab",
               "render_method": "opaque"
             }
           }
@@ -2137,7 +1987,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "sandstone_top",
+              "texture": "smooth_sandstone_slab",
               "render_method": "opaque"
             }
           }
@@ -2148,7 +1998,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "red_nether_brick",
+              "texture": "red_nether_brick_slab",
               "render_method": "opaque"
             }
           }
@@ -2159,7 +2009,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "end_bricks",
+              "texture": "end_stone_brick_slab",
               "render_method": "opaque"
             }
           }
@@ -2170,7 +2020,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "andesite",
+              "texture": "andesite_slab",
               "render_method": "opaque"
             }
           }
@@ -2181,7 +2031,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "polished_andesite",
+              "texture": "polished_andesite_slab",
               "render_method": "opaque"
             }
           }
@@ -2192,7 +2042,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "diorite",
+              "texture": "diorite_slab",
               "render_method": "opaque"
             }
           }
@@ -2203,7 +2053,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "polished_diorite",
+              "texture": "polished_diorite_slab",
               "render_method": "opaque"
             }
           }
@@ -2214,7 +2064,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "granite",
+              "texture": "granite_slab",
               "render_method": "opaque"
             }
           }
@@ -2225,7 +2075,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "polished_granite",
+              "texture": "polished_granite_slab",
               "render_method": "opaque"
             }
           }
@@ -2236,7 +2086,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "mossy_stone_bricks",
+              "texture": "mossy_stone_brick_slab",
               "render_method": "opaque"
             }
           }
@@ -2247,7 +2097,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "quartz_block_bottom",
+              "texture": "smooth_quartz_slab",
               "render_method": "opaque"
             }
           }
@@ -2258,7 +2108,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "cut_sandstone",
+              "texture": "cut_sandstone_slab",
               "render_method": "opaque"
             }
           }
@@ -2269,7 +2119,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "cut_red_sandstone",
+              "texture": "cut_red_sandstone_slab",
               "render_method": "opaque"
             }
           }
@@ -2280,7 +2130,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "red_sandstone_top",
+              "texture": "smooth_red_sandstone_slab",
               "render_method": "opaque"
             }
           }
@@ -2291,7 +2141,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "cobbled_deepslate",
+              "texture": "cobbled_deepslate_slab",
               "render_method": "opaque"
             }
           }
@@ -2302,7 +2152,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "polished_deepslate",
+              "texture": "polished_deepslate_slab",
               "render_method": "opaque"
             }
           }
@@ -2313,7 +2163,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "deepslate_tiles",
+              "texture": "deepslate_tile_slab",
               "render_method": "opaque"
             }
           }
@@ -2324,7 +2174,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "deepslate_bricks",
+              "texture": "deepslate_brick_slab",
               "render_method": "opaque"
             }
           }
@@ -2335,7 +2185,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "mud_bricks",
+              "texture": "mud_brick_slab",
               "render_method": "opaque"
             }
           }
@@ -2346,7 +2196,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "blackstone",
+              "texture": "blackstone_slab",
               "render_method": "opaque"
             }
           }
@@ -2357,7 +2207,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "polished_blackstone",
+              "texture": "polished_blackstone_slab",
               "render_method": "opaque"
             }
           }
@@ -2368,7 +2218,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "polished_blackstone_bricks",
+              "texture": "polished_blackstone_brick_slab",
               "render_method": "opaque"
             }
           }
@@ -2379,7 +2229,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "tuff",
+              "texture": "tuff_slab",
               "render_method": "opaque"
             }
           }
@@ -2390,7 +2240,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "tuff_bricks",
+              "texture": "tuff_brick_slab",
               "render_method": "opaque"
             }
           }
@@ -2401,7 +2251,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "polished_tuff",
+              "texture": "polished_tuff_slab",
               "render_method": "opaque"
             }
           }
@@ -2412,7 +2262,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "bamboo_mosaic",
+              "texture": "bamboo_mosaic_slab",
               "render_method": "opaque"
             }
           }
@@ -2423,7 +2273,7 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "pale_oak_planks",
+              "texture": "pale_oak_slab",
               "render_method": "opaque"
             }
           }
@@ -2434,32 +2284,19 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "resin_bricks",
+              "texture": "resin_brick_slab",
               "render_method": "opaque"
             }
           }
         }
       },
       {
-        "condition": "q.block_state('bigdoors:overlay') == 1 && q.block_state('bigdoors:geometry_id') == 0 && q.block_state('bigdoors:panel_rotation') < 4",
+        "condition": "q.block_state('bigdoors:material_group') == 15 && q.block_state('bigdoors:material_id') == 15",
         "components": {
-          "minecraft:geometry": "geometry.bigdoors.strapped_sides",
           "minecraft:material_instances": {
-            "overlay": {
-              "texture": "bigdoors_panel_overlay_h",
-              "render_method": "alpha_test"
-            }
-          }
-        }
-      },
-      {
-        "condition": "q.block_state('bigdoors:overlay') == 1 && q.block_state('bigdoors:geometry_id') == 0 && q.block_state('bigdoors:panel_rotation') >= 4",
-        "components": {
-          "minecraft:geometry": "geometry.bigdoors.strapped_sides_v",
-          "minecraft:material_instances": {
-            "overlay": {
-              "texture": "bigdoors_panel_overlay_v",
-              "render_method": "alpha_test"
+            "*": {
+              "texture": "bigdoors_hinge_unmatched",
+              "render_method": "opaque"
             }
           }
         }
