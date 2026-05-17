@@ -2,14 +2,6 @@ import { ItemStack } from "@minecraft/server";
 import { typeIdForIndex, blockStatesToMaterial } from "../domain/MaterialRegistry.js";
 import { HINGE_BLOCK_ID, PANEL_BLOCK_ID } from "../util/Constants.js";
 
-function isCreativeMode(player) {
-  try {
-    return player?.getGameMode() === "creative";
-  } catch {
-    return false;
-  }
-}
-
 export class BreakHandler {
   constructor(manager) {
     this._manager = manager;
@@ -21,29 +13,49 @@ export class BreakHandler {
     const group = event.brokenBlockPermutation.getState("bigdoors:material_group");
     const id = event.brokenBlockPermutation.getState("bigdoors:material_id");
     const materialIndex = blockStatesToMaterial(group, id);
-    const creative = isCreativeMode(event.player);
 
     const assembly = this._manager.findByPosition(pos);
     if (!assembly) return;
 
     this._manager.removePanelFromAssembly(assembly.id, pos);
 
-    if (!creative) {
-      const vanillaTypeId = typeIdForIndex(materialIndex);
-      if (vanillaTypeId) {
-        dimension.spawnItem(new ItemStack(vanillaTypeId, 1), pos);
-      }
+    const vanillaTypeId = typeIdForIndex(materialIndex);
+    if (vanillaTypeId) {
+      dimension.spawnItem(new ItemStack(vanillaTypeId, 1), pos);
     }
   }
 
   handleHingeBreak(event) {
     const hingePos = event.block.location;
     const dimension = event.block.dimension;
-    const creative = isCreativeMode(event.player);
 
     const assembly = this._manager.findByPosition(hingePos);
     if (!assembly) return;
 
+    this._dissolveAssembly(assembly, dimension);
+
+    dimension.spawnItem(new ItemStack(HINGE_BLOCK_ID, 1), hingePos);
+  }
+
+  handleCreativePanelBreak(pos, dimension, brokenBlockPermutation) {
+    const group = brokenBlockPermutation.getState("bigdoors:material_group");
+    const id = brokenBlockPermutation.getState("bigdoors:material_id");
+    const materialIndex = blockStatesToMaterial(group, id);
+
+    const assembly = this._manager.findByPosition(pos);
+    if (!assembly) return;
+
+    this._manager.removePanelFromAssembly(assembly.id, pos);
+  }
+
+  handleCreativeHingeBreak(pos, dimension) {
+    const assembly = this._manager.findByPosition(pos);
+    if (!assembly) return;
+
+    this._dissolveAssembly(assembly, dimension);
+  }
+
+  _dissolveAssembly(assembly, dimension) {
     if (assembly.isOpen) {
       for (const panel of assembly.panelPositions) {
         const b = dimension.getBlock(panel.currentPos);
@@ -69,9 +81,5 @@ export class BreakHandler {
     }
 
     this._manager.dissolveAssembly(assembly.id);
-
-    if (!creative) {
-      dimension.spawnItem(new ItemStack(HINGE_BLOCK_ID, 1), hingePos);
-    }
   }
 }
