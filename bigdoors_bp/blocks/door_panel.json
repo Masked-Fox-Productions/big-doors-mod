@@ -194,6 +194,93 @@
         }
       },
       {
+        "condition": "(q.block_state('bigdoors:geometry_id') >= 1 && q.block_state('bigdoors:geometry_id') <= 4) && q.block_state('bigdoors:panel_rotation') < 4",
+        "components": {
+          "minecraft:collision_box": {
+            "origin": [
+              -2,
+              0,
+              -2
+            ],
+            "size": [
+              4,
+              24,
+              4
+            ]
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -2,
+              0,
+              -2
+            ],
+            "size": [
+              4,
+              16,
+              4
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('bigdoors:geometry_id') == 5 && q.block_state('bigdoors:panel_rotation') < 4",
+        "components": {
+          "minecraft:collision_box": {
+            "origin": [
+              -1,
+              0,
+              -8
+            ],
+            "size": [
+              2,
+              16,
+              16
+            ]
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -1,
+              0,
+              -8
+            ],
+            "size": [
+              2,
+              16,
+              16
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('bigdoors:geometry_id') == 7 && q.block_state('bigdoors:panel_rotation') < 4",
+        "components": {
+          "minecraft:collision_box": {
+            "origin": [
+              -1,
+              0,
+              -8
+            ],
+            "size": [
+              2,
+              16,
+              16
+            ]
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -1,
+              0,
+              -8
+            ],
+            "size": [
+              2,
+              16,
+              16
+            ]
+          }
+        }
+      },
+      {
         "condition": "q.block_state('bigdoors:panel_rotation') == 1",
         "components": {
           "minecraft:transformation": {
