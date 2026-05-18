@@ -8,7 +8,7 @@ import {
   makeMockPlayer,
   placeBlock,
 } from "./helpers/mock-dimension.mjs";
-import { HINGE_BLOCK_ID, PANEL_BLOCK_ID } from "../bigdoors_bp/scripts/util/Constants.js";
+import { HINGE_BLOCK_ID, PANEL_BLOCK_ID, UNMATCHED_MATERIAL_INDEX } from "../bigdoors_bp/scripts/util/Constants.js";
 
 describe("HingePlacementHandler", () => {
   let manager;
@@ -119,6 +119,34 @@ describe("HingePlacementHandler", () => {
     const assembly2 = manager.findByPosition({ x: 0, y: 1, z: 0 });
     assert.equal(assembly1, assembly2);
     assert.equal(assembly1.hingePositions.length, 2);
+  });
+
+  it("hinge added to assembly with panels inherits existing material", () => {
+    const dim = makeMockDimension();
+    const hingeStates = { "bigdoors:facing": "north", "bigdoors:mode": "horizontal", "bigdoors:door_side": "east" };
+
+    const block1 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 }, hingeStates);
+    const player = makeMockPlayer({ x: 0, y: 0, z: -1 });
+    handler.onPlace(block1, player, dim);
+
+    const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
+    manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 12);
+    manager.setHingeMaterialIndex(assembly.id, 12);
+
+    const block2 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 1, z: 0 }, {
+      "bigdoors:facing": "north",
+      "bigdoors:mode": "horizontal",
+      "bigdoors:door_side": "none",
+      "bigdoors:material_group": Math.floor(UNMATCHED_MATERIAL_INDEX / 16),
+      "bigdoors:material_id": UNMATCHED_MATERIAL_INDEX % 16,
+    });
+    handler.onPlace(block2, player, dim);
+
+    const merged = manager.findByPosition({ x: 0, y: 1, z: 0 });
+    assert.equal(merged, assembly);
+    assert.equal(block2.permutation.getState("bigdoors:material_group"), 0);
+    assert.equal(block2.permutation.getState("bigdoors:material_id"), 12);
+    assert.equal(merged.hingePositions[1].materialIndex, 12);
   });
 
   it("second hinge below existing hinge merges into same assembly", () => {

@@ -21,6 +21,14 @@ function posAdd(pos, offset) {
   return { x: pos.x + offset.x, y: pos.y + offset.y, z: pos.z + offset.z };
 }
 
+function materialIndexForAssembly(assembly) {
+  const matchedHinge = assembly.hingePositions.find(
+    (hinge) => hinge.materialIndex !== UNMATCHED_MATERIAL_INDEX
+  );
+  if (matchedHinge) return matchedHinge.materialIndex;
+  return assembly.panelPositions[0]?.materialIndex ?? UNMATCHED_MATERIAL_INDEX;
+}
+
 export class HingePlacementHandler {
   constructor(manager) {
     this._manager = manager;
@@ -49,13 +57,14 @@ export class HingePlacementHandler {
 
     let assembly = this._mergeWithAdjacentHinge(pos, dimension, hingeType);
     if (assembly) {
+      const materialIndex = materialIndexForAssembly(assembly);
       block.setPermutation(
         BlockPermutation.resolve(block.typeId, {
           "bigdoors:facing": assembly.facing,
           "bigdoors:mode": assembly.mode,
           "bigdoors:door_side": assembly.doorSide || "none",
-          "bigdoors:material_group": Math.floor(UNMATCHED_MATERIAL_INDEX / 16),
-          "bigdoors:material_id": UNMATCHED_MATERIAL_INDEX % 16,
+          "bigdoors:material_group": Math.floor(materialIndex / 16),
+          "bigdoors:material_id": materialIndex % 16,
         })
       );
     } else {
@@ -122,6 +131,11 @@ export class HingePlacementHandler {
 
     if (sorted.length > 1) {
       this._manager.mergeAssemblies(canonical.id, ...sorted.slice(1).map(a => a.id));
+    }
+
+    const materialIndex = materialIndexForAssembly(canonical);
+    if (materialIndex !== UNMATCHED_MATERIAL_INDEX) {
+      this._manager.setHingeMaterialIndex(canonical.id, materialIndex);
     }
 
     return canonical;
