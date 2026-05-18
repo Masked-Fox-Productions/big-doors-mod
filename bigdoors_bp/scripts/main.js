@@ -148,7 +148,8 @@ hingePlacement.register();
 const panelPlacement = new PanelPlacementHandler(manager);
 panelPlacement.register();
 
-initRopes(ropeManager);
+const ropeHandlers = initRopes(ropeManager);
+ropeInteraction = ropeHandlers.interaction;
 
 console.warn("[bigdoors] === Initialization complete ===");
 
