@@ -138,7 +138,6 @@ export class RopeChain {
       brokenPositions.push({ ...drop.segments[s] });
     }
     drop.segments.length = segmentIndex;
-    drop.remaining = 0;
 
     for (let i = this.drops.length - 1; i > dropIndex; i--) {
       const d = this.drops[i];

@@ -150,6 +150,7 @@ panelPlacement.register();
 
 const ropeHandlers = initRopes(ropeManager);
 ropeInteraction = ropeHandlers.interaction;
+ropeBreak = ropeHandlers.breakHandler;
 
 console.warn("[bigdoors] === Initialization complete ===");
 
