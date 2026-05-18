@@ -1,10 +1,7 @@
 import { world } from "@minecraft/server";
 import { DoorAssembly } from "./domain/DoorAssembly.js";
 import { PERSISTENCE_KEY, UNMATCHED_MATERIAL_INDEX } from "./util/Constants.js";
-
-function posKey(pos) {
-  return `${pos.x},${pos.y},${pos.z}`;
-}
+import { posKey } from "./util/posKey.js";
 
 export class DoorManager {
   constructor() {

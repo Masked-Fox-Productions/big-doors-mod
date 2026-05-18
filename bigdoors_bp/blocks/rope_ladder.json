@@ -1,0 +1,64 @@
+{
+  "format_version": "1.26.0",
+  "minecraft:block": {
+    "description": {
+      "identifier": "ropes:rope_ladder",
+      "menu_category": {
+        "category": "nature"
+      },
+      "states": {
+        "ropes:ladder_state": ["coiled", "segment"],
+        "ropes:face": ["north", "south", "east", "west"]
+      }
+    },
+    "components": {
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 0.5
+      },
+      "minecraft:collision_box": {
+        "origin": [-8, 0, 6],
+        "size": [16, 16, 2]
+      },
+      "minecraft:geometry": "geometry.ropes.rope_ladder",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "ropes_rope_ladder_segment",
+          "render_method": "alpha_test"
+        }
+      },
+      "minecraft:light_dampening": 0,
+      "ropes:rope_ladder_component": {}
+    },
+    "permutations": [
+      {
+        "condition": "q.block_state('ropes:ladder_state') == 'coiled'",
+        "components": {
+          "minecraft:material_instances": {
+            "*": {
+              "texture": "ropes_rope_ladder_coil",
+              "render_method": "alpha_test"
+            }
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('ropes:face') == 'south'",
+        "components": {
+          "minecraft:transformation": { "rotation": [0, 180, 0] }
+        }
+      },
+      {
+        "condition": "q.block_state('ropes:face') == 'east'",
+        "components": {
+          "minecraft:transformation": { "rotation": [0, 270, 0] }
+        }
+      },
+      {
+        "condition": "q.block_state('ropes:face') == 'west'",
+        "components": {
+          "minecraft:transformation": { "rotation": [0, 90, 0] }
+        }
+      }
+    ]
+  }
+}

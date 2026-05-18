@@ -1,8 +1,5 @@
 import { computeArcPositions } from "../domain/RotationMath.js";
-
-function posKey(pos) {
-  return `${pos.x},${pos.y},${pos.z}`;
-}
+import { posKey } from "../util/posKey.js";
 
 /**
  * Sweep entities out of the path of a rotating door.
