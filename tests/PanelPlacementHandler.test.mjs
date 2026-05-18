@@ -7,7 +7,7 @@ import {
   makeMockDimension,
   placeBlock,
 } from "./helpers/mock-dimension.mjs";
-import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, PANEL_BLOCK_ID, GEOMETRY_CLASS_SLAB, GEOMETRY_ID_SLAB_TOP, UNMATCHED_MATERIAL_INDEX } from "../bigdoors_bp/scripts/util/Constants.js";
+import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, PANEL_BLOCK_ID, PANEL_SLAB_BLOCK_ID, GEOMETRY_CLASS_SLAB, GEOMETRY_ID_SLAB_TOP, UNMATCHED_MATERIAL_INDEX } from "../bigdoors_bp/scripts/util/Constants.js";
 
 describe("PanelPlacementHandler", () => {
   let manager;
@@ -639,7 +639,7 @@ describe("PanelPlacementHandler", () => {
 
       const result = handler.onPlace(block, dim);
       assert.equal(result, true);
-      assert.equal(block.typeId, PANEL_BLOCK_ID);
+      assert.equal(block.typeId, PANEL_SLAB_BLOCK_ID);
 
       const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
       assert.equal(assembly.panelPositions[0].geometryId, GEOMETRY_CLASS_SLAB);
@@ -655,7 +655,7 @@ describe("PanelPlacementHandler", () => {
 
       const result = handler.onPlace(block, dim);
       assert.equal(result, true);
-      assert.equal(block.typeId, PANEL_BLOCK_ID);
+      assert.equal(block.typeId, PANEL_SLAB_BLOCK_ID);
 
       const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
       assert.equal(assembly.panelPositions[0].geometryId, GEOMETRY_ID_SLAB_TOP);

@@ -1,6 +1,6 @@
 import { BlockPermutation, ItemStack } from "@minecraft/server";
 import { typeIdForIndex, blockStatesToMaterial } from "../domain/MaterialRegistry.js";
-import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, PANEL_BLOCK_ID, UNMATCHED_MATERIAL_INDEX } from "../util/Constants.js";
+import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, UNMATCHED_MATERIAL_INDEX } from "../util/Constants.js";
 
 export class BreakHandler {
   constructor(manager) {
