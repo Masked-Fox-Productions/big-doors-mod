@@ -8,7 +8,7 @@ function makeBlock(typeId, pos, face, stateKey) {
   const states = {};
   if (stateKey) states[stateKey] = face;
   states["ropes:face"] = face;
-  return {
+  const block = {
     typeId,
     location: { ...pos },
     dimension: {
@@ -18,7 +18,11 @@ function makeBlock(typeId, pos, face, stateKey) {
     permutation: {
       getState(name) { return states[name] ?? null; },
     },
+    setPermutation(perm) {
+      block.permutation = perm;
+    },
   };
+  return block;
 }
 
 describe("RopePlacementHandler", () => {
@@ -86,6 +90,40 @@ describe("RopePlacementHandler", () => {
     const found = mgr.getChainAtPosition("minecraft:overworld", { x: 6, y: 63, z: 5 });
     assert.ok(found);
     assert.notEqual(found.id, chain.id);
+  });
+
+  it("placing rope below coiled anchor joins chain as segment", () => {
+    const chain = mgr.createChain("rope", "minecraft:overworld", { x: 5, y: 64, z: 5 }, "up", 0);
+
+    const block = makeBlock("ropes:rope", { x: 5, y: 63, z: 5 }, "up", "ropes:rope_state");
+    handler._onPlace(block, {}, block.dimension);
+
+    const found = mgr.getChainAtPosition("minecraft:overworld", { x: 5, y: 63, z: 5 });
+    assert.equal(found, chain);
+    assert.equal(chain.drops[0].segments.length, 1);
+    assert.equal(block.permutation.getState("ropes:rope_state"), "segment");
+  });
+
+  it("placing rope above existing chain joins chain as segment", () => {
+    const chain = mgr.createChain("rope", "minecraft:overworld", { x: 5, y: 63, z: 5 }, "up", 0);
+
+    const block = makeBlock("ropes:rope", { x: 5, y: 64, z: 5 }, "up", "ropes:rope_state");
+    handler._onPlace(block, {}, block.dimension);
+
+    const found = mgr.getChainAtPosition("minecraft:overworld", { x: 5, y: 64, z: 5 });
+    assert.equal(found, chain);
+    assert.equal(block.permutation.getState("ropes:rope_state"), "segment");
+  });
+
+  it("placing rope ladder below coiled anchor joins chain", () => {
+    const chain = mgr.createChain("rope_ladder", "minecraft:overworld", { x: 5, y: 64, z: 5 }, "north", 0);
+
+    const block = makeBlock("ropes:rope_ladder", { x: 5, y: 63, z: 5 }, "north", "ropes:ladder_state");
+    handler._onPlace(block, {}, block.dimension);
+
+    const found = mgr.getChainAtPosition("minecraft:overworld", { x: 5, y: 63, z: 5 });
+    assert.equal(found, chain);
+    assert.equal(block.permutation.getState("ropes:ladder_state"), "segment");
   });
 
   it("placement creates chain in RopeManager and position index is updated", () => {

@@ -1,8 +1,13 @@
-import { world, system } from "@minecraft/server";
+import { world, system, InputButton } from "@minecraft/server";
 import { CLIMB_INTERVAL_TICKS, ROPE_CLIMB_SPEED, LADDER_CLIMB_SPEED } from "../util/RopeConstants.js";
 
 const SLOW_FALLING_DURATION = 4;
 const SLOW_FALLING_ID = "slow_falling";
+const MOVEMENT_DEADZONE = 0.15;
+
+function isPressed(state) {
+  return state === "Pressed" || state === true;
+}
 
 export class ClimbableSubsystem {
   constructor(ropeManager) {
@@ -12,6 +17,7 @@ export class ClimbableSubsystem {
 
   register() {
     system.runInterval(() => this._tick(), CLIMB_INTERVAL_TICKS);
+    console.warn("[ropes] ClimbableSubsystem registered, interval=" + CLIMB_INTERVAL_TICKS);
   }
 
   _tick() {
@@ -50,41 +56,48 @@ export class ClimbableSubsystem {
 
       let isJumping = false;
       let isSneaking = false;
+      let isMoving = false;
       try {
-        isJumping = player.isJumping;
-      } catch { /* player may be invalid */ }
+        isJumping = isPressed(player.inputInfo.getButtonState(InputButton.Jump));
+      } catch (err) {
+        console.warn(`[ropes] inputInfo.Jump failed: ${err}`);
+        try { isJumping = player.isJumping; } catch {}
+      }
       try {
-        isSneaking = player.isSneaking;
-      } catch { /* player may be invalid */ }
+        isSneaking = isPressed(player.inputInfo.getButtonState(InputButton.Sneak));
+      } catch (err) {
+        console.warn(`[ropes] inputInfo.Sneak failed: ${err}`);
+        try { isSneaking = player.isSneaking; } catch {}
+      }
+      try {
+        const movement = player.inputInfo.getMovementVector();
+        isMoving = Math.abs(movement.x) > MOVEMENT_DEADZONE || Math.abs(movement.y) > MOVEMENT_DEADZONE;
+      } catch {}
 
       if (chain.type === "rope_ladder") {
-        if (isJumping) {
-          try {
-            player.applyKnockback(0, 0, 0, LADDER_CLIMB_SPEED);
-          } catch { /* player may be invalid */ }
+        if (isJumping || isMoving) {
+          this._applyVerticalLift(player, LADDER_CLIMB_SPEED);
         }
       } else {
         if (!state.effectApplied) {
           try {
             player.addEffect(SLOW_FALLING_ID, SLOW_FALLING_DURATION, { amplifier: 0, showParticles: false });
             state.effectApplied = true;
-          } catch { /* effect may fail */ }
+          } catch (err) { console.warn(`[ropes] addEffect failed: ${err}`); }
         }
 
         if (isJumping) {
-          try {
-            player.applyKnockback(0, 0, 0, ROPE_CLIMB_SPEED);
-          } catch { /* player may be invalid */ }
+          this._applyVerticalLift(player, ROPE_CLIMB_SPEED);
         } else if (isSneaking) {
           try {
             player.removeEffect(SLOW_FALLING_ID);
             state.effectApplied = false;
-          } catch { /* effect may fail */ }
+          } catch {}
         } else {
           try {
             player.addEffect(SLOW_FALLING_ID, SLOW_FALLING_DURATION, { amplifier: 0, showParticles: false });
             state.effectApplied = true;
-          } catch { /* effect may fail */ }
+          } catch {}
         }
       }
 
@@ -93,9 +106,17 @@ export class ClimbableSubsystem {
       if (state.effectApplied) {
         try {
           player.removeEffect(SLOW_FALLING_ID);
-        } catch { /* effect may fail */ }
+        } catch {}
       }
       this._climbingState.delete(player.id);
+    }
+  }
+
+  _applyVerticalLift(player, strength) {
+    try {
+      player.applyKnockback({ x: 0, z: 0 }, strength);
+    } catch (err) {
+      console.warn(`[ropes] knockback failed: ${err}`);
     }
   }
 }

@@ -131,6 +131,12 @@ export class BlockPermutation {
   }
 }
 
+export const InputButton = {
+  Jump: "Jump",
+  Sneak: "Sneak",
+};
+
+
 export const EntityInitializationCause = {
   Born: "Born",
   Event: "Event",

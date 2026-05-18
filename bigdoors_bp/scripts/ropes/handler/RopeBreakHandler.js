@@ -12,10 +12,11 @@ export class RopeBreakHandler {
       const dimId = event.block.dimension.id;
       const chainIds = this._manager.getChainsForSupportBlock(dimId, pos);
       if (!chainIds) return;
+      const creative = event.player?.getGameMode?.() === "creative";
       for (const chainId of [...chainIds]) {
         const chain = this._manager.getChain(chainId);
         if (!chain) continue;
-        this._breakEntireChain(chain, event.block.dimension, false);
+        this._breakEntireChain(chain, event.block.dimension, creative);
       }
     });
 
@@ -26,8 +27,9 @@ export class RopeBreakHandler {
       if (!chain || !chain.isWhipDeployed) return;
       event.cancel = true;
       const dim = event.block.dimension;
+      const creative = event.player?.getGameMode?.() === "creative";
       system.run(() => {
-        this._breakEntireChain(chain, dim, false);
+        this._breakEntireChain(chain, dim, creative);
       });
     });
   }

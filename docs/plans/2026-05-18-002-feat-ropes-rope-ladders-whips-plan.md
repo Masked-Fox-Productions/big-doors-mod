@@ -259,7 +259,7 @@ flowchart TB
     U6 --> U7
 ```
 
-- [ ] **Unit 1: Domain Model and RopeManager**
+- [x] **Unit 1: Domain Model and RopeManager**
 
 **Goal:** Establish the pure-JS domain model for rope chains and the manager that owns all rope state with persistence.
 
@@ -314,7 +314,7 @@ flowchart TB
 
 ---
 
-- [ ] **Unit 2: Block and Item JSON Definitions + Resource Pack**
+- [x] **Unit 2: Block and Item JSON Definitions + Resource Pack**
 
 **Goal:** Define all block JSONs, item JSONs, geometry files, textures, and lang strings needed for the three new items to exist in-game (even if non-functional).
 
@@ -365,7 +365,7 @@ flowchart TB
 
 ---
 
-- [ ] **Unit 3: Entry Point Integration and Placement Handlers**
+- [x] **Unit 3: Entry Point Integration and Placement Handlers**
 
 **Goal:** Wire rope block components into `main.js` startup, instantiate RopeManager, and implement placement logic for both rope and rope ladder blocks.
 
@@ -415,7 +415,7 @@ flowchart TB
 
 ---
 
-- [ ] **Unit 4: Coil/Uncoil and Segment Addition**
+- [x] **Unit 4: Coil/Uncoil and Segment Addition**
 
 **Goal:** Implement the core interact-to-extend and interact-to-retract mechanics shared by ropes and rope ladders, plus adding segments to coils.
 
@@ -466,7 +466,7 @@ flowchart TB
 
 ---
 
-- [ ] **Unit 5: Cascading Terrain-Follow (Rope Only)**
+- [x] **Unit 5: Cascading Terrain-Follow (Rope Only)**
 
 **Goal:** Implement ledge coil creation and multi-drop cascading for ropes. When a rope hits solid ground during uncoil, excess segments pool into a ledge coil that can extend further.
 
@@ -515,7 +515,7 @@ flowchart TB
 
 ---
 
-- [ ] **Unit 6: Break Handler**
+- [x] **Unit 6: Break Handler**
 
 **Goal:** Implement break behavior for hand-placed rope segments, anchors, and support block removal.
 
@@ -562,7 +562,7 @@ flowchart TB
 
 ---
 
-- [ ] **Unit 7: Whip Item**
+- [x] **Unit 7: Whip Item**
 
 **Goal:** Implement the whip as a weapon (vanilla-range melee) and tool (rope segment deployment from range), including whip-specific break behavior and return-to-deployer logic.
 
@@ -616,7 +616,7 @@ flowchart TB
 
 ---
 
-- [ ] **Unit 8: Climbable Subsystem**
+- [x] **Unit 8: Climbable Subsystem**
 
 **Goal:** Make rope and rope ladder blocks climbable using script-based velocity manipulation, since `minecraft:climbable` does not exist for custom blocks.
 

@@ -91,7 +91,7 @@ system.beforeEvents.startup.subscribe((ev) => {
       if (ropeBreak) ropeBreak.handleBreak(e);
     },
     beforeOnPlayerPlace(e) {
-      const face = e.face ?? "up";
+      const face = (e.face ?? "Up").toLowerCase();
       e.permutationToPlace = BlockPermutation.resolve(ROPE_BLOCK_ID, {
         "ropes:rope_state": "coiled",
         "ropes:face": face,
@@ -107,7 +107,7 @@ system.beforeEvents.startup.subscribe((ev) => {
       if (ropeBreak) ropeBreak.handleBreak(e);
     },
     beforeOnPlayerPlace(e) {
-      const face = e.face ?? "north";
+      const face = (e.face ?? "North").toLowerCase();
       const wallFaces = new Set(["north", "south", "east", "west"]);
       if (!wallFaces.has(face)) {
         e.cancel = true;

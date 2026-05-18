@@ -28,6 +28,7 @@
         }
       },
       "minecraft:light_dampening": 0,
+      "minecraft:loot": "loot_tables/empty.json",
       "ropes:rope_component": {}
     },
     "permutations": [
