@@ -2,13 +2,14 @@ import { BlockPermutation, ItemStack, system } from "@minecraft/server";
 import { getRotateFn } from "../domain/RotationMath.js";
 import { checkPath, checkClose } from "../domain/ObstructionChecker.js";
 import { sweep } from "../subsystem/EntitySweeper.js";
-import { PANEL_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, DIR_OFFSETS, OPPOSITE_DIR, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB, GEOMETRY_CLASS_BARS, GEOMETRY_CLASS_PANE } from "../util/Constants.js";
+import { REDSTONE_DEBOUNCE_TICKS, DIR_OFFSETS, OPPOSITE_DIR, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB, GEOMETRY_CLASS_BARS, GEOMETRY_CLASS_PANE } from "../util/Constants.js";
 import {
   materialToBlockStates,
   panelBlockStates,
   resolveGeometryId,
   geometryClassForMaterial,
   resolveVerticalGeometryId,
+  panelBlockIdForMaterial,
 } from "../domain/MaterialRegistry.js";
 import { closedRotation, openRotation } from "../domain/PanelRotation.js";
 
@@ -147,6 +148,7 @@ export class InteractionHandler {
       tuples.push({
         source: panelPositions[i],
         dest: destinations[i],
+        blockId: panelBlockIdForMaterial(matIdx),
         states: panelBlockStates(matIdx, geoId, rotation, panel.overlay ?? 0),
       });
     }
@@ -161,7 +163,7 @@ export class InteractionHandler {
     for (const t of tuples) {
       const b = dimension.getBlock(t.dest);
       if (b) {
-        b.setPermutation(BlockPermutation.resolve(PANEL_BLOCK_ID, t.states));
+        b.setPermutation(BlockPermutation.resolve(t.blockId, t.states));
       }
     }
 
@@ -221,6 +223,7 @@ export class InteractionHandler {
       tuples.push({
         source: currentPositions[i],
         dest: closedPositions[i],
+        blockId: panelBlockIdForMaterial(matIdx),
         states: panelBlockStates(matIdx, geoId, rotation, panel.overlay ?? 0),
       });
     }
@@ -235,7 +238,7 @@ export class InteractionHandler {
     for (const t of tuples) {
       const b = dimension.getBlock(t.dest);
       if (b) {
-        b.setPermutation(BlockPermutation.resolve(PANEL_BLOCK_ID, t.states));
+        b.setPermutation(BlockPermutation.resolve(t.blockId, t.states));
       }
     }
 

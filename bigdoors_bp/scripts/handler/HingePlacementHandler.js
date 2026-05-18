@@ -2,7 +2,7 @@ import { world, BlockPermutation } from "@minecraft/server";
 import {
   HINGE_BLOCK_ID,
   HIDDEN_HINGE_BLOCK_ID,
-  PANEL_BLOCK_ID,
+  PANEL_BLOCK_IDS,
   DIR_OFFSETS,
   DIRECTIONS,
   OPPOSITE_DIR,
@@ -146,7 +146,7 @@ export class HingePlacementHandler {
       const offset = DIR_OFFSETS[dir];
       const neighborPos = posAdd(hingePos, offset);
       const neighborBlock = dimension.getBlock(neighborPos);
-      if (!neighborBlock || neighborBlock.typeId !== PANEL_BLOCK_ID) continue;
+      if (!neighborBlock || !PANEL_BLOCK_IDS.has(neighborBlock.typeId)) continue;
 
       const otherAssembly = this._manager.findByPosition(neighborPos);
       if (!otherAssembly || otherAssembly.id === newAssembly.id) continue;
@@ -163,10 +163,10 @@ export class HingePlacementHandler {
   _clearBoundaryOverlays(assembly, dimension) {
     for (const bp of assembly.boundaryPanels) {
       const block = dimension.getBlock(bp.currentPos);
-      if (!block || block.typeId !== PANEL_BLOCK_ID) continue;
+      if (!block || !PANEL_BLOCK_IDS.has(block.typeId)) continue;
       const perm = block.permutation;
       block.setPermutation(
-        BlockPermutation.resolve(PANEL_BLOCK_ID, {
+        BlockPermutation.resolve(block.typeId, {
           "bigdoors:material_group": perm.getState("bigdoors:material_group"),
           "bigdoors:material_id": perm.getState("bigdoors:material_id"),
           "bigdoors:geometry_id": perm.getState("bigdoors:geometry_id"),

@@ -4,7 +4,21 @@ import {
   indexForTypeId,
   typeIdForIndex,
   resolveGeometryId,
+  panelBlockIdForMaterial,
 } from "../bigdoors_bp/scripts/domain/MaterialRegistry.js";
+import {
+  PANEL_BLOCK_ID,
+  PANEL_FENCE_BLOCK_ID,
+  PANEL_BARS_BLOCK_ID,
+  PANEL_PANE_BLOCK_ID,
+  PANEL_SLAB_BLOCK_ID,
+  PANEL_BLOCK_IDS,
+  GEOMETRY_CLASS_FENCE,
+  GEOMETRY_CLASS_BARS,
+  GEOMETRY_CLASS_PANE,
+  GEOMETRY_CLASS_SLAB,
+  panelBlockIdForGeoClass,
+} from "../bigdoors_bp/scripts/util/Constants.js";
 
 describe("MaterialRegistry", () => {
   it("maps cobblestone typeId to its index and back", () => {
@@ -94,6 +108,57 @@ describe("resolveGeometryId — pane", () => {
   });
   it("returns pane_after (14) with only after neighbor", () => {
     assert.equal(resolveGeometryId(PANE_MAT, false, true), 14);
+  });
+});
+
+describe("panelBlockIdForGeoClass", () => {
+  it("returns fence block ID for GEOMETRY_CLASS_FENCE", () => {
+    assert.equal(panelBlockIdForGeoClass(GEOMETRY_CLASS_FENCE), PANEL_FENCE_BLOCK_ID);
+  });
+  it("returns bars block ID for GEOMETRY_CLASS_BARS", () => {
+    assert.equal(panelBlockIdForGeoClass(GEOMETRY_CLASS_BARS), PANEL_BARS_BLOCK_ID);
+  });
+  it("returns pane block ID for GEOMETRY_CLASS_PANE", () => {
+    assert.equal(panelBlockIdForGeoClass(GEOMETRY_CLASS_PANE), PANEL_PANE_BLOCK_ID);
+  });
+  it("returns slab block ID for GEOMETRY_CLASS_SLAB", () => {
+    assert.equal(panelBlockIdForGeoClass(GEOMETRY_CLASS_SLAB), PANEL_SLAB_BLOCK_ID);
+  });
+  it("returns default PANEL_BLOCK_ID for full block (0)", () => {
+    assert.equal(panelBlockIdForGeoClass(0), PANEL_BLOCK_ID);
+  });
+  it("returns default PANEL_BLOCK_ID for undefined/null", () => {
+    assert.equal(panelBlockIdForGeoClass(undefined), PANEL_BLOCK_ID);
+    assert.equal(panelBlockIdForGeoClass(null), PANEL_BLOCK_ID);
+  });
+});
+
+describe("panelBlockIdForMaterial", () => {
+  it("returns fence block ID for oak_fence (index 80)", () => {
+    assert.equal(panelBlockIdForMaterial(80), PANEL_FENCE_BLOCK_ID);
+  });
+  it("returns default block ID for oak_planks (index 0)", () => {
+    assert.equal(panelBlockIdForMaterial(0), PANEL_BLOCK_ID);
+  });
+  it("returns bars block ID for iron_bars (index 92)", () => {
+    assert.equal(panelBlockIdForMaterial(92), PANEL_BARS_BLOCK_ID);
+  });
+  it("returns pane block ID for glass_pane (index 144)", () => {
+    assert.equal(panelBlockIdForMaterial(144), PANEL_PANE_BLOCK_ID);
+  });
+  it("returns slab block ID for oak_slab (index 128)", () => {
+    assert.equal(panelBlockIdForMaterial(128), PANEL_SLAB_BLOCK_ID);
+  });
+});
+
+describe("PANEL_BLOCK_IDS set", () => {
+  it("contains all five panel block IDs", () => {
+    assert.equal(PANEL_BLOCK_IDS.size, 5);
+    assert.ok(PANEL_BLOCK_IDS.has(PANEL_BLOCK_ID));
+    assert.ok(PANEL_BLOCK_IDS.has(PANEL_FENCE_BLOCK_ID));
+    assert.ok(PANEL_BLOCK_IDS.has(PANEL_BARS_BLOCK_ID));
+    assert.ok(PANEL_BLOCK_IDS.has(PANEL_PANE_BLOCK_ID));
+    assert.ok(PANEL_BLOCK_IDS.has(PANEL_SLAB_BLOCK_ID));
   });
 });
 

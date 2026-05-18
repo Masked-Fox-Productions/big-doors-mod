@@ -5,6 +5,7 @@ import {
   GEOMETRY_CLASS_BARS,
   GEOMETRY_CLASS_PANE,
   DIR_OFFSETS,
+  panelBlockIdForGeoClass,
 } from "../util/Constants.js";
 
 /** @type {Map<string, number>} typeId → index */
@@ -24,6 +25,10 @@ export function typeIdForIndex(index) {
 
 export function geometryClassForMaterial(flatIndex) {
   return MATERIAL_GEOMETRY_CLASS.get(flatIndex) ?? 0;
+}
+
+export function panelBlockIdForMaterial(flatIndex) {
+  return panelBlockIdForGeoClass(geometryClassForMaterial(flatIndex));
 }
 
 /**

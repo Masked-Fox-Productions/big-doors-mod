@@ -7,6 +7,18 @@
 export const HINGE_BLOCK_ID = "bigdoors:hinge";
 export const HIDDEN_HINGE_BLOCK_ID = "bigdoors:hidden_hinge";
 export const PANEL_BLOCK_ID = "bigdoors:door_panel";
+export const PANEL_FENCE_BLOCK_ID = "bigdoors:door_panel_fence";
+export const PANEL_BARS_BLOCK_ID = "bigdoors:door_panel_bars";
+export const PANEL_PANE_BLOCK_ID = "bigdoors:door_panel_pane";
+export const PANEL_SLAB_BLOCK_ID = "bigdoors:door_panel_slab";
+
+export const PANEL_BLOCK_IDS = new Set([
+  PANEL_BLOCK_ID,
+  PANEL_FENCE_BLOCK_ID,
+  PANEL_BARS_BLOCK_ID,
+  PANEL_PANE_BLOCK_ID,
+  PANEL_SLAB_BLOCK_ID,
+]);
 
 // Reserved material index for hinges that haven't been matched to a panel yet
 export const UNMATCHED_MATERIAL_INDEX = 255;
@@ -422,6 +434,16 @@ export const GEOMETRY_ID_SLAB_TOP = 8;
 
 export function isSlabGeometryId(geoId) {
   return geoId === GEOMETRY_CLASS_SLAB || geoId === GEOMETRY_ID_SLAB_TOP;
+}
+
+export function panelBlockIdForGeoClass(geoClass) {
+  switch (geoClass) {
+    case GEOMETRY_CLASS_FENCE: return PANEL_FENCE_BLOCK_ID;
+    case GEOMETRY_CLASS_BARS:  return PANEL_BARS_BLOCK_ID;
+    case GEOMETRY_CLASS_PANE:  return PANEL_PANE_BLOCK_ID;
+    case GEOMETRY_CLASS_SLAB:  return PANEL_SLAB_BLOCK_ID;
+    default:                   return PANEL_BLOCK_ID;
+  }
 }
 
 // --------------------------------------------------------------------------

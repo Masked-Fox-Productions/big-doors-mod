@@ -1,10 +1,11 @@
 import { BlockPermutation, ItemStack, system } from "@minecraft/server";
-import { PANEL_BLOCK_ID, HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, REDSTONE_SOURCE_POLL_TICKS, DIR_OFFSETS, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB, GEOMETRY_CLASS_BARS, GEOMETRY_CLASS_PANE } from "../util/Constants.js";
+import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, PANEL_BLOCK_IDS, REDSTONE_DEBOUNCE_TICKS, REDSTONE_SOURCE_POLL_TICKS, DIR_OFFSETS, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB, GEOMETRY_CLASS_BARS, GEOMETRY_CLASS_PANE } from "../util/Constants.js";
 import {
   panelBlockStates,
   resolveGeometryId,
   geometryClassForMaterial,
   resolveVerticalGeometryId,
+  panelBlockIdForMaterial,
 } from "../domain/MaterialRegistry.js";
 import { closedRotation, openRotation } from "../domain/PanelRotation.js";
 import { checkPath, checkClose } from "../domain/ObstructionChecker.js";
@@ -178,7 +179,7 @@ export class RedstoneSubsystem {
       const neighborPos = { x: loc.x + off.x, y: loc.y + off.y, z: loc.z + off.z };
       const nb = dimension.getBlock(neighborPos);
       if (!nb) continue;
-      if (nb.typeId === HINGE_BLOCK_ID || nb.typeId === HIDDEN_HINGE_BLOCK_ID || nb.typeId === PANEL_BLOCK_ID) continue;
+      if (nb.typeId === HINGE_BLOCK_ID || nb.typeId === HIDDEN_HINGE_BLOCK_ID || PANEL_BLOCK_IDS.has(nb.typeId)) continue;
       const power = nb.getRedstonePower();
       if (power != null && power > 0) {
         return neighborPos;
@@ -246,6 +247,7 @@ export class RedstoneSubsystem {
     const tuples = assembly.panelPositions.map((panel, i) => ({
       source: panelPositions[i],
       dest: newPositions[i],
+      blockId: panelBlockIdForMaterial(panel.materialIndex),
       states: this._panelStates(assembly, i, true, direction),
     }));
 
@@ -256,7 +258,7 @@ export class RedstoneSubsystem {
     for (const t of tuples) {
       const b = dimension.getBlock(t.dest);
       if (b) {
-        b.setPermutation(BlockPermutation.resolve(PANEL_BLOCK_ID, t.states));
+        b.setPermutation(BlockPermutation.resolve(t.blockId, t.states));
       }
     }
 
@@ -306,6 +308,7 @@ export class RedstoneSubsystem {
     const tuples = assembly.panelPositions.map((panel, i) => ({
       source: panel.currentPos,
       dest: panel.closedPos,
+      blockId: panelBlockIdForMaterial(panel.materialIndex),
       states: this._panelStates(assembly, i, false, null),
     }));
 
@@ -316,7 +319,7 @@ export class RedstoneSubsystem {
     for (const t of tuples) {
       const b = dimension.getBlock(t.dest);
       if (b) {
-        b.setPermutation(BlockPermutation.resolve(PANEL_BLOCK_ID, t.states));
+        b.setPermutation(BlockPermutation.resolve(t.blockId, t.states));
       }
     }
 
