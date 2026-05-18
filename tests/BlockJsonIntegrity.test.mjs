@@ -3,6 +3,7 @@ import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { GEOMETRY_INDEX } from "../bigdoors_bp/scripts/util/Constants.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
@@ -131,6 +132,94 @@ describe("Block JSON integrity", () => {
           "geometry.bigdoors.strapped_sides"
         );
       }
+    });
+
+    it("geometry_id state values span exactly 0–14", () => {
+      const states = panel["minecraft:block"].description.states["bigdoors:geometry_id"];
+      assert.deepEqual(states, Array.from({ length: 15 }, (_, i) => i));
+    });
+
+    it("every nonzero geometry_id has a geometry permutation", () => {
+      const geoPerms = new Set();
+      for (const p of panel["minecraft:block"].permutations) {
+        const m = p.condition.match(/geometry_id'\) == (\d+)/);
+        if (m && p.components["minecraft:geometry"]) {
+          geoPerms.add(Number(m[1]));
+        }
+      }
+      for (let id = 1; id <= 14; id++) {
+        assert.ok(geoPerms.has(id), `geometry_id ${id} missing geometry permutation`);
+      }
+    });
+
+    it("every nonzero geometry_id maps to a GEOMETRY_INDEX entry", () => {
+      for (let id = 1; id <= 14; id++) {
+        assert.ok(GEOMETRY_INDEX[id], `geometry_id ${id} missing from GEOMETRY_INDEX`);
+      }
+    });
+
+    it("pane and bars geometry IDs have upright collision permutations", () => {
+      const paneBarIds = [5, 7, 9, 10, 11, 12, 13, 14];
+      for (const id of paneBarIds) {
+        const found = panel["minecraft:block"].permutations.some(
+          (p) => p.condition.includes(`geometry_id') == ${id}`) &&
+                 p.condition.includes("panel_rotation") &&
+                 p.condition.includes("< 4") &&
+                 p.components["minecraft:collision_box"]
+        );
+        assert.ok(found, `geometry_id ${id} missing upright collision permutation`);
+      }
+    });
+
+    it("fence, pane, and bars geometry IDs have vertical-open collision permutations", () => {
+      const vertOpenIds = [1, 2, 3, 4, 5, 7, 9, 10, 11, 12, 13, 14];
+      const collisionPerms = panel["minecraft:block"].permutations.filter(
+        (p) => p.components["minecraft:collision_box"] &&
+               (p.condition.includes("== 5") || p.condition.includes("== 6")) &&
+               p.condition.includes("panel_rotation")
+      );
+      for (const id of vertOpenIds) {
+        const found = collisionPerms.some((p) => {
+          const cond = p.condition;
+          if (cond.includes(`geometry_id') == ${id}`)) return true;
+          const rangeMatch = cond.match(/geometry_id'\) >= (\d+) && .*geometry_id'\) <= (\d+)/);
+          if (rangeMatch && id >= Number(rangeMatch[1]) && id <= Number(rangeMatch[2])) return true;
+          if (cond.includes(`geometry_id') == ${id} ||`) || cond.includes(`|| q.block_state('bigdoors:geometry_id') == ${id}`)) return true;
+          return false;
+        });
+        assert.ok(found, `geometry_id ${id} missing vertical-open collision permutation`);
+      }
+    });
+
+    it("pane/bars upright collision thin axis is Z (size[2] == 2)", () => {
+      const fullWidthIds = [5, 7];
+      for (const id of fullWidthIds) {
+        const perm = panel["minecraft:block"].permutations.find(
+          (p) => p.condition.includes(`geometry_id') == ${id}`) &&
+                 p.condition.includes("< 4") &&
+                 p.components["minecraft:collision_box"]
+        );
+        assert.ok(perm, `geometry_id ${id} missing collision`);
+        const size = perm.components["minecraft:collision_box"].size;
+        assert.equal(size[2], 2, `geometry_id ${id} collision thin axis should be Z (size[2]=2), got ${size[2]}`);
+        assert.equal(size[0], 16, `geometry_id ${id} collision X should be 16, got ${size[0]}`);
+      }
+    });
+
+    it("no duplicate geometry_id values in state array", () => {
+      const states = panel["minecraft:block"].description.states["bigdoors:geometry_id"];
+      const unique = new Set(states);
+      assert.equal(unique.size, states.length, "duplicate geometry_id values found");
+    });
+
+    it("total permutation count is within Bedrock limit (65536)", () => {
+      const s = panel["minecraft:block"].description.states;
+      const count = s["bigdoors:material_group"].length *
+                    s["bigdoors:material_id"].length *
+                    s["bigdoors:geometry_id"].length *
+                    s["bigdoors:panel_rotation"].length *
+                    s["bigdoors:overlay"].length;
+      assert.ok(count <= 65536, `permutation count ${count} exceeds 65536`);
     });
   });
 });

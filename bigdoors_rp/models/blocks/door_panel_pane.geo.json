@@ -16,6 +16,55 @@
           ]
         }
       ]
+    },
+    {
+      "description": {
+        "identifier": "geometry.bigdoors.pane_solo",
+        "texture_width": 16,
+        "texture_height": 16
+      },
+      "bones": [
+        {
+          "name": "pane",
+          "pivot": [0, 0, 0],
+          "cubes": [
+            { "origin": [-1, 0, -8], "size": [2, 16, 16], "uv": [0, 0] },
+            { "origin": [-8, 0, -1], "size": [16, 16, 2], "uv": [0, 0] }
+          ]
+        }
+      ]
+    },
+    {
+      "description": {
+        "identifier": "geometry.bigdoors.pane_before",
+        "texture_width": 16,
+        "texture_height": 16
+      },
+      "bones": [
+        {
+          "name": "pane",
+          "pivot": [0, 0, 0],
+          "cubes": [
+            { "origin": [-8, 0, -1], "size": [8, 16, 2], "uv": [0, 0] }
+          ]
+        }
+      ]
+    },
+    {
+      "description": {
+        "identifier": "geometry.bigdoors.pane_after",
+        "texture_width": 16,
+        "texture_height": 16
+      },
+      "bones": [
+        {
+          "name": "pane",
+          "pivot": [0, 0, 0],
+          "cubes": [
+            { "origin": [0, 0, -1], "size": [8, 16, 2], "uv": [0, 0] }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -8,6 +8,8 @@ import {
   OPPOSITE_DIR,
   GEOMETRY_CLASS_FENCE,
   GEOMETRY_CLASS_SLAB,
+  GEOMETRY_CLASS_BARS,
+  GEOMETRY_CLASS_PANE,
   GEOMETRY_ID_SLAB_TOP,
   UNMATCHED_MATERIAL_INDEX,
 } from "../util/Constants.js";
@@ -261,7 +263,7 @@ export class PanelPlacementHandler {
     const doorSide = assembly.doorSide;
     const isVertical = doorSide === "up" || doorSide === "down";
 
-    if (isVertical && geoClass === GEOMETRY_CLASS_FENCE) {
+    if (isVertical && (geoClass === GEOMETRY_CLASS_FENCE || geoClass === GEOMETRY_CLASS_BARS || geoClass === GEOMETRY_CLASS_PANE)) {
       const facing = assembly.facing;
       if (facing === "north" || facing === "south") {
         return { beforeOffset: DIR_OFFSETS["west"], afterOffset: DIR_OFFSETS["east"] };

@@ -1,11 +1,13 @@
 import {
   GEOMETRY_CLASS_FENCE,
   GEOMETRY_CLASS_SLAB,
+  GEOMETRY_CLASS_BARS,
+  GEOMETRY_CLASS_PANE,
 } from "../util/Constants.js";
 
 export function closedRotation(doorSide, facing, geoClass) {
   if (doorSide === "up" || doorSide === "down") {
-    if (geoClass === GEOMETRY_CLASS_FENCE || geoClass === GEOMETRY_CLASS_SLAB) {
+    if (geoClass === GEOMETRY_CLASS_FENCE || geoClass === GEOMETRY_CLASS_SLAB || geoClass === GEOMETRY_CLASS_BARS || geoClass === GEOMETRY_CLASS_PANE) {
       if (facing === "north" || facing === "south") return 2;
       return 1;
     }
@@ -20,7 +22,7 @@ export function closedRotation(doorSide, facing, geoClass) {
 
 export function openRotation(mode, doorSide, facing, direction, geoClass) {
   if (mode === "vertical") {
-    if (geoClass === GEOMETRY_CLASS_FENCE || geoClass === GEOMETRY_CLASS_SLAB) {
+    if (geoClass === GEOMETRY_CLASS_FENCE || geoClass === GEOMETRY_CLASS_SLAB || geoClass === GEOMETRY_CLASS_BARS || geoClass === GEOMETRY_CLASS_PANE) {
       if (facing === "north" || facing === "south") return 6;
       return 5;
     }

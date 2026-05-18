@@ -2,6 +2,9 @@ import {
   MATERIAL_INDEX,
   MATERIAL_GEOMETRY_CLASS,
   GEOMETRY_CLASS_FENCE,
+  GEOMETRY_CLASS_BARS,
+  GEOMETRY_CLASS_PANE,
+  DIR_OFFSETS,
 } from "../util/Constants.js";
 
 /** @type {Map<string, number>} typeId → index */
@@ -33,12 +36,29 @@ export function geometryClassForMaterial(flatIndex) {
 export function resolveGeometryId(flatIndex, hasNeighborBefore, hasNeighborAfter) {
   const geoClass = MATERIAL_GEOMETRY_CLASS.get(flatIndex) ?? 0;
   if (geoClass === 0) return 0;
-  if (geoClass !== GEOMETRY_CLASS_FENCE) return geoClass;
 
-  if (hasNeighborBefore && hasNeighborAfter) return 4;  // fence_both (post + rails both ways)
-  if (hasNeighborBefore) return 2;                       // fence_before (post + rails toward hinge)
-  if (hasNeighborAfter) return 3;                        // fence_after (post + rails toward extension)
-  return 1;                                              // fence_solo (post only)
+  if (geoClass === GEOMETRY_CLASS_FENCE) {
+    if (hasNeighborBefore && hasNeighborAfter) return 4;
+    if (hasNeighborBefore) return 2;
+    if (hasNeighborAfter) return 3;
+    return 1;
+  }
+
+  if (geoClass === GEOMETRY_CLASS_BARS) {
+    if (hasNeighborBefore && hasNeighborAfter) return 5;
+    if (hasNeighborBefore) return 10;
+    if (hasNeighborAfter) return 11;
+    return 9;
+  }
+
+  if (geoClass === GEOMETRY_CLASS_PANE) {
+    if (hasNeighborBefore && hasNeighborAfter) return 7;
+    if (hasNeighborBefore) return 13;
+    if (hasNeighborAfter) return 14;
+    return 12;
+  }
+
+  return geoClass;
 }
 
 export function materialToBlockStates(flatIndex, geometryId) {
@@ -67,4 +87,40 @@ export function panelBlockStates(matIdx, geoId, rotation, overlay = 0) {
     "bigdoors:panel_rotation": rotation,
     "bigdoors:overlay": overlay,
   };
+}
+
+export function hasAssemblyBlockAtClosed(assembly, pos) {
+  for (const p of assembly.panelPositions) {
+    const cp = p.closedPos ?? p;
+    if (cp.x === pos.x && cp.y === pos.y && cp.z === pos.z) return true;
+  }
+  for (const hp of assembly.hingePositions ?? []) {
+    if (hp.x === pos.x && hp.y === pos.y && hp.z === pos.z) return true;
+  }
+  return false;
+}
+
+export function resolveVerticalGeometryId(assembly, panelIndex) {
+  const panel = assembly.panelPositions[panelIndex];
+  const matIdx = panel.materialIndex;
+  const pos = panel.closedPos ?? panel;
+  const facing = assembly.facing;
+
+  let beforeDir, afterDir;
+  if (facing === "north" || facing === "south") {
+    beforeDir = "west";
+    afterDir = "east";
+  } else {
+    beforeDir = "north";
+    afterDir = "south";
+  }
+
+  const bOff = DIR_OFFSETS[beforeDir];
+  const aOff = DIR_OFFSETS[afterDir];
+  const beforePos = { x: pos.x + bOff.x, y: pos.y + bOff.y, z: pos.z + bOff.z };
+  const afterPos = { x: pos.x + aOff.x, y: pos.y + aOff.y, z: pos.z + aOff.z };
+
+  const hasNeighborBefore = hasAssemblyBlockAtClosed(assembly, beforePos);
+  const hasNeighborAfter = hasAssemblyBlockAtClosed(assembly, afterPos);
+  return resolveGeometryId(matIdx, hasNeighborBefore, hasNeighborAfter);
 }

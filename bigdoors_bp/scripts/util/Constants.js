@@ -394,16 +394,24 @@ export const MATERIAL_INDEX = [
 // 0 is always the full block (default).
 // --------------------------------------------------------------------------
 
+// Geometry ID headroom: 15 values × 16 groups × 16 IDs × 8 rotations × 2 overlays = 61,440 permutations (limit 65,536).
+// Only one more geometry ID value (16 total) can be added before hitting the Bedrock permutation limit.
 export const GEOMETRY_INDEX = [
-  /* 0 */ "minecraft:geometry.full_block",
-  /* 1 */ "geometry.bigdoors.fence_solo",
-  /* 2 */ "geometry.bigdoors.fence_before",
-  /* 3 */ "geometry.bigdoors.fence_after",
-  /* 4 */ "geometry.bigdoors.fence_both",
-  /* 5 */ "geometry.bigdoors.bars",
-  /* 6 */ "geometry.bigdoors.slab",
-  /* 7 */ "geometry.bigdoors.pane",
-  /* 8 */ "geometry.bigdoors.slab_top",
+  /* 0  */ "minecraft:geometry.full_block",
+  /* 1  */ "geometry.bigdoors.fence_solo",
+  /* 2  */ "geometry.bigdoors.fence_before",
+  /* 3  */ "geometry.bigdoors.fence_after",
+  /* 4  */ "geometry.bigdoors.fence_both",
+  /* 5  */ "geometry.bigdoors.bars",
+  /* 6  */ "geometry.bigdoors.slab",
+  /* 7  */ "geometry.bigdoors.pane",
+  /* 8  */ "geometry.bigdoors.slab_top",
+  /* 9  */ "geometry.bigdoors.bars_solo",
+  /* 10 */ "geometry.bigdoors.bars_before",
+  /* 11 */ "geometry.bigdoors.bars_after",
+  /* 12 */ "geometry.bigdoors.pane_solo",
+  /* 13 */ "geometry.bigdoors.pane_before",
+  /* 14 */ "geometry.bigdoors.pane_after",
 ];
 
 export const GEOMETRY_CLASS_FENCE = 1;

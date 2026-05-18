@@ -1,9 +1,10 @@
 import { BlockPermutation, ItemStack, system } from "@minecraft/server";
-import { PANEL_BLOCK_ID, HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, REDSTONE_SOURCE_POLL_TICKS, DIR_OFFSETS, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB } from "../util/Constants.js";
+import { PANEL_BLOCK_ID, HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, REDSTONE_SOURCE_POLL_TICKS, DIR_OFFSETS, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB, GEOMETRY_CLASS_BARS, GEOMETRY_CLASS_PANE } from "../util/Constants.js";
 import {
   panelBlockStates,
   resolveGeometryId,
   geometryClassForMaterial,
+  resolveVerticalGeometryId,
 } from "../domain/MaterialRegistry.js";
 import { closedRotation, openRotation } from "../domain/PanelRotation.js";
 import { checkPath, checkClose } from "../domain/ObstructionChecker.js";
@@ -333,8 +334,8 @@ export class RedstoneSubsystem {
       geoId = 0;
     } else if (geoClass === GEOMETRY_CLASS_SLAB && panel.geometryId !== undefined) {
       geoId = panel.geometryId;
-    } else if (assembly.mode === "vertical" && geoClass === GEOMETRY_CLASS_FENCE) {
-      geoId = this._resolveVerticalFenceGeo(assembly, panelIndex);
+    } else if (assembly.mode === "vertical" && (geoClass === GEOMETRY_CLASS_FENCE || geoClass === GEOMETRY_CLASS_BARS || geoClass === GEOMETRY_CLASS_PANE)) {
+      geoId = resolveVerticalGeometryId(assembly, panelIndex);
     } else {
       const hasNeighborBefore = true;
       const hasNeighborAfter = panelIndex < assembly.panelPositions.length - 1;
@@ -347,37 +348,4 @@ export class RedstoneSubsystem {
     return panelBlockStates(matIdx, geoId, rotation, panel.overlay ?? 0);
   }
 
-  _resolveVerticalFenceGeo(assembly, panelIndex) {
-    const matIdx = assembly.panelPositions[panelIndex].materialIndex;
-    const panel = assembly.panelPositions[panelIndex];
-    const pos = panel.closedPos ?? panel;
-    const facing = assembly.facing;
-
-    let beforeDir, afterDir;
-    if (facing === "north" || facing === "south") {
-      beforeDir = "west";
-      afterDir = "east";
-    } else {
-      beforeDir = "north";
-      afterDir = "south";
-    }
-
-    const beforePos = { x: pos.x + DIR_OFFSETS[beforeDir].x, y: pos.y + DIR_OFFSETS[beforeDir].y, z: pos.z + DIR_OFFSETS[beforeDir].z };
-    const afterPos = { x: pos.x + DIR_OFFSETS[afterDir].x, y: pos.y + DIR_OFFSETS[afterDir].y, z: pos.z + DIR_OFFSETS[afterDir].z };
-
-    const hasNeighborBefore = this._hasAssemblyPanelAt(assembly, beforePos);
-    const hasNeighborAfter = this._hasAssemblyPanelAt(assembly, afterPos);
-    return resolveGeometryId(matIdx, hasNeighborBefore, hasNeighborAfter);
-  }
-
-  _hasAssemblyPanelAt(assembly, pos) {
-    for (const p of assembly.panelPositions) {
-      const cp = p.closedPos ?? p;
-      if (cp.x === pos.x && cp.y === pos.y && cp.z === pos.z) return true;
-    }
-    for (const hp of assembly.hingePositions ?? []) {
-      if (hp.x === pos.x && hp.y === pos.y && hp.z === pos.z) return true;
-    }
-    return false;
-  }
 }

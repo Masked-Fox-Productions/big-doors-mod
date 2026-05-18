@@ -2,12 +2,13 @@ import { BlockPermutation, ItemStack, system } from "@minecraft/server";
 import { getRotateFn } from "../domain/RotationMath.js";
 import { checkPath, checkClose } from "../domain/ObstructionChecker.js";
 import { sweep } from "../subsystem/EntitySweeper.js";
-import { PANEL_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, DIR_OFFSETS, OPPOSITE_DIR, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB } from "../util/Constants.js";
+import { PANEL_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, DIR_OFFSETS, OPPOSITE_DIR, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB, GEOMETRY_CLASS_BARS, GEOMETRY_CLASS_PANE } from "../util/Constants.js";
 import {
   materialToBlockStates,
   panelBlockStates,
   resolveGeometryId,
   geometryClassForMaterial,
+  resolveVerticalGeometryId,
 } from "../domain/MaterialRegistry.js";
 import { closedRotation, openRotation } from "../domain/PanelRotation.js";
 
@@ -253,8 +254,8 @@ export class InteractionHandler {
       return panel.geometryId;
     }
 
-    if (assembly.mode === "vertical" && geoClass === GEOMETRY_CLASS_FENCE) {
-      return this._resolveVerticalFenceGeo(assembly, panelIndex);
+    if (assembly.mode === "vertical" && (geoClass === GEOMETRY_CLASS_FENCE || geoClass === GEOMETRY_CLASS_BARS || geoClass === GEOMETRY_CLASS_PANE)) {
+      return resolveVerticalGeometryId(assembly, panelIndex);
     }
 
     const hasNeighborBefore = true;
@@ -262,37 +263,4 @@ export class InteractionHandler {
     return resolveGeometryId(matIdx, hasNeighborBefore, hasNeighborAfter);
   }
 
-  _resolveVerticalFenceGeo(assembly, panelIndex) {
-    const matIdx = assembly.panelPositions[panelIndex].materialIndex;
-    const panel = assembly.panelPositions[panelIndex];
-    const pos = panel.closedPos ?? panel;
-    const facing = assembly.facing;
-
-    let beforeDir, afterDir;
-    if (facing === "north" || facing === "south") {
-      beforeDir = "west";
-      afterDir = "east";
-    } else {
-      beforeDir = "north";
-      afterDir = "south";
-    }
-
-    const beforePos = posAdd(pos, DIR_OFFSETS[beforeDir]);
-    const afterPos = posAdd(pos, DIR_OFFSETS[afterDir]);
-
-    const hasNeighborBefore = this._hasAssemblyPanelAt(assembly, beforePos);
-    const hasNeighborAfter = this._hasAssemblyPanelAt(assembly, afterPos);
-    return resolveGeometryId(matIdx, hasNeighborBefore, hasNeighborAfter);
-  }
-
-  _hasAssemblyPanelAt(assembly, pos) {
-    for (const p of assembly.panelPositions) {
-      const cp = p.closedPos ?? p;
-      if (cp.x === pos.x && cp.y === pos.y && cp.z === pos.z) return true;
-    }
-    for (const hp of assembly.hingePositions ?? []) {
-      if (hp.x === pos.x && hp.y === pos.y && hp.z === pos.z) return true;
-    }
-    return false;
-  }
 }

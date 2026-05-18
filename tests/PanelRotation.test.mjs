@@ -4,6 +4,8 @@ import { closedRotation, openRotation } from "../bigdoors_bp/scripts/domain/Pane
 import {
   GEOMETRY_CLASS_FENCE,
   GEOMETRY_CLASS_SLAB,
+  GEOMETRY_CLASS_BARS,
+  GEOMETRY_CLASS_PANE,
 } from "../bigdoors_bp/scripts/util/Constants.js";
 
 describe("closedRotation", () => {
@@ -46,6 +48,18 @@ describe("closedRotation", () => {
   it("vertical slab facing east -> 1 (same as fence)", () => {
     assert.equal(closedRotation("down", "east", GEOMETRY_CLASS_SLAB), 1);
   });
+
+  it("vertical pane facing north -> 2 (same as fence)", () => {
+    assert.equal(closedRotation("up", "north", GEOMETRY_CLASS_PANE), 2);
+  });
+
+  it("vertical bars facing east -> 1 (same as fence)", () => {
+    assert.equal(closedRotation("up", "east", GEOMETRY_CLASS_BARS), 1);
+  });
+
+  it("horizontal pane east -> 2 (unchanged)", () => {
+    assert.equal(closedRotation("east", "north", GEOMETRY_CLASS_PANE), 2);
+  });
 });
 
 describe("openRotation", () => {
@@ -83,5 +97,13 @@ describe("openRotation", () => {
 
   it("horizontal ccw from south (closed=1) -> 2", () => {
     assert.equal(openRotation("horizontal", "south", "north", "ccw", 0), 2);
+  });
+
+  it("vertical pane facing north -> 6 (same as fence)", () => {
+    assert.equal(openRotation("vertical", "up", "north", "cw", GEOMETRY_CLASS_PANE), 6);
+  });
+
+  it("vertical bars facing east -> 5 (same as fence)", () => {
+    assert.equal(openRotation("vertical", "up", "east", "cw", GEOMETRY_CLASS_BARS), 5);
   });
 });
