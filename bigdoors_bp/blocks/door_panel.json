@@ -1954,7 +1954,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -1965,7 +1965,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "white_stained_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -1976,7 +1976,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "orange_stained_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -1987,7 +1987,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "magenta_stained_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -1998,7 +1998,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "light_blue_stained_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -2009,7 +2009,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "yellow_stained_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -2020,7 +2020,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "lime_stained_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -2031,7 +2031,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "pink_stained_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -2042,7 +2042,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "gray_stained_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -2053,7 +2053,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "light_gray_stained_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -2064,7 +2064,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "cyan_stained_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -2075,7 +2075,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "purple_stained_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -2086,7 +2086,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "blue_stained_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -2097,7 +2097,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "brown_stained_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -2108,7 +2108,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "green_stained_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -2119,7 +2119,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "red_stained_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
