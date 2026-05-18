@@ -406,8 +406,8 @@ export const MATERIAL_INDEX = [
 // 0 is always the full block (default).
 // --------------------------------------------------------------------------
 
-// Geometry ID headroom: 15 values × 16 groups × 16 IDs × 8 rotations × 2 overlays = 61,440 permutations (limit 65,536).
-// Only one more geometry ID value (16 total) can be added before hitting the Bedrock permutation limit.
+// door_panel carries geometry_id=[0,1] (Bedrock requires ≥2 state values). Exotic classes live in their own block types.
+// Per-block budget: 2 × 16 × 16 × 8 × 2 = 8,192 permutations (limit 65,536).
 export const GEOMETRY_INDEX = [
   /* 0  */ "minecraft:geometry.full_block",
   /* 1  */ "geometry.bigdoors.fence_solo",
