@@ -5,15 +5,9 @@
  */
 
 import { UNMATCHED_MATERIAL_INDEX } from "../util/Constants.js";
+import { posKey } from "../util/posKey.js";
 
 let _nextId = 1;
-
-/**
- * Generate a position key string for map lookups.
- */
-function posKey(pos) {
-  return `${pos.x},${pos.y},${pos.z}`;
-}
 
 export class DoorAssembly {
   /**

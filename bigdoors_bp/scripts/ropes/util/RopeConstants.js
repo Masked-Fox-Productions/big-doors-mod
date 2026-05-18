@@ -1,0 +1,12 @@
+export const ROPE_BLOCK_ID = "ropes:rope";
+export const ROPE_LADDER_BLOCK_ID = "ropes:rope_ladder";
+export const WHIP_ITEM_ID = "ropes:whip";
+export const ROPES_PERSISTENCE_KEY = "ropes:state";
+export const MAX_CHAIN_LENGTH = 64;
+export const CLIMB_INTERVAL_TICKS = 2;
+export const ROPE_CLIMB_SPEED = 0.35;
+export const LADDER_CLIMB_SPEED = 0.28;
+export const WHIP_RANGE = 8;
+export const WHIP_DEPLOY_SEGMENTS = 4;
+export const WHIP_DAMAGE = 3;
+export const BREAK_BATCH_THRESHOLD = 16;

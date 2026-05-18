@@ -32,10 +32,12 @@ function makeDefaultWorld() {
       playerPlaceBlock: makeNoopSubscribable(),
       playerBreakBlock: makeNoopSubscribable(),
       entitySpawn: makeNoopSubscribable(),
-      worldInitialize: makeNoopSubscribable()
+      worldInitialize: makeNoopSubscribable(),
+      itemUse: makeNoopSubscribable(),
     },
     beforeEvents: {
       entitySpawn: makeNoopSubscribable(),
+      playerBreakBlock: makeNoopSubscribable(),
     },
     getDynamicProperty(key) { return props.get(key); },
     setDynamicProperty(key, value) { props.set(key, value); },
@@ -48,6 +50,7 @@ function makeDefaultWorld() {
       };
     },
     getPlayers() { return []; },
+    getAllPlayers() { return []; },
   };
 }
 
@@ -127,6 +130,12 @@ export class BlockPermutation {
     return new BlockPermutation(typeId, states);
   }
 }
+
+export const InputButton = {
+  Jump: "Jump",
+  Sneak: "Sneak",
+};
+
 
 export const EntityInitializationCause = {
   Born: "Born",

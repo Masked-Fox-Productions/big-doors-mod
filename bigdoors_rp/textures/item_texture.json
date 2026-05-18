@@ -1,0 +1,15 @@
+{
+  "resource_pack_name": "bigdoors",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "ropes_rope": {
+      "textures": "textures/items/rope"
+    },
+    "ropes_rope_ladder": {
+      "textures": "textures/items/rope_ladder"
+    },
+    "ropes_whip": {
+      "textures": "textures/items/whip"
+    }
+  }
+}
