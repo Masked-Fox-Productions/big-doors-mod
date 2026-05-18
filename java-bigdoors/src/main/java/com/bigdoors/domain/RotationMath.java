@@ -4,6 +4,7 @@ import com.bigdoors.util.BlockPos3;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
 
 /**
  * Pure rotation math for door panel positions around a hinge.
@@ -87,6 +88,23 @@ public final class RotationMath {
                     hingePos.z() - dy
             );
         }
+    }
+
+    /**
+     * Returns the appropriate rotation function for the given mode, facing, and direction.
+     */
+    public static BiFunction<BlockPos3, BlockPos3, BlockPos3> getRotateFn(String mode, String facing, String direction) {
+        if ("vertical".equals(mode)) {
+            if ("cw".equals(direction)) {
+                return (pos, hinge) -> rotateVerticalCW(pos, hinge, facing);
+            } else {
+                return (pos, hinge) -> rotateVerticalCCW(pos, hinge, facing);
+            }
+        }
+        if ("cw".equals(direction)) {
+            return RotationMath::rotateCW;
+        }
+        return RotationMath::rotateCCW;
     }
 
     /**

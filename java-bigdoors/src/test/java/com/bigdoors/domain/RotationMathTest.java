@@ -4,6 +4,7 @@ import com.bigdoors.util.BlockPos3;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.function.BiFunction;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -92,6 +93,40 @@ class RotationMathTest {
         // dz=0, dy=1 → newY = 5+0=5, newZ = 3-1=2
         BlockPos3 result = RotationMath.rotateVerticalCCW(pos, hinge, "east");
         assertEquals(new BlockPos3(3, 5, 2), result);
+    }
+
+    // --- getRotateFn tests ---
+
+    @Test
+    void getRotateFn_horizontal_cw_matchesRotateCW() {
+        BiFunction<BlockPos3, BlockPos3, BlockPos3> fn = RotationMath.getRotateFn("horizontal", "", "cw");
+        BlockPos3 pos = new BlockPos3(5, 0, 3);
+        BlockPos3 hinge = new BlockPos3(3, 0, 3);
+        assertEquals(RotationMath.rotateCW(pos, hinge), fn.apply(pos, hinge));
+    }
+
+    @Test
+    void getRotateFn_horizontal_ccw_matchesRotateCCW() {
+        BiFunction<BlockPos3, BlockPos3, BlockPos3> fn = RotationMath.getRotateFn("horizontal", "", "ccw");
+        BlockPos3 pos = new BlockPos3(5, 0, 3);
+        BlockPos3 hinge = new BlockPos3(3, 0, 3);
+        assertEquals(RotationMath.rotateCCW(pos, hinge), fn.apply(pos, hinge));
+    }
+
+    @Test
+    void getRotateFn_vertical_north_cw_matchesVerticalCW() {
+        BiFunction<BlockPos3, BlockPos3, BlockPos3> fn = RotationMath.getRotateFn("vertical", "north", "cw");
+        BlockPos3 pos = new BlockPos3(3, 6, 3);
+        BlockPos3 hinge = new BlockPos3(3, 5, 3);
+        assertEquals(RotationMath.rotateVerticalCW(pos, hinge, "north"), fn.apply(pos, hinge));
+    }
+
+    @Test
+    void getRotateFn_vertical_east_ccw_matchesVerticalCCW() {
+        BiFunction<BlockPos3, BlockPos3, BlockPos3> fn = RotationMath.getRotateFn("vertical", "east", "ccw");
+        BlockPos3 pos = new BlockPos3(3, 6, 3);
+        BlockPos3 hinge = new BlockPos3(3, 5, 3);
+        assertEquals(RotationMath.rotateVerticalCCW(pos, hinge, "east"), fn.apply(pos, hinge));
     }
 
     @Test
