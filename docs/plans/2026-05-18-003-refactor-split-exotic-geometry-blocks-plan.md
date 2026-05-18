@@ -1,7 +1,7 @@
 ---
 title: "refactor: Split exotic geometry classes into separate custom block types"
 type: refactor
-status: active
+status: completed
 date: 2026-05-18
 deepened: 2026-05-18
 ---
