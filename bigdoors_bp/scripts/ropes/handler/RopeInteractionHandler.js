@@ -110,6 +110,7 @@ export class RopeInteractionHandler {
 
     let baseX = startPos.x;
     let baseZ = startPos.z;
+    let hitSolid = false;
 
     const belowStart = { x: baseX, y: currentY, z: baseZ };
     let canGoStraightDown = false;
@@ -135,13 +136,18 @@ export class RopeInteractionHandler {
         const b = dimension.getBlock(checkPos);
         if (!b) break;
         const isAir = b.typeId === "minecraft:air" || b.typeId === "minecraft:cave_air" || b.typeId === "minecraft:void_air";
-        if (!isAir) break;
+        if (!isAir) { hitSolid = true; break; }
       } catch { break; }
       positions.push({ x: baseX, y: currentY, z: baseZ });
       currentY--;
     }
 
     if (positions.length === 0) return;
+
+    let ledgeCoilPos = null;
+    if (hitSolid && chain.type === "rope" && positions.length > 0) {
+      ledgeCoilPos = positions.pop();
+    }
 
     const blockId = blockIdForChainType(chain.type);
     const stateKey = stateForChainType(chain.type);
@@ -153,15 +159,22 @@ export class RopeInteractionHandler {
       try {
         const b = dimension.getBlock(pos);
         if (!b) continue;
-        const states = { [stateKey]: "segment" };
-        if (chain.type === "rope_ladder") {
-          states["ropes:face"] = face;
-        } else {
-          states["ropes:face"] = face;
-        }
+        const states = { [stateKey]: "segment", "ropes:face": face };
         b.setPermutation(BlockPermutation.resolve(blockId, states));
         this._manager.addSegmentPosition(chain.id, chain.dimensionId, pos);
       } catch { /* block in unloaded chunk */ }
+    }
+
+    if (ledgeCoilPos) {
+      chain.createLedgeCoil(dropIndex, ledgeCoilPos);
+      try {
+        const b = dimension.getBlock(ledgeCoilPos);
+        if (b) {
+          const states = { [stateKey]: "coiled", "ropes:face": face };
+          b.setPermutation(BlockPermutation.resolve(blockId, states));
+        }
+      } catch { /* block in unloaded chunk */ }
+      this._manager.addSegmentPosition(chain.id, chain.dimensionId, ledgeCoilPos);
     }
 
     this._manager.save();

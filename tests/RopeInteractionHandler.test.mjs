@@ -107,7 +107,7 @@ describe("RopeInteractionHandler", () => {
     assert.equal(chain.totalSegments, 0);
   });
 
-  it("uncoil stops at solid block below", () => {
+  it("uncoil stops at solid and creates ledge coil with remaining segments", () => {
     const blockMap = {
       "0,61,0": { typeId: "minecraft:stone", setType() {}, setPermutation() {} },
     };
@@ -118,8 +118,12 @@ describe("RopeInteractionHandler", () => {
 
     handler.handleInteract(block, player, dim);
 
-    assert.equal(chain.drops[0].segments.length, 2);
-    assert.equal(chain.drops[0].remaining, 8);
+    assert.equal(chain.drops.length, 2);
+    assert.equal(chain.drops[0].segments.length, 1);
+    assert.equal(chain.drops[0].remaining, 0);
+    assert.deepEqual(chain.drops[1].coilPos, { x: 0, y: 62, z: 0 });
+    assert.equal(chain.drops[1].remaining, 9);
+    assert.equal(chain.totalSegments, 10);
   });
 
   it("retract one: interact with non-coil segment removes bottom segment", () => {
@@ -196,5 +200,169 @@ describe("RopeInteractionHandler", () => {
 
     assert.equal(mgr.getChainAtPosition("minecraft:overworld", { x: 0, y: 63, z: 0 }), null);
     assert.equal(mgr.getChainAtPosition("minecraft:overworld", { x: 0, y: 62, z: 0 }), null);
+  });
+
+  it("cascade: interact with ledge coil extends further downward", () => {
+    const blockMap = {
+      "0,61,0": { typeId: "minecraft:stone", setType() {}, setPermutation() {} },
+    };
+    const dim = makeDimension(blockMap);
+    const chain = mgr.createChain("rope", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "up", 10);
+    const player = makePlayer();
+    const anchorBlock = makeBlock("ropes:rope", { x: 0, y: 64, z: 0 }, dim);
+
+    handler.handleInteract(anchorBlock, player, dim);
+
+    assert.equal(chain.drops.length, 2);
+    const ledgeCoil = chain.drops[1];
+    assert.equal(ledgeCoil.remaining, 9);
+
+    mgr.addSegmentPosition(chain.id, "minecraft:overworld", ledgeCoil.coilPos);
+    const ledgeBlock = makeBlock("ropes:rope", ledgeCoil.coilPos, dim);
+    handler.handleInteract(ledgeBlock, player, dim);
+
+    assert.equal(ledgeCoil.segments.length, 9);
+    assert.equal(ledgeCoil.remaining, 0);
+  });
+
+  it("cascade: multi-level cascading with two ledges", () => {
+    const blockMap = {
+      "0,61,0": { typeId: "minecraft:stone", setType() {}, setPermutation() {} },
+      "0,56,1": { typeId: "minecraft:stone", setType() {}, setPermutation() {} },
+    };
+    const dim = makeDimension(blockMap);
+    const chain = mgr.createChain("rope", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "up", 20);
+    const player = makePlayer();
+
+    handler.handleInteract(makeBlock("ropes:rope", { x: 0, y: 64, z: 0 }, dim), player, dim);
+    assert.equal(chain.drops.length, 2);
+    assert.equal(chain.drops[0].segments.length, 1);
+    assert.deepEqual(chain.drops[1].coilPos, { x: 0, y: 62, z: 0 });
+    assert.equal(chain.drops[1].remaining, 19);
+
+    mgr.addSegmentPosition(chain.id, "minecraft:overworld", chain.drops[1].coilPos);
+    handler.handleInteract(makeBlock("ropes:rope", chain.drops[1].coilPos, dim), player, dim);
+
+    assert.equal(chain.drops.length, 3);
+    assert.equal(chain.drops[1].segments.length, 5);
+    assert.deepEqual(chain.drops[2].coilPos, { x: 0, y: 57, z: 1 });
+    assert.equal(chain.drops[2].remaining, 14);
+    assert.equal(chain.totalSegments, 20);
+  });
+
+  it("cascade: full recoil from anchor clears all drops and ledge coils", () => {
+    const blockMap = {
+      "0,61,0": { typeId: "minecraft:stone", setType() {}, setPermutation() {} },
+    };
+    const dim = makeDimension(blockMap);
+    const chain = mgr.createChain("rope", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "up", 10);
+    const player = makePlayer();
+
+    handler.handleInteract(makeBlock("ropes:rope", { x: 0, y: 64, z: 0 }, dim), player, dim);
+    assert.equal(chain.drops.length, 2);
+
+    mgr.addSegmentPosition(chain.id, "minecraft:overworld", chain.drops[1].coilPos);
+    handler.handleInteract(makeBlock("ropes:rope", chain.drops[1].coilPos, dim), player, dim);
+    assert.ok(chain.drops[1].segments.length > 0);
+
+    for (const drop of chain.drops) {
+      for (const seg of drop.segments) {
+        mgr.addSegmentPosition(chain.id, "minecraft:overworld", seg);
+      }
+    }
+
+    handler.handleInteract(makeBlock("ropes:rope", { x: 0, y: 64, z: 0 }, dim), player, dim);
+
+    assert.equal(chain.drops.length, 1);
+    assert.equal(chain.drops[0].remaining, 10);
+    assert.equal(chain.drops[0].segments.length, 0);
+    assert.equal(chain.totalSegments, 10);
+  });
+
+  it("cascade: one-at-a-time retract removes bottommost segment", () => {
+    const blockMap = {
+      "0,61,0": { typeId: "minecraft:stone", setType() {}, setPermutation() {} },
+    };
+    const dim = makeDimension(blockMap);
+    const chain = mgr.createChain("rope", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "up", 10);
+    const player = makePlayer();
+
+    handler.handleInteract(makeBlock("ropes:rope", { x: 0, y: 64, z: 0 }, dim), player, dim);
+
+    mgr.addSegmentPosition(chain.id, "minecraft:overworld", chain.drops[1].coilPos);
+    handler.handleInteract(makeBlock("ropes:rope", chain.drops[1].coilPos, dim), player, dim);
+
+    for (const drop of chain.drops) {
+      for (const seg of drop.segments) {
+        mgr.addSegmentPosition(chain.id, "minecraft:overworld", seg);
+      }
+    }
+
+    const bottomSeg = chain.drops[1].segments[chain.drops[1].segments.length - 1];
+    const segCount = chain.drops[1].segments.length;
+
+    const segBlock = makeBlock("ropes:rope", chain.drops[0].segments[0], dim);
+    handler.handleInteract(segBlock, player, dim);
+
+    assert.equal(chain.drops[1].segments.length, segCount - 1);
+  });
+
+  it("cascade: rope ladder skips cascade, no ledge coil on solid", () => {
+    const blockMap = {
+      "0,61,0": { typeId: "minecraft:stone", setType() {}, setPermutation() {} },
+    };
+    const dim = makeDimension(blockMap);
+    const chain = mgr.createChain("rope_ladder", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "north", 10);
+    const player = makePlayer();
+    const block = makeBlock("ropes:rope_ladder", { x: 0, y: 64, z: 0 }, dim);
+
+    handler.handleInteract(block, player, dim);
+
+    assert.equal(chain.drops.length, 1);
+    assert.equal(chain.drops[0].segments.length, 2);
+    assert.equal(chain.drops[0].remaining, 8);
+  });
+
+  it("cascade: position index tracks ledge coil positions", () => {
+    const blockMap = {
+      "0,61,0": { typeId: "minecraft:stone", setType() {}, setPermutation() {} },
+    };
+    const dim = makeDimension(blockMap);
+    const chain = mgr.createChain("rope", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "up", 10);
+    const player = makePlayer();
+
+    handler.handleInteract(makeBlock("ropes:rope", { x: 0, y: 64, z: 0 }, dim), player, dim);
+
+    const ledgePos = chain.drops[1].coilPos;
+    const found = mgr.getChainAtPosition("minecraft:overworld", ledgePos);
+    assert.equal(found, chain);
+  });
+
+  it("cascade: adding segments to ledge coil then full recoil preserves total", () => {
+    const blockMap = {
+      "0,61,0": { typeId: "minecraft:stone", setType() {}, setPermutation() {} },
+    };
+    const dim = makeDimension(blockMap);
+    const chain = mgr.createChain("rope", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "up", 10);
+    const player = makePlayer();
+
+    handler.handleInteract(makeBlock("ropes:rope", { x: 0, y: 64, z: 0 }, dim), player, dim);
+    assert.equal(chain.drops.length, 2);
+
+    chain.addSegments(3, 1);
+    assert.equal(chain.totalSegments, 13);
+
+    for (const drop of chain.drops) {
+      for (const seg of drop.segments) {
+        mgr.addSegmentPosition(chain.id, "minecraft:overworld", seg);
+      }
+    }
+    mgr.addSegmentPosition(chain.id, "minecraft:overworld", chain.drops[1].coilPos);
+
+    handler.handleInteract(makeBlock("ropes:rope", { x: 0, y: 64, z: 0 }, dim), player, dim);
+
+    assert.equal(chain.drops.length, 1);
+    assert.equal(chain.totalSegments, 13);
+    assert.equal(chain.drops[0].remaining, 13);
   });
 });

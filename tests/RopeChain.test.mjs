@@ -189,4 +189,95 @@ describe("RopeChain", () => {
     assert.equal(chain.isAnchor({ x: 5, y: 10, z: 15 }), true);
     assert.equal(chain.isAnchor({ x: 5, y: 9, z: 15 }), false);
   });
+
+  it("multi-cascade: three drops with correct remaining at each", () => {
+    const chain = new RopeChain("rope_1", "rope", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "up", 20);
+    chain.extendDrop(0, [{ x: 0, y: 63, z: 0 }, { x: 0, y: 62, z: 0 }]);
+    chain.createLedgeCoil(0, { x: 0, y: 61, z: 0 });
+    chain.extendDrop(1, [{ x: 0, y: 60, z: 0 }, { x: 0, y: 59, z: 0 }]);
+    chain.createLedgeCoil(1, { x: 0, y: 58, z: 0 });
+
+    assert.equal(chain.drops.length, 3);
+    assert.equal(chain.drops[0].remaining, 0);
+    assert.equal(chain.drops[0].segments.length, 2);
+    assert.equal(chain.drops[1].remaining, 0);
+    assert.equal(chain.drops[1].segments.length, 2);
+    assert.equal(chain.drops[2].remaining, 16);
+    assert.equal(chain.totalSegments, 20);
+  });
+
+  it("retractOneFromBottom with cascade: removes from deepest drop first", () => {
+    const chain = new RopeChain("rope_1", "rope", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "up", 10);
+    chain.extendDrop(0, [{ x: 0, y: 63, z: 0 }]);
+    chain.createLedgeCoil(0, { x: 0, y: 62, z: 0 });
+    chain.extendDrop(1, [{ x: 0, y: 61, z: 0 }, { x: 0, y: 60, z: 0 }]);
+
+    const result = chain.retractOneFromBottom();
+    assert.deepEqual(result.removed, { x: 0, y: 60, z: 0 });
+    assert.equal(chain.drops[1].segments.length, 1);
+    assert.equal(chain.drops[1].remaining, 8);
+    assert.equal(chain.drops.length, 2);
+  });
+
+  it("retractOneFromBottom: last segment in cascade drop merges back to parent", () => {
+    const chain = new RopeChain("rope_1", "rope", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "up", 10);
+    chain.extendDrop(0, [{ x: 0, y: 63, z: 0 }]);
+    chain.createLedgeCoil(0, { x: 0, y: 62, z: 0 });
+    chain.extendDrop(1, [{ x: 0, y: 61, z: 0 }]);
+
+    const result = chain.retractOneFromBottom();
+    assert.deepEqual(result.removed, { x: 0, y: 61, z: 0 });
+    assert.deepEqual(result.ledgeCoilRemoved, { x: 0, y: 62, z: 0 });
+    assert.equal(chain.drops.length, 1);
+    assert.equal(chain.drops[0].remaining, 9);
+  });
+
+  it("fullRecoil with 3 ledge coils clears all and restores total", () => {
+    const chain = new RopeChain("rope_1", "rope", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "up", 20);
+    chain.extendDrop(0, [{ x: 0, y: 63, z: 0 }]);
+    chain.createLedgeCoil(0, { x: 0, y: 62, z: 0 });
+    chain.extendDrop(1, [{ x: 0, y: 61, z: 0 }]);
+    chain.createLedgeCoil(1, { x: 0, y: 60, z: 0 });
+    chain.extendDrop(2, [{ x: 0, y: 59, z: 0 }]);
+    chain.createLedgeCoil(2, { x: 0, y: 58, z: 0 });
+
+    const removed = chain.fullRecoil();
+    assert.equal(chain.drops.length, 1);
+    assert.equal(chain.totalSegments, 20);
+    assert.equal(chain.drops[0].remaining, 20);
+    assert.ok(removed.some(p => p.y === 62));
+    assert.ok(removed.some(p => p.y === 60));
+    assert.ok(removed.some(p => p.y === 58));
+  });
+
+  it("breakAtSegment above ledge coil removes all downstream", () => {
+    const chain = new RopeChain("rope_1", "rope", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "up", 15);
+    chain.extendDrop(0, [{ x: 0, y: 63, z: 0 }, { x: 0, y: 62, z: 0 }]);
+    chain.createLedgeCoil(0, { x: 0, y: 61, z: 0 });
+    chain.extendDrop(1, [{ x: 0, y: 60, z: 0 }, { x: 0, y: 59, z: 0 }]);
+
+    const broken = chain.breakAtSegment(0, 1);
+
+    assert.equal(broken.length, 4);
+    assert.ok(broken.some(p => p.y === 62));
+    assert.ok(broken.some(p => p.y === 61));
+    assert.ok(broken.some(p => p.y === 60));
+    assert.ok(broken.some(p => p.y === 59));
+    assert.equal(chain.drops.length, 1);
+    assert.equal(chain.drops[0].segments.length, 1);
+  });
+
+  it("partial cascade: some drops extended, full recoil clears everything", () => {
+    const chain = new RopeChain("rope_1", "rope", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "up", 20);
+    chain.extendDrop(0, [{ x: 0, y: 63, z: 0 }]);
+    chain.createLedgeCoil(0, { x: 0, y: 62, z: 0 });
+
+    assert.equal(chain.drops[1].remaining, 19);
+    assert.equal(chain.drops[1].segments.length, 0);
+
+    const removed = chain.fullRecoil();
+    assert.equal(chain.drops.length, 1);
+    assert.equal(chain.totalSegments, 20);
+    assert.ok(removed.some(p => p.y === 62));
+  });
 });
