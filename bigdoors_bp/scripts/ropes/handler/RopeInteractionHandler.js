@@ -1,5 +1,5 @@
 import { BlockPermutation } from "@minecraft/server";
-import { ROPE_BLOCK_ID, ROPE_LADDER_BLOCK_ID } from "../util/RopeConstants.js";
+import { ALLOW_ADD_SEGMENTS_BY_CLICKING_COIL, ROPE_BLOCK_ID, ROPE_LADDER_BLOCK_ID } from "../util/RopeConstants.js";
 import { DIR_OFFSETS } from "../../util/Constants.js";
 
 const CARDINAL_ORDER = ["north", "east", "south", "west"];
@@ -54,14 +54,18 @@ export class RopeInteractionHandler {
     if (chain.isAnchor(pos) && (chain.drops[0].segments.length > 0 || chain.drops.length > 1)) {
       this._fullRecoil(chain, dimension);
     } else if (info.isCoil) {
-      if (isHoldingRopeItem) {
+      if (ALLOW_ADD_SEGMENTS_BY_CLICKING_COIL && isHoldingRopeItem) {
         this._addSegmentFromItem(chain, info.dropIndex, player);
       } else if (info.drop.remaining > 0) {
         this._uncoil(chain, info.dropIndex, player, dimension);
       }
     } else {
       if (!isHoldingRopeItem) {
-        this._retractOne(chain, dimension);
+        if (chain.type === "rope_ladder") {
+          this._fullRecoil(chain, dimension);
+        } else {
+          this._retractOne(chain, dimension);
+        }
       }
     }
   }

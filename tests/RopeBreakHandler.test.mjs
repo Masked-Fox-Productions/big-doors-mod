@@ -36,7 +36,7 @@ function makePlayer(name = "TestPlayer", creative = false) {
   const items = [];
   return {
     name,
-    getGameMode() { return creative ? "creative" : "survival"; },
+    getGameMode() { return creative ? "Creative" : "Survival"; },
     dimension: { id: "minecraft:overworld" },
     location: { x: 0, y: 64, z: 0 },
     getComponent(n) {

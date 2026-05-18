@@ -12,7 +12,7 @@ export class RopeBreakHandler {
       const dimId = event.block.dimension.id;
       const chainIds = this._manager.getChainsForSupportBlock(dimId, pos);
       if (!chainIds) return;
-      const creative = event.player?.getGameMode?.() === "creative";
+      const creative = event.player?.getGameMode?.() === "Creative";
       for (const chainId of [...chainIds]) {
         const chain = this._manager.getChain(chainId);
         if (!chain) continue;
@@ -27,7 +27,7 @@ export class RopeBreakHandler {
       if (!chain || !chain.isWhipDeployed) return;
       event.cancel = true;
       const dim = event.block.dimension;
-      const creative = event.player?.getGameMode?.() === "creative";
+      const creative = event.player?.getGameMode?.() === "Creative";
       system.run(() => {
         this._breakEntireChain(chain, dim, creative);
       });
@@ -44,7 +44,7 @@ export class RopeBreakHandler {
 
     if (chain.isWhipDeployed) return;
 
-    const creative = event.player?.getGameMode?.() === "creative";
+    const creative = event.player?.getGameMode?.() === "Creative";
 
     if (chain.isAnchor(pos)) {
       this._breakEntireChain(chain, dimension, creative);

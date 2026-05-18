@@ -6,6 +6,7 @@ export const MAX_CHAIN_LENGTH = 64;
 export const CLIMB_INTERVAL_TICKS = 2;
 export const ROPE_CLIMB_SPEED = 0.35;
 export const LADDER_CLIMB_SPEED = 0.28;
+export const ALLOW_ADD_SEGMENTS_BY_CLICKING_COIL = false;
 export const WHIP_RANGE = 8;
 export const WHIP_DEPLOY_SEGMENTS = 4;
 export const WHIP_DAMAGE = 3;

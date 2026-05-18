@@ -1,0 +1,21 @@
+{
+  "format_version": "1.21.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.ropes.rope_wall",
+        "texture_width": 16,
+        "texture_height": 16
+      },
+      "bones": [
+        {
+          "name": "rope",
+          "pivot": [0, 0, 0],
+          "cubes": [
+            { "origin": [-1, 0, 5], "size": [2, 16, 2], "uv": [0, 0] }
+          ]
+        }
+      ]
+    }
+  ]
+}

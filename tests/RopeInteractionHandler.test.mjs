@@ -85,16 +85,17 @@ describe("RopeInteractionHandler", () => {
     assert.equal(chain.drops[0].remaining, 5);
   });
 
-  it("add segment: holding rope item on coil increments remaining", () => {
+  it("add segment: holding rope item on coil is disabled by config", () => {
     const holdingItem = { typeId: "ropes:rope", amount: 5 };
     const dim = makeDimension();
-    const chain = mgr.createChain("rope", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "up", 3);
+    const chain = mgr.createChain("rope", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "up", 0);
     const player = makePlayer(0, holdingItem);
     const block = makeBlock("ropes:rope", { x: 0, y: 64, z: 0 }, dim);
 
     handler.handleInteract(block, player, dim);
 
-    assert.equal(chain.totalSegments, 4);
+    assert.equal(chain.totalSegments, 0);
+    assert.equal(holdingItem.amount, 5);
   });
 
   it("no-op: interact with coil that has 0 remaining does nothing", () => {
@@ -305,6 +306,28 @@ describe("RopeInteractionHandler", () => {
     handler.handleInteract(segBlock, player, dim);
 
     assert.equal(chain.drops[1].segments.length, segCount - 1);
+  });
+
+  it("rope ladder: clicking any segment triggers full recoil", () => {
+    const dim = makeDimension();
+    const chain = mgr.createChain("rope_ladder", "minecraft:overworld", { x: 0, y: 64, z: 0 }, "north", 5);
+    chain.extendDrop(0, [
+      { x: 0, y: 63, z: 0 },
+      { x: 0, y: 62, z: 0 },
+      { x: 0, y: 61, z: 0 },
+    ]);
+    mgr.addSegmentPosition(chain.id, "minecraft:overworld", { x: 0, y: 63, z: 0 });
+    mgr.addSegmentPosition(chain.id, "minecraft:overworld", { x: 0, y: 62, z: 0 });
+    mgr.addSegmentPosition(chain.id, "minecraft:overworld", { x: 0, y: 61, z: 0 });
+
+    const player = makePlayer();
+    const block = makeBlock("ropes:rope_ladder", { x: 0, y: 62, z: 0 }, dim);
+
+    handler.handleInteract(block, player, dim);
+
+    assert.equal(chain.drops.length, 1);
+    assert.equal(chain.drops[0].segments.length, 0);
+    assert.equal(chain.drops[0].remaining, 5);
   });
 
   it("cascade: rope ladder skips cascade, no ledge coil on solid", () => {
