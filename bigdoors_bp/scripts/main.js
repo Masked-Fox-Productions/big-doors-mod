@@ -10,7 +10,7 @@ import { RedstoneSubsystem } from "./subsystem/RedstoneSubsystem.js";
 import { RopeManager } from "./ropes/RopeManager.js";
 import { initRopes } from "./ropes/init.js";
 
-console.warn("[bigdoors] === Mod initializing ===");
+console.log("[bigdoors] === Mod initializing ===");
 
 let manager;
 let interaction;
@@ -179,14 +179,14 @@ redstone = new RedstoneSubsystem(manager);
 ropeManager = new RopeManager();
 
 world.afterEvents.worldLoad.subscribe(() => {
-  console.warn("[bigdoors] worldLoad fired — loading persistence");
+  console.log("[bigdoors] worldLoad fired — loading persistence");
   manager.load();
   ropeManager.load();
   redstone.restoreMonitors(world.getDimension("overworld"));
 });
 
 system.run(() => {
-  console.warn("[bigdoors] Fallback load triggered");
+  console.log("[bigdoors] Fallback load triggered");
   manager.load();
   ropeManager.load();
   redstone.restoreMonitors(world.getDimension("overworld"));
@@ -202,6 +202,6 @@ const ropeHandlers = initRopes(ropeManager);
 ropeInteraction = ropeHandlers.interaction;
 ropeBreak = ropeHandlers.breakHandler;
 
-console.warn("[bigdoors] === Initialization complete ===");
+console.log("[bigdoors] === Initialization complete ===");
 
 export { manager, ropeManager };

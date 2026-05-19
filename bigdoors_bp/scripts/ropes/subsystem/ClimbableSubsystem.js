@@ -17,7 +17,7 @@ export class ClimbableSubsystem {
 
   register() {
     system.runInterval(() => this._tick(), CLIMB_INTERVAL_TICKS);
-    console.warn("[ropes] ClimbableSubsystem registered, interval=" + CLIMB_INTERVAL_TICKS);
+    console.log("[ropes] ClimbableSubsystem registered, interval=" + CLIMB_INTERVAL_TICKS);
   }
 
   _tick() {
