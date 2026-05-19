@@ -7,6 +7,7 @@ import com.bigdoors.BigdoorsMod;
 import com.bigdoors.DoorManager;
 import com.bigdoors.domain.DoorAssembly;
 import com.bigdoors.domain.MaterialRegistry;
+import com.bigdoors.domain.PanelRotation;
 import com.bigdoors.subsystem.DoorMover;
 import com.bigdoors.subsystem.RedstoneHandler;
 import com.bigdoors.util.BlockPos3;
@@ -233,15 +234,28 @@ public class HingeBlock extends Block {
         if (matIdx < 0) return false;
 
         BlockPos3 panelBp = new BlockPos3(neighborPos.getX(), neighborPos.getY(), neighborPos.getZ());
+
+        if ("up".equals(direction) || "down".equals(direction)) {
+            manager.setMode(assembly.getId(), "vertical");
+        }
         manager.setDoorSide(assembly.getId(), direction);
+
         manager.startConversion(neighborPos);
         try {
-            Block panelBlock = ModBlocks.panelBlockForGeoClass(
-                    MaterialRegistry.geometryClassForMaterial(matIdx));
+            int geoClass = MaterialRegistry.geometryClassForMaterial(matIdx);
+            int overlay = "hidden".equals(assembly.getHingeType()) ? 0 : 1;
+            int rotation = PanelRotation.closedRotation(direction, assembly.getFacing(), geoClass);
+            Integer geoId = resolveGeometryId(matIdx, geoClass, null, null);
+
+            Block panelBlock = ModBlocks.panelBlockForGeoClass(geoClass);
             BlockState panelState = DoorPanelBlock.applyMaterialIndex(
-                    panelBlock.defaultBlockState(), matIdx);
+                    panelBlock.defaultBlockState(), matIdx)
+                    .setValue(DoorPanelBlock.PANEL_ROTATION, rotation)
+                    .setValue(DoorPanelBlock.OVERLAY, overlay);
+            panelState = applyGeometryVariant(panelState, geoId);
             level.setBlockAndUpdate(neighborPos, panelState);
-            manager.addPanelToAssembly(assembly.getId(), panelBp, matIdx);
+            manager.addPanelToAssembly(assembly.getId(), panelBp, matIdx,
+                    geoId, overlay);
         } finally {
             manager.endConversion(neighborPos);
         }
@@ -272,18 +286,46 @@ public class HingeBlock extends Block {
         BlockPos3 panelBp = new BlockPos3(neighborPos.getX(), neighborPos.getY(), neighborPos.getZ());
         manager.startConversion(neighborPos);
         try {
-            Block panelBlock = ModBlocks.panelBlockForGeoClass(
-                    MaterialRegistry.geometryClassForMaterial(matIdx));
+            int geoClass = MaterialRegistry.geometryClassForMaterial(matIdx);
+            int overlay = "hidden".equals(assembly.getHingeType()) ? 0 : 1;
+            int rotation = PanelRotation.closedRotation(assembly.getDoorSide(),
+                    assembly.getFacing(), geoClass);
+            Integer geoId = resolveGeometryId(matIdx, geoClass, null, null);
+
+            Block panelBlock = ModBlocks.panelBlockForGeoClass(geoClass);
             BlockState panelState = DoorPanelBlock.applyMaterialIndex(
-                    panelBlock.defaultBlockState(), matIdx);
+                    panelBlock.defaultBlockState(), matIdx)
+                    .setValue(DoorPanelBlock.PANEL_ROTATION, rotation)
+                    .setValue(DoorPanelBlock.OVERLAY, overlay);
+            panelState = applyGeometryVariant(panelState, geoId);
             level.setBlockAndUpdate(neighborPos, panelState);
-            manager.addPanelToAssembly(assembly.getId(), panelBp, matIdx);
+            manager.addPanelToAssembly(assembly.getId(), panelBp, matIdx,
+                    geoId, overlay);
         } finally {
             manager.endConversion(neighborPos);
         }
 
-        // Check for double door after each conversion
         checkDoubleDoorAfterConversion(level, manager, assembly);
+    }
+
+    static Integer resolveGeometryId(int matIdx, int geoClass, Boolean neighborBefore, Boolean neighborAfter) {
+        if (geoClass == 0) return null;
+        boolean before = neighborBefore != null ? neighborBefore : false;
+        boolean after = neighborAfter != null ? neighborAfter : false;
+        return MaterialRegistry.resolveGeometryId(matIdx, before, after);
+    }
+
+    static BlockState applyGeometryVariant(BlockState state, Integer geoId) {
+        if (geoId == null) return state;
+        try {
+            net.minecraft.world.level.block.state.properties.IntegerProperty gvProp =
+                    (net.minecraft.world.level.block.state.properties.IntegerProperty)
+                    state.getBlock().getStateDefinition().getProperty("geometry_variant");
+            if (gvProp != null) {
+                return state.setValue(gvProp, geoId);
+            }
+        } catch (ClassCastException ignored) {}
+        return state;
     }
 
     // --- Redstone: open / close door on power transition ---

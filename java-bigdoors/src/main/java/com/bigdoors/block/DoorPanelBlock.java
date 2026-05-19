@@ -7,6 +7,7 @@ import com.bigdoors.BigdoorsMod;
 import com.bigdoors.DoorManager;
 import com.bigdoors.domain.DoorAssembly;
 import com.bigdoors.domain.MaterialRegistry;
+import com.bigdoors.domain.PanelRotation;
 import com.bigdoors.subsystem.DoorMover;
 import com.bigdoors.subsystem.RedstoneHandler;
 import com.bigdoors.util.BlockPos3;
@@ -136,11 +137,20 @@ public class DoorPanelBlock extends Block {
 
             manager.startConversion(neighborPos);
             try {
-                Block panelBlock = ModBlocks.panelBlockForGeoClass(
-                        MaterialRegistry.geometryClassForMaterial(matIdx));
-                BlockState panelState = applyMaterialIndex(panelBlock.defaultBlockState(), matIdx);
+                int geoClass = MaterialRegistry.geometryClassForMaterial(matIdx);
+                int overlay = "hidden".equals(assembly.getHingeType()) ? 0 : 1;
+                int rotation = PanelRotation.closedRotation(assembly.getDoorSide(),
+                        assembly.getFacing(), geoClass);
+                Integer geoId = HingeBlock.resolveGeometryId(matIdx, geoClass, null, null);
+
+                Block panelBlock = ModBlocks.panelBlockForGeoClass(geoClass);
+                BlockState panelState = applyMaterialIndex(panelBlock.defaultBlockState(), matIdx)
+                        .setValue(PANEL_ROTATION, rotation)
+                        .setValue(OVERLAY, overlay);
+                panelState = HingeBlock.applyGeometryVariant(panelState, geoId);
                 level.setBlockAndUpdate(neighborPos, panelState);
-                manager.addPanelToAssembly(assembly.getId(), neighborBp, matIdx);
+                manager.addPanelToAssembly(assembly.getId(), neighborBp, matIdx,
+                        geoId, overlay);
             } finally {
                 manager.endConversion(neighborPos);
             }
