@@ -321,7 +321,7 @@ public class HingeBlock extends Block {
         return MaterialRegistry.resolveGeometryId(matIdx, before, after);
     }
 
-    static BlockState applyGeometryVariant(BlockState state, Integer geoId) {
+    public static BlockState applyGeometryVariant(BlockState state, Integer geoId) {
         if (geoId == null) return state;
         try {
             net.minecraft.world.level.block.state.properties.IntegerProperty gvProp =

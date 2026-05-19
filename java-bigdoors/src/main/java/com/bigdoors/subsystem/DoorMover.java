@@ -17,7 +17,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import com.bigdoors.block.HingeBlock;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -214,17 +214,7 @@ public final class DoorMover {
         }
         state = state.setValue(DoorPanelBlock.PANEL_ROTATION, rotation);
         state = state.setValue(DoorPanelBlock.OVERLAY, panel.overlay());
-
-        // Set geometry variant for exotic blocks
-        if (geoClass != 0 && panel.geometryId() != null) {
-            try {
-                IntegerProperty gvProp = (IntegerProperty) state.getBlock().getStateDefinition()
-                        .getProperty("geometry_variant");
-                if (gvProp != null) {
-                    state = state.setValue(gvProp, panel.geometryId());
-                }
-            } catch (ClassCastException ignored) {}
-        }
+        state = HingeBlock.applyGeometryVariant(state, panel.geometryId());
 
         return state;
     }

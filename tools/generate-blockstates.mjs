@@ -16,7 +16,7 @@ const GROUPS = 13;  // 0-12
 const IDS = 16;     // 0-15
 const ROTATIONS = 8; // 0-7
 const OVERLAYS = 2;  // 0-1
-const GEO_VARIANTS = 16; // 0-15
+const GEO_VARIANTS = 15; // 0-14
 
 const ROTATION_Y = [0, 90, 180, 270, 0, 90, 180, 270];
 

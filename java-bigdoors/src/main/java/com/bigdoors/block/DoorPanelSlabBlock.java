@@ -12,7 +12,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class DoorPanelSlabBlock extends DoorPanelBlock {
 
-    public static final IntegerProperty GEOMETRY_VARIANT = IntegerProperty.create("geometry_variant", 0, 15);
+    public static final IntegerProperty GEOMETRY_VARIANT = IntegerProperty.create("geometry_variant", 0, 14);
 
     private static final VoxelShape SLAB_BOTTOM = Block.box(0.0, 0.0, 0.0, 16.0, 8.0, 16.0);
 
