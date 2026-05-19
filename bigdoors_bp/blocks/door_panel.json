@@ -1192,7 +1192,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -1203,7 +1203,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "tinted_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             }
           }
         }
@@ -5206,7 +5206,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             },
             "overlay": {
               "texture": "bigdoors_panel_overlay_h",
@@ -5222,7 +5222,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             },
             "overlay": {
               "texture": "bigdoors_panel_overlay_v",
@@ -5242,7 +5242,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "tinted_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             },
             "overlay": {
               "texture": "bigdoors_panel_overlay_h",
@@ -5258,7 +5258,7 @@
           "minecraft:material_instances": {
             "*": {
               "texture": "tinted_glass",
-              "render_method": "alpha_test"
+              "render_method": "blend"
             },
             "overlay": {
               "texture": "bigdoors_panel_overlay_v",

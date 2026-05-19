@@ -19,6 +19,6 @@ export function initRopes(ropeManager) {
   const climbable = new ClimbableSubsystem(ropeManager);
   climbable.register();
 
-  console.warn("[ropes] Rope subsystems initialized");
+  console.log("[ropes] Rope subsystems initialized");
   return { interaction, breakHandler };
 }

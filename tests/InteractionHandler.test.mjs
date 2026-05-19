@@ -4,7 +4,7 @@ import { __reset } from "./stubs/minecraft-server.mjs";
 import { DoorManager } from "../bigdoors_bp/scripts/DoorManager.js";
 import { InteractionHandler } from "../bigdoors_bp/scripts/handler/InteractionHandler.js";
 import { makeMockDimension, placeBlock } from "./helpers/mock-dimension.mjs";
-import { PANEL_BLOCK_ID, HINGE_BLOCK_ID } from "../bigdoors_bp/scripts/util/Constants.js";
+import { PANEL_BLOCK_ID, HINGE_BLOCK_ID, WINCH_BLOCK_ID } from "../bigdoors_bp/scripts/util/Constants.js";
 
 function posKey(pos) {
   return `${pos.x},${pos.y},${pos.z}`;
@@ -548,5 +548,240 @@ describe("InteractionHandler", () => {
     const destPos = opened.panelPositions[0].currentPos;
     const destBlock = dim.getBlock(destPos);
     assert.equal(destBlock.permutation.getState("bigdoors:overlay"), 0);
+  });
+
+  describe("winch mode", () => {
+    function setupWinchDoor(manager, hingeType = "winch") {
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "vertical", hingeType);
+      manager.setDoorSide(assembly.id, "down");
+      manager.addPanelToAssembly(assembly.id, { x: 0, y: -1, z: 0 }, 12);
+      return assembly;
+    }
+
+    function buildWinchDimension(assembly) {
+      const dim = makeMockDimension(new Map());
+      placeBlock(dim, WINCH_BLOCK_ID, { x: 0, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 0, y: -1, z: 0 }, { "bigdoors:material": 12 });
+      for (let x = -1; x <= 1; x++) {
+        for (let y = -3; y <= 3; y++) {
+          for (let z = -1; z <= 1; z++) {
+            const key = posKey({ x, y, z });
+            if (!dim._blocks.has(key)) {
+              placeBlock(dim, "minecraft:air", { x, y, z });
+            }
+          }
+        }
+      }
+      return dim;
+    }
+
+    it("winch assembly opens with linear shift — panel mirrors through winch", () => {
+      const assembly = setupWinchDoor(manager);
+      const dim = buildWinchDimension(assembly);
+      const player = { location: { x: 0, y: -1, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: -1, z: 0 });
+
+      handler.handleInteract(block, player, dim);
+
+      const updated = manager.getAssembly(assembly.id);
+      assert.equal(updated.isOpen, true);
+      const panelPos = updated.panelPositions[0].currentPos;
+      assert.equal(panelPos.y, 1, "Panel at y=-1 should mirror through winch y=0 to y=1");
+      assert.equal(panelPos.x, 0, "X should be preserved");
+      assert.equal(panelPos.z, 0, "Z should be preserved");
+    });
+
+    it("winch assembly closes back to closedPos", () => {
+      const assembly = setupWinchDoor(manager);
+      const dim = buildWinchDimension(assembly);
+      const player = { location: { x: 0, y: -1, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: -1, z: 0 });
+
+      handler.handleInteract(block, player, dim);
+      const opened = manager.getAssembly(assembly.id);
+      assert.equal(opened.isOpen, true);
+
+      const newPos = opened.panelPositions[0].currentPos;
+      const panelBlock = dim.getBlock(newPos);
+      handler.handleInteract(panelBlock, player, dim);
+
+      const closed = manager.getAssembly(assembly.id);
+      assert.equal(closed.isOpen, false);
+      assert.deepEqual(closed.panelPositions[0].currentPos, { x: 0, y: -1, z: 0 });
+    });
+
+    it("winch open uses canonical 'cw' direction", () => {
+      const assembly = setupWinchDoor(manager);
+      const dim = buildWinchDimension(assembly);
+      const player = { location: { x: 0, y: -1, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: -1, z: 0 });
+
+      handler.handleInteract(block, player, dim);
+
+      const updated = manager.getAssembly(assembly.id);
+      assert.equal(updated.openDirection, "cw");
+    });
+
+    it("winch open is blocked when destination has solid block", () => {
+      const assembly = setupWinchDoor(manager);
+      const dim = buildWinchDimension(assembly);
+      placeBlock(dim, "minecraft:stone", { x: 0, y: 1, z: 0 });
+      const player = { location: { x: 0, y: -1, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: -1, z: 0 });
+
+      handler.handleInteract(block, player, dim);
+
+      const updated = manager.getAssembly(assembly.id);
+      assert.equal(updated.isOpen, false, "Winch should not open when destination is blocked");
+    });
+
+    it("winch open destroys soft blocks at destination without drops", () => {
+      const assembly = setupWinchDoor(manager);
+      const dim = buildWinchDimension(assembly);
+      placeBlock(dim, "minecraft:short_grass", { x: 0, y: 1, z: 0 });
+      let spawnCalled = false;
+      dim.spawnItem = () => { spawnCalled = true; };
+
+      const player = { location: { x: 0, y: -1, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: -1, z: 0 });
+
+      handler.handleInteract(block, player, dim);
+
+      const updated = manager.getAssembly(assembly.id);
+      assert.equal(updated.isOpen, true);
+      assert.equal(spawnCalled, false, "Soft blocks should not spawn drops");
+    });
+
+    it("winch open destroys passable blocks at destination with drops", () => {
+      const assembly = setupWinchDoor(manager);
+      const dim = buildWinchDimension(assembly);
+      placeBlock(dim, "minecraft:torch", { x: 0, y: 1, z: 0 });
+      let spawnedItems = [];
+      dim.spawnItem = (item, pos) => { spawnedItems.push({ item, pos }); };
+
+      const player = { location: { x: 0, y: -1, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: -1, z: 0 });
+
+      handler.handleInteract(block, player, dim);
+
+      const updated = manager.getAssembly(assembly.id);
+      assert.equal(updated.isOpen, true);
+      assert.equal(spawnedItems.length, 1);
+      assert.equal(spawnedItems[0].item.typeId, "minecraft:torch");
+    });
+
+    it("winch aborts when destination is in unloaded chunk", () => {
+      const assembly = setupWinchDoor(manager);
+      const dim = makeMockDimension(new Map());
+      placeBlock(dim, WINCH_BLOCK_ID, { x: 0, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 0, y: -1, z: 0 });
+
+      const player = { location: { x: 0, y: -1, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: -1, z: 0 });
+
+      handler.handleInteract(block, player, dim);
+
+      const updated = manager.getAssembly(assembly.id);
+      assert.equal(updated.isOpen, false, "Winch should not open when destination chunk is unloaded");
+    });
+
+    it("multi-panel winch portcullis mirrors all panels", () => {
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "vertical", "winch");
+      manager.setDoorSide(assembly.id, "down");
+      manager.addPanelToAssembly(assembly.id, { x: 0, y: -1, z: 0 }, 12);
+      manager.addPanelToAssembly(assembly.id, { x: 0, y: -2, z: 0 }, 12);
+
+      const dim = makeMockDimension(new Map());
+      placeBlock(dim, WINCH_BLOCK_ID, { x: 0, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 0, y: -1, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 0, y: -2, z: 0 });
+      for (let y = -4; y <= 4; y++) {
+        const key = posKey({ x: 0, y, z: 0 });
+        if (!dim._blocks.has(key)) {
+          placeBlock(dim, "minecraft:air", { x: 0, y, z: 0 });
+        }
+      }
+
+      const player = { location: { x: 0, y: -1, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: -1, z: 0 });
+      handler.handleInteract(block, player, dim);
+
+      const updated = manager.getAssembly(assembly.id);
+      assert.equal(updated.isOpen, true);
+      const positions = updated.panelPositions.map(p => p.currentPos);
+      assert.deepEqual(positions[0], { x: 0, y: 1, z: 0 });
+      assert.deepEqual(positions[1], { x: 0, y: 2, z: 0 });
+    });
+
+    it("winch partner opens with mirror shift when primary opens", () => {
+      const primary = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "vertical", "winch");
+      manager.setDoorSide(primary.id, "down");
+      manager.addPanelToAssembly(primary.id, { x: 0, y: -1, z: 0 }, 12);
+
+      const partner = manager.createAssembly({ x: 1, y: 0, z: 0 }, "north", "vertical", "winch");
+      manager.setDoorSide(partner.id, "down");
+      manager.addPanelToAssembly(partner.id, { x: 1, y: -1, z: 0 }, 12);
+      manager.pairAssemblies(primary.id, partner.id);
+
+      const dim = makeMockDimension(new Map());
+      placeBlock(dim, WINCH_BLOCK_ID, { x: 0, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 0, y: -1, z: 0 });
+      placeBlock(dim, WINCH_BLOCK_ID, { x: 1, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: -1, z: 0 });
+      for (let x = 0; x <= 1; x++) {
+        for (let y = -3; y <= 3; y++) {
+          const key = posKey({ x, y, z: 0 });
+          if (!dim._blocks.has(key)) {
+            placeBlock(dim, "minecraft:air", { x, y, z: 0 });
+          }
+        }
+      }
+
+      const player = { location: { x: 0, y: -1, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: -1, z: 0 });
+      handler.handleInteract(block, player, dim);
+
+      const updatedPrimary = manager.getAssembly(primary.id);
+      const updatedPartner = manager.getAssembly(partner.id);
+      assert.equal(updatedPrimary.isOpen, true);
+      assert.equal(updatedPartner.isOpen, true);
+      assert.deepEqual(updatedPartner.panelPositions[0].currentPos, { x: 1, y: 1, z: 0 });
+    });
+
+    it("winch partner closes when primary closes", () => {
+      const primary = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "vertical", "winch");
+      manager.setDoorSide(primary.id, "down");
+      manager.addPanelToAssembly(primary.id, { x: 0, y: -1, z: 0 }, 12);
+
+      const partner = manager.createAssembly({ x: 1, y: 0, z: 0 }, "north", "vertical", "winch");
+      manager.setDoorSide(partner.id, "down");
+      manager.addPanelToAssembly(partner.id, { x: 1, y: -1, z: 0 }, 12);
+      manager.pairAssemblies(primary.id, partner.id);
+
+      const dim = makeMockDimension(new Map());
+      placeBlock(dim, WINCH_BLOCK_ID, { x: 0, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 0, y: -1, z: 0 });
+      placeBlock(dim, WINCH_BLOCK_ID, { x: 1, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: -1, z: 0 });
+      for (let x = 0; x <= 1; x++) {
+        for (let y = -3; y <= 3; y++) {
+          const key = posKey({ x, y, z: 0 });
+          if (!dim._blocks.has(key)) {
+            placeBlock(dim, "minecraft:air", { x, y, z: 0 });
+          }
+        }
+      }
+
+      const player = { location: { x: 0, y: -1, z: -2 } };
+      const block = dim.getBlock({ x: 0, y: -1, z: 0 });
+      handler.handleInteract(block, player, dim);
+
+      const opened = manager.getAssembly(primary.id);
+      const panelBlock = dim.getBlock(opened.panelPositions[0].currentPos);
+      handler.handleInteract(panelBlock, player, dim);
+
+      assert.equal(manager.getAssembly(primary.id).isOpen, false);
+      assert.equal(manager.getAssembly(partner.id).isOpen, false);
+    });
   });
 });

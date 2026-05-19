@@ -8,7 +8,7 @@ import {
   makeMockPlayer,
   placeBlock,
 } from "./helpers/mock-dimension.mjs";
-import { HINGE_BLOCK_ID, PANEL_BLOCK_ID, UNMATCHED_MATERIAL_INDEX } from "../bigdoors_bp/scripts/util/Constants.js";
+import { HINGE_BLOCK_ID, WINCH_BLOCK_ID, HIDDEN_WINCH_BLOCK_ID, PANEL_BLOCK_ID, UNMATCHED_MATERIAL_INDEX } from "../bigdoors_bp/scripts/util/Constants.js";
 
 describe("HingePlacementHandler", () => {
   let manager;
@@ -386,6 +386,89 @@ describe("HingePlacementHandler", () => {
       for (const y of [0, 1, 2]) {
         assert.equal(manager.findByPosition({ x: 0, y, z: 0 }), assembly);
       }
+    });
+  });
+
+  describe("winch type compatibility", () => {
+    it("winch does not merge with adjacent hinge", () => {
+      const dim = makeMockDimension();
+      const player = makeMockPlayer({ x: 0, y: 0, z: -1 });
+
+      const h1 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 }, {
+        "bigdoors:facing": "north", "bigdoors:mode": "horizontal", "bigdoors:door_side": "none",
+      });
+      handler.onPlace(h1, player, dim);
+
+      const w1 = placeBlock(dim, WINCH_BLOCK_ID, { x: 0, y: 1, z: 0 }, {
+        "bigdoors:facing": "north", "bigdoors:mode": "vertical", "bigdoors:door_side": "none",
+      });
+      handler.onPlace(w1, player, dim);
+
+      const hingeAsm = manager.findByPosition({ x: 0, y: 0, z: 0 });
+      const winchAsm = manager.findByPosition({ x: 0, y: 1, z: 0 });
+      assert.notEqual(hingeAsm, winchAsm, "Winch should not merge with hinge");
+    });
+
+    it("winch merges with adjacent winch", () => {
+      const dim = makeMockDimension();
+      const player = makeMockPlayer({ x: 0, y: 0, z: -1 });
+
+      const w1 = placeBlock(dim, WINCH_BLOCK_ID, { x: 0, y: 0, z: 0 }, {
+        "bigdoors:facing": "north", "bigdoors:mode": "vertical", "bigdoors:door_side": "none",
+      });
+      handler.onPlace(w1, player, dim);
+
+      const w2 = placeBlock(dim, WINCH_BLOCK_ID, { x: 0, y: 1, z: 0 }, {
+        "bigdoors:facing": "north", "bigdoors:mode": "vertical", "bigdoors:door_side": "none",
+      });
+      handler.onPlace(w2, player, dim);
+
+      const asm1 = manager.findByPosition({ x: 0, y: 0, z: 0 });
+      const asm2 = manager.findByPosition({ x: 0, y: 1, z: 0 });
+      assert.equal(asm1, asm2, "Two winches should merge");
+    });
+
+    it("winch merges with hidden_winch", () => {
+      const dim = makeMockDimension();
+      const player = makeMockPlayer({ x: 0, y: 0, z: -1 });
+
+      const w1 = placeBlock(dim, WINCH_BLOCK_ID, { x: 0, y: 0, z: 0 }, {
+        "bigdoors:facing": "north", "bigdoors:mode": "vertical", "bigdoors:door_side": "none",
+      });
+      handler.onPlace(w1, player, dim);
+
+      const hw = placeBlock(dim, HIDDEN_WINCH_BLOCK_ID, { x: 0, y: 1, z: 0 }, {
+        "bigdoors:facing": "north", "bigdoors:mode": "vertical", "bigdoors:door_side": "none",
+      });
+      handler.onPlace(hw, player, dim);
+
+      const asm1 = manager.findByPosition({ x: 0, y: 0, z: 0 });
+      const asm2 = manager.findByPosition({ x: 0, y: 1, z: 0 });
+      assert.equal(asm1, asm2, "Winch and hidden winch should merge");
+    });
+
+    it("double-door detection rejects winch paired with hinge", () => {
+      const dim = makeMockDimension();
+      const player = makeMockPlayer({ x: 0, y: 0, z: -1 });
+
+      const h1 = placeBlock(dim, HINGE_BLOCK_ID, { x: 0, y: 0, z: 0 }, {
+        "bigdoors:facing": "north", "bigdoors:mode": "horizontal", "bigdoors:door_side": "none",
+      });
+      handler.onPlace(h1, player, dim);
+      const hingeAsm = manager.findByPosition({ x: 0, y: 0, z: 0 });
+      manager.setDoorSide(hingeAsm.id, "east");
+      manager.addPanelToAssembly(hingeAsm.id, { x: 1, y: 0, z: 0 }, 0);
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 });
+
+      const w1 = placeBlock(dim, WINCH_BLOCK_ID, { x: 2, y: 0, z: 0 }, {
+        "bigdoors:facing": "north", "bigdoors:mode": "horizontal", "bigdoors:door_side": "none",
+      });
+      handler.onPlace(w1, player, dim);
+      const winchAsm = manager.findByPosition({ x: 2, y: 0, z: 0 });
+      manager.setDoorSide(winchAsm.id, "west");
+
+      assert.ok(!hingeAsm.partnerAssemblyId, "Hinge should not pair with winch");
+      assert.ok(!winchAsm.partnerAssemblyId, "Winch should not pair with hinge");
     });
   });
 });

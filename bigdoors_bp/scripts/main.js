@@ -1,5 +1,5 @@
 import { world, system, BlockPermutation } from "@minecraft/server";
-import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, UNMATCHED_MATERIAL_INDEX } from "./util/Constants.js";
+import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, WINCH_BLOCK_ID, HIDDEN_WINCH_BLOCK_ID, UNMATCHED_MATERIAL_INDEX } from "./util/Constants.js";
 import { ROPE_BLOCK_ID, ROPE_LADDER_BLOCK_ID } from "./ropes/util/RopeConstants.js";
 import { DoorManager } from "./DoorManager.js";
 import { HingePlacementHandler } from "./handler/HingePlacementHandler.js";
@@ -10,7 +10,7 @@ import { RedstoneSubsystem } from "./subsystem/RedstoneSubsystem.js";
 import { RopeManager } from "./ropes/RopeManager.js";
 import { initRopes } from "./ropes/init.js";
 
-console.warn("[bigdoors] === Mod initializing ===");
+console.log("[bigdoors] === Mod initializing ===");
 
 let manager;
 let interaction;
@@ -61,6 +61,56 @@ system.beforeEvents.startup.subscribe((ev) => {
       e.permutationToPlace = BlockPermutation.resolve(HIDDEN_HINGE_BLOCK_ID, {
         "bigdoors:facing": facing,
         "bigdoors:mode": "horizontal",
+        "bigdoors:door_side": "none",
+        "bigdoors:material_group": Math.floor(UNMATCHED_MATERIAL_INDEX / 16),
+        "bigdoors:material_id": UNMATCHED_MATERIAL_INDEX % 16,
+      });
+    },
+    onRedstoneUpdate(e) {
+      redstone.handleRedstoneUpdate(e);
+    },
+  });
+
+  ev.blockComponentRegistry.registerCustomComponent("bigdoors:winch_component", {
+    onPlayerInteract(e) {
+      interaction.handleInteract(e.block, e.player, e.block.dimension);
+    },
+    onPlayerBreak(e) {
+      breakHandler.handleHingeBreak(e);
+    },
+    beforeOnPlayerPlace(e) {
+      const viewDir = e.player.getViewDirection();
+      const facing = Math.abs(viewDir.x) > Math.abs(viewDir.z)
+        ? (viewDir.x > 0 ? "east" : "west")
+        : (viewDir.z > 0 ? "south" : "north");
+      e.permutationToPlace = BlockPermutation.resolve(WINCH_BLOCK_ID, {
+        "bigdoors:facing": facing,
+        "bigdoors:mode": "vertical",
+        "bigdoors:door_side": "none",
+        "bigdoors:material_group": Math.floor(UNMATCHED_MATERIAL_INDEX / 16),
+        "bigdoors:material_id": UNMATCHED_MATERIAL_INDEX % 16,
+      });
+    },
+    onRedstoneUpdate(e) {
+      redstone.handleRedstoneUpdate(e);
+    },
+  });
+
+  ev.blockComponentRegistry.registerCustomComponent("bigdoors:hidden_winch_component", {
+    onPlayerInteract(e) {
+      interaction.handleInteract(e.block, e.player, e.block.dimension);
+    },
+    onPlayerBreak(e) {
+      breakHandler.handleHingeBreak(e);
+    },
+    beforeOnPlayerPlace(e) {
+      const viewDir = e.player.getViewDirection();
+      const facing = Math.abs(viewDir.x) > Math.abs(viewDir.z)
+        ? (viewDir.x > 0 ? "east" : "west")
+        : (viewDir.z > 0 ? "south" : "north");
+      e.permutationToPlace = BlockPermutation.resolve(HIDDEN_WINCH_BLOCK_ID, {
+        "bigdoors:facing": facing,
+        "bigdoors:mode": "vertical",
         "bigdoors:door_side": "none",
         "bigdoors:material_group": Math.floor(UNMATCHED_MATERIAL_INDEX / 16),
         "bigdoors:material_id": UNMATCHED_MATERIAL_INDEX % 16,
@@ -129,14 +179,14 @@ redstone = new RedstoneSubsystem(manager);
 ropeManager = new RopeManager();
 
 world.afterEvents.worldLoad.subscribe(() => {
-  console.warn("[bigdoors] worldLoad fired — loading persistence");
+  console.log("[bigdoors] worldLoad fired — loading persistence");
   manager.load();
   ropeManager.load();
   redstone.restoreMonitors(world.getDimension("overworld"));
 });
 
 system.run(() => {
-  console.warn("[bigdoors] Fallback load triggered");
+  console.log("[bigdoors] Fallback load triggered");
   manager.load();
   ropeManager.load();
   redstone.restoreMonitors(world.getDimension("overworld"));
@@ -152,6 +202,6 @@ const ropeHandlers = initRopes(ropeManager);
 ropeInteraction = ropeHandlers.interaction;
 ropeBreak = ropeHandlers.breakHandler;
 
-console.warn("[bigdoors] === Initialization complete ===");
+console.log("[bigdoors] === Initialization complete ===");
 
 export { manager, ropeManager };

@@ -2,6 +2,8 @@ import { world, BlockPermutation } from "@minecraft/server";
 import {
   HINGE_BLOCK_ID,
   HIDDEN_HINGE_BLOCK_ID,
+  WINCH_BLOCK_ID,
+  HIDDEN_WINCH_BLOCK_ID,
   PANEL_BLOCK_IDS,
   DIR_OFFSETS,
   DIRECTIONS,
@@ -12,6 +14,10 @@ import {
   GEOMETRY_CLASS_PANE,
   GEOMETRY_ID_SLAB_TOP,
   UNMATCHED_MATERIAL_INDEX,
+  isVisibleHingeType,
+  blockIdForHingeType,
+  areTypesCompatible,
+  MAX_DOOR_SCAN_RADIUS,
 } from "../util/Constants.js";
 import {
   indexForTypeId,
@@ -61,6 +67,8 @@ export class PanelPlacementHandler {
       if (
         event.block.typeId === HINGE_BLOCK_ID ||
         event.block.typeId === HIDDEN_HINGE_BLOCK_ID ||
+        event.block.typeId === WINCH_BLOCK_ID ||
+        event.block.typeId === HIDDEN_WINCH_BLOCK_ID ||
         PANEL_BLOCK_IDS.has(event.block.typeId)
       ) {
         return;
@@ -99,7 +107,8 @@ export class PanelPlacementHandler {
   }
 
   _isHingeBlock(typeId) {
-    return typeId === HINGE_BLOCK_ID || typeId === HIDDEN_HINGE_BLOCK_ID;
+    return typeId === HINGE_BLOCK_ID || typeId === HIDDEN_HINGE_BLOCK_ID
+      || typeId === WINCH_BLOCK_ID || typeId === HIDDEN_WINCH_BLOCK_ID;
   }
 
   _matchesAssemblyMaterial(assembly, matIdx) {
@@ -208,7 +217,7 @@ export class PanelPlacementHandler {
       storedGeoId = geoId;
     }
 
-    const overlay = assembly.hingeType === "hinge" ? 1 : 0;
+    const overlay = isVisibleHingeType(assembly.hingeType) ? 1 : 0;
     const rotation = closedRotation(assembly.doorSide, assembly.facing, geoClass);
     block.setPermutation(
       BlockPermutation.resolve(panelBlockIdForMaterial(matIdx), panelBlockStates(matIdx, geoId, rotation, overlay))
@@ -230,7 +239,7 @@ export class PanelPlacementHandler {
     for (const hinge of assembly.hingePositions) {
       const hingeBlock = dimension.getBlock(hinge);
       if (!hingeBlock) continue;
-      const blockId = hinge.type === "hidden" ? HIDDEN_HINGE_BLOCK_ID : HINGE_BLOCK_ID;
+      const blockId = blockIdForHingeType(hinge.type);
       hingeBlock.setPermutation(
         BlockPermutation.resolve(blockId, {
           "bigdoors:facing": assembly.facing,
@@ -321,7 +330,7 @@ export class PanelPlacementHandler {
     const doorSideOffset = DIR_OFFSETS[assembly.doorSide];
     const hingePos = assembly.primaryHingePos;
 
-    for (let dist = 1; dist <= 16; dist++) {
+    for (let dist = 1; dist <= MAX_DOOR_SCAN_RADIUS; dist++) {
       const scanPos = {
         x: hingePos.x + doorSideOffset.x * dist,
         y: hingePos.y,
@@ -335,6 +344,7 @@ export class PanelPlacementHandler {
         if (!other || other.id === assembly.id) break;
         if (other.partnerAssemblyId) break;
         if (other.doorSide !== OPPOSITE_DIR[assembly.doorSide]) break;
+        if (!areTypesCompatible(assembly.hingeType, other.hingeType)) break;
 
         this._manager.pairAndSplitAssemblies(assembly.id, other.id);
         this._clearBoundaryOverlays(assembly, dimension);

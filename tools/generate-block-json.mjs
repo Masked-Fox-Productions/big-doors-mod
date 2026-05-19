@@ -52,13 +52,17 @@ function extractMaterialMap(blockJson) {
   const map = new Map();
   for (const perm of blockJson["minecraft:block"].permutations) {
     const cond = perm.condition;
+    if (cond.includes("overlay") || cond.includes("mode")) continue;
     const mat = perm.components?.["minecraft:material_instances"];
     if (!mat?.["*"]) continue;
     const m = cond.match(
       /material_group'\)\s*==\s*(\d+)\s*&&\s*.*material_id'\)\s*==\s*(\d+)/
     );
     if (!m) continue;
-    map.set(`${m[1]}:${m[2]}`, mat["*"].texture);
+    map.set(`${m[1]}:${m[2]}`, {
+      texture: mat["*"].texture,
+      renderMethod: mat["*"].render_method || "alpha_test",
+    });
   }
   return map;
 }
@@ -107,7 +111,7 @@ function generateHinge(panelTexMap) {
     },
   ];
 
-  for (const [key, texture] of texMap) {
+  for (const [key, { texture, renderMethod }] of texMap) {
     const [g, id] = key.split(":").map(Number);
     // Skip the unmatched entry — already kept above
     if (g === 15 && id === 15) continue;
@@ -118,7 +122,7 @@ function generateHinge(panelTexMap) {
         components: {
           "minecraft:geometry": geometry,
           "minecraft:material_instances": {
-            "*": mi(texture),
+            "*": mi(texture, renderMethod),
             overlay: mi(overlayTex),
           },
         },
@@ -134,6 +138,71 @@ function generateHinge(panelTexMap) {
   writeJson("bigdoors_bp/blocks/hinge.json", hinge);
   console.log(
     `hinge.json: ${facing.length} facing + ${combined.length} material×mode + ${unmatched.length} unmatched = ${hinge["minecraft:block"].permutations.length} permutations`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Winch generation — identical to hinge but targets winch.json
+// ---------------------------------------------------------------------------
+
+function generateWinch(panelTexMap) {
+  const winch = readJson("bigdoors_bp/blocks/winch.json");
+  const texMap = panelTexMap;
+
+  const kept = [];
+  for (const perm of winch["minecraft:block"].permutations) {
+    const cond = perm.condition;
+    if (cond.includes("facing")) {
+      kept.push(perm);
+      continue;
+    }
+    if (cond.includes("material_group") && cond.includes("15") && cond.includes("material_id")) {
+      const m = cond.match(/material_group'\)\s*==\s*15.*material_id'\)\s*==\s*15/);
+      if (m) {
+        kept.push(perm);
+        continue;
+      }
+    }
+  }
+
+  const combined = [];
+  const modes = [
+    {
+      mode: "horizontal",
+      geometry: "geometry.bigdoors.winch_h",
+    },
+    {
+      mode: "vertical",
+      geometry: "geometry.bigdoors.winch_v",
+    },
+  ];
+
+  for (const [key, { texture, renderMethod }] of texMap) {
+    const [g, id] = key.split(":").map(Number);
+    if (g === 15 && id === 15) continue;
+
+    for (const { mode, geometry } of modes) {
+      combined.push({
+        condition: `${q("mode", "==", mode)} && ${matCond(g, id)}`,
+        components: {
+          "minecraft:geometry": geometry,
+          "minecraft:material_instances": {
+            "*": mi(texture, renderMethod),
+            chain: mi("bigdoors_winch_front"),
+            axle: mi("bigdoors_winch_side"),
+          },
+        },
+      });
+    }
+  }
+
+  const unmatched = kept.filter((p) => p.condition.includes("material_group"));
+  const facing = kept.filter((p) => p.condition.includes("facing"));
+  winch["minecraft:block"].permutations = [...facing, ...combined, ...unmatched];
+
+  writeJson("bigdoors_bp/blocks/winch.json", winch);
+  console.log(
+    `winch.json: ${facing.length} facing + ${combined.length} material×mode + ${unmatched.length} unmatched = ${winch["minecraft:block"].permutations.length} permutations`
   );
 }
 
@@ -178,7 +247,7 @@ function generateDoorPanel() {
   const materialPerms = [];
   const overlayPerms = [];
 
-  for (const [key, texture] of texMap) {
+  for (const [key, { texture, renderMethod }] of texMap) {
     const [g, id] = key.split(":").map(Number);
     const flatIdx = g * 16 + id;
     const isFullBlock = !NON_FULL_BLOCK.has(flatIdx);
@@ -188,7 +257,7 @@ function generateDoorPanel() {
       condition: matCond(g, id),
       components: {
         "minecraft:material_instances": {
-          "*": mi(texture),
+          "*": mi(texture, renderMethod),
         },
       },
     });
@@ -199,7 +268,7 @@ function generateDoorPanel() {
         components: {
           "minecraft:geometry": "geometry.bigdoors.strapped_sides",
           "minecraft:material_instances": {
-            "*": mi(texture),
+            "*": mi(texture, renderMethod),
             overlay: mi("bigdoors_panel_overlay_h"),
           },
         },
@@ -209,7 +278,7 @@ function generateDoorPanel() {
         components: {
           "minecraft:geometry": "geometry.bigdoors.strapped_sides_v",
           "minecraft:material_instances": {
-            "*": mi(texture),
+            "*": mi(texture, renderMethod),
             overlay: mi("bigdoors_panel_overlay_v"),
             overlay_ew: mi("bigdoors_panel_overlay_h"),
           },
@@ -240,4 +309,5 @@ function generateDoorPanel() {
 // Door panel first — its texture map is the canonical source for both blocks.
 const panelTexMap = generateDoorPanel();
 generateHinge(panelTexMap);
+generateWinch(panelTexMap);
 console.log("Done.");

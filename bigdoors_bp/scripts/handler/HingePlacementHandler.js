@@ -2,11 +2,16 @@ import { world, BlockPermutation } from "@minecraft/server";
 import {
   HINGE_BLOCK_ID,
   HIDDEN_HINGE_BLOCK_ID,
+  WINCH_BLOCK_ID,
+  HIDDEN_WINCH_BLOCK_ID,
   PANEL_BLOCK_IDS,
   DIR_OFFSETS,
   DIRECTIONS,
   OPPOSITE_DIR,
   UNMATCHED_MATERIAL_INDEX,
+  hingeTypeFromBlockId,
+  blockIdForHingeType,
+  areTypesCompatible,
 } from "../util/Constants.js";
 
 
@@ -36,24 +41,16 @@ export class HingePlacementHandler {
 
   register() {
     world.afterEvents.playerPlaceBlock.subscribe((event) => {
-      if (event.block.typeId !== HINGE_BLOCK_ID && event.block.typeId !== HIDDEN_HINGE_BLOCK_ID) return;
+      if (!this._isHingeBlock(event.block.typeId)) return;
       this.onPlace(event.block, event.player, event.block.dimension);
     });
-  }
-
-  _hingeTypeFromBlockId(typeId) {
-    return typeId === HIDDEN_HINGE_BLOCK_ID ? "hidden" : "hinge";
-  }
-
-  _blockIdForHingeType(type) {
-    return type === "hidden" ? HIDDEN_HINGE_BLOCK_ID : HINGE_BLOCK_ID;
   }
 
   onPlace(block, player, dimension) {
     const pos = block.location;
     const facing = block.permutation.getState("bigdoors:facing");
     const mode = block.permutation.getState("bigdoors:mode");
-    const hingeType = this._hingeTypeFromBlockId(block.typeId);
+    const hingeType = hingeTypeFromBlockId(block.typeId);
 
     let assembly = this._mergeWithAdjacentHinge(pos, dimension, hingeType);
     if (assembly) {
@@ -92,7 +89,8 @@ export class HingePlacementHandler {
   }
 
   _isHingeBlock(typeId) {
-    return typeId === HINGE_BLOCK_ID || typeId === HIDDEN_HINGE_BLOCK_ID;
+    return typeId === HINGE_BLOCK_ID || typeId === HIDDEN_HINGE_BLOCK_ID
+      || typeId === WINCH_BLOCK_ID || typeId === HIDDEN_WINCH_BLOCK_ID;
   }
 
   _mergeWithAdjacentHinge(pos, dimension, hingeType) {
@@ -103,7 +101,9 @@ export class HingePlacementHandler {
       const neighborBlock = dimension.getBlock(neighborPos);
       if (neighborBlock && this._isHingeBlock(neighborBlock.typeId)) {
         const existing = this._manager.findByPosition(neighborPos);
-        if (existing) adjacent.set(existing.id, existing);
+        if (existing && areTypesCompatible(hingeType, existing.hingeType)) {
+          adjacent.set(existing.id, existing);
+        }
       }
     }
     for (const dir of HORIZONTAL_DIRS) {
@@ -112,7 +112,7 @@ export class HingePlacementHandler {
       const neighborBlock = dimension.getBlock(neighborPos);
       if (neighborBlock && this._isHingeBlock(neighborBlock.typeId)) {
         const existing = this._manager.findByPosition(neighborPos);
-        if (existing && existing.mode === "vertical") {
+        if (existing && existing.mode === "vertical" && areTypesCompatible(hingeType, existing.hingeType)) {
           adjacent.set(existing.id, existing);
         }
       }
@@ -154,6 +154,7 @@ export class HingePlacementHandler {
       if (otherAssembly.partnerAssemblyId) continue;
       if (!otherAssembly.doorSide) continue;
       if (otherAssembly.doorSide !== OPPOSITE_DIR[dir]) continue;
+      if (!areTypesCompatible(newAssembly.hingeType, otherAssembly.hingeType)) continue;
 
       return { otherAssembly, doorSide: dir };
     }

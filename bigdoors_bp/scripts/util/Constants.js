@@ -6,6 +6,8 @@
 // Block identifiers
 export const HINGE_BLOCK_ID = "bigdoors:hinge";
 export const HIDDEN_HINGE_BLOCK_ID = "bigdoors:hidden_hinge";
+export const WINCH_BLOCK_ID = "bigdoors:winch";
+export const HIDDEN_WINCH_BLOCK_ID = "bigdoors:hidden_winch";
 export const PANEL_BLOCK_ID = "bigdoors:door_panel";
 export const PANEL_FENCE_BLOCK_ID = "bigdoors:door_panel_fence";
 export const PANEL_BARS_BLOCK_ID = "bigdoors:door_panel_bars";
@@ -508,3 +510,44 @@ export const MATERIAL_GEOMETRY_CLASS = new Map([
   [201, GEOMETRY_CLASS_SLAB], [202, GEOMETRY_CLASS_SLAB], [203, GEOMETRY_CLASS_SLAB],
   [204, GEOMETRY_CLASS_SLAB],
 ]);
+
+// --------------------------------------------------------------------------
+// Hinge type classification helpers
+// --------------------------------------------------------------------------
+
+const WINCH_TYPES = new Set(["winch", "hidden_winch"]);
+const VISIBLE_TYPES = new Set(["hinge", "winch"]);
+
+export function isWinchType(hingeType) {
+  return WINCH_TYPES.has(hingeType);
+}
+
+export function isVisibleHingeType(hingeType) {
+  return VISIBLE_TYPES.has(hingeType);
+}
+
+const BLOCK_ID_FOR_TYPE = {
+  hinge: HINGE_BLOCK_ID,
+  hidden: HIDDEN_HINGE_BLOCK_ID,
+  winch: WINCH_BLOCK_ID,
+  hidden_winch: HIDDEN_WINCH_BLOCK_ID,
+};
+
+export function blockIdForHingeType(type) {
+  return BLOCK_ID_FOR_TYPE[type] ?? HINGE_BLOCK_ID;
+}
+
+const TYPE_FOR_BLOCK_ID = {
+  [HINGE_BLOCK_ID]: "hinge",
+  [HIDDEN_HINGE_BLOCK_ID]: "hidden",
+  [WINCH_BLOCK_ID]: "winch",
+  [HIDDEN_WINCH_BLOCK_ID]: "hidden_winch",
+};
+
+export function hingeTypeFromBlockId(blockId) {
+  return TYPE_FOR_BLOCK_ID[blockId] ?? "hinge";
+}
+
+export function areTypesCompatible(typeA, typeB) {
+  return isWinchType(typeA) === isWinchType(typeB);
+}

@@ -391,6 +391,12 @@
     },
     "ropes_whip_handle": {
       "textures": "textures/blocks/whip_handle"
+    },
+    "bigdoors_winch_front": {
+      "textures": "textures/blocks/winch_front"
+    },
+    "bigdoors_winch_side": {
+      "textures": "textures/blocks/winch_side"
     }
   }
 }

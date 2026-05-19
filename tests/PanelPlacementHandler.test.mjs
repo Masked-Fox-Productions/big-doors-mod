@@ -7,7 +7,7 @@ import {
   makeMockDimension,
   placeBlock,
 } from "./helpers/mock-dimension.mjs";
-import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, PANEL_BLOCK_ID, PANEL_SLAB_BLOCK_ID, GEOMETRY_CLASS_SLAB, GEOMETRY_ID_SLAB_TOP, UNMATCHED_MATERIAL_INDEX } from "../bigdoors_bp/scripts/util/Constants.js";
+import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, WINCH_BLOCK_ID, HIDDEN_WINCH_BLOCK_ID, PANEL_BLOCK_ID, PANEL_SLAB_BLOCK_ID, GEOMETRY_CLASS_SLAB, GEOMETRY_ID_SLAB_TOP, UNMATCHED_MATERIAL_INDEX } from "../bigdoors_bp/scripts/util/Constants.js";
 
 describe("PanelPlacementHandler", () => {
   let manager;
@@ -671,6 +671,40 @@ describe("PanelPlacementHandler", () => {
 
       const assembly = manager.findByPosition({ x: 0, y: 0, z: 0 });
       assert.equal(assembly.panelPositions[0].geometryId, undefined);
+    });
+  });
+
+  describe("winch overlay", () => {
+    it("panel placed next to winch gets overlay=1", () => {
+      const dim = makeMockDimension();
+      placeBlock(dim, WINCH_BLOCK_ID, { x: 0, y: 0, z: 0 }, {
+        "bigdoors:facing": "north",
+        "bigdoors:mode": "vertical",
+        "bigdoors:door_side": "down",
+      });
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "vertical", "winch");
+      manager.setDoorSide(assembly.id, "down");
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 0, y: -1, z: 0 });
+      handler.onPlace(block, dim);
+
+      assert.equal(assembly.panelPositions[0].overlay, 1);
+    });
+
+    it("panel placed next to hidden_winch gets overlay=0", () => {
+      const dim = makeMockDimension();
+      placeBlock(dim, HIDDEN_WINCH_BLOCK_ID, { x: 0, y: 0, z: 0 }, {
+        "bigdoors:facing": "north",
+        "bigdoors:mode": "vertical",
+        "bigdoors:door_side": "down",
+      });
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "vertical", "hidden_winch");
+      manager.setDoorSide(assembly.id, "down");
+
+      const block = placeBlock(dim, "minecraft:cobblestone", { x: 0, y: -1, z: 0 });
+      handler.onPlace(block, dim);
+
+      assert.equal(assembly.panelPositions[0].overlay, 0);
     });
   });
 });
