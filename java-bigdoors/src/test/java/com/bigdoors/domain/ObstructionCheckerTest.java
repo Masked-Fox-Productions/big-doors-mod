@@ -2,10 +2,13 @@ package com.bigdoors.domain;
 
 import com.bigdoors.util.BlockPos3;
 import com.bigdoors.domain.ObstructionChecker.BlockClassification;
+import com.bigdoors.domain.ObstructionChecker.CloseCheckResult;
 import com.bigdoors.domain.ObstructionChecker.PathCheckResult;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -101,5 +104,88 @@ class ObstructionCheckerTest {
         });
 
         assertTrue(result.canOpen());
+    }
+
+    // --- Mode-aware checkPath tests ---
+
+    @Test
+    void checkPath_verticalNorth_rotatesInYZPlane() {
+        BlockPos3 hinge = new BlockPos3(3, 5, 3);
+        // Panel above hinge
+        List<BlockPos3> panels = List.of(new BlockPos3(3, 6, 3));
+
+        PathCheckResult result = ObstructionChecker.checkPath(panels, hinge, "cw",
+                pos -> null, "vertical", "north");
+
+        assertTrue(result.canOpen());
+    }
+
+    @Test
+    void checkPath_horizontal_defaultMode_unchanged() {
+        BlockPos3 hinge = new BlockPos3(0, 0, 0);
+        List<BlockPos3> panels = List.of(new BlockPos3(1, 0, 0));
+
+        PathCheckResult resultDefault = ObstructionChecker.checkPath(panels, hinge, "cw", pos -> null);
+        PathCheckResult resultExplicit = ObstructionChecker.checkPath(panels, hinge, "cw",
+                pos -> null, "horizontal", "");
+
+        assertEquals(resultDefault.canOpen(), resultExplicit.canOpen());
+    }
+
+    // --- checkClose tests ---
+
+    @Test
+    void checkClose_allAir_canClose() {
+        List<BlockPos3> closedPositions = List.of(new BlockPos3(1, 0, 0), new BlockPos3(2, 0, 0));
+        Set<String> currentKeys = new HashSet<>();
+
+        CloseCheckResult result = ObstructionChecker.checkClose(closedPositions, currentKeys, pos -> null);
+
+        assertTrue(result.canClose());
+        assertTrue(result.obstructedPositions().isEmpty());
+    }
+
+    @Test
+    void checkClose_solidBlock_cannotClose() {
+        List<BlockPos3> closedPositions = List.of(new BlockPos3(1, 0, 0));
+        Set<String> currentKeys = new HashSet<>();
+
+        CloseCheckResult result = ObstructionChecker.checkClose(closedPositions, currentKeys,
+                pos -> "minecraft:stone");
+
+        assertFalse(result.canClose());
+        assertEquals(1, result.obstructedPositions().size());
+    }
+
+    @Test
+    void checkClose_skipsCurrentPositions() {
+        BlockPos3 closedPos = new BlockPos3(1, 0, 0);
+        List<BlockPos3> closedPositions = List.of(closedPos);
+        Set<String> currentKeys = Set.of(closedPos.toKey());
+
+        CloseCheckResult result = ObstructionChecker.checkClose(closedPositions, currentKeys,
+                pos -> "minecraft:stone");
+
+        assertTrue(result.canClose());
+    }
+
+    @Test
+    void checkClose_identifiesSoftAndPassableBlocks() {
+        List<BlockPos3> closedPositions = List.of(
+                new BlockPos3(1, 0, 0),
+                new BlockPos3(2, 0, 0),
+                new BlockPos3(3, 0, 0)
+        );
+        Set<String> currentKeys = new HashSet<>();
+
+        CloseCheckResult result = ObstructionChecker.checkClose(closedPositions, currentKeys, pos -> {
+            if (pos.equals(new BlockPos3(1, 0, 0))) return "minecraft:short_grass";
+            if (pos.equals(new BlockPos3(2, 0, 0))) return "minecraft:torch";
+            return null;
+        });
+
+        assertTrue(result.canClose());
+        assertEquals(1, result.softBlocks().size());
+        assertEquals(1, result.passableBlocks().size());
     }
 }

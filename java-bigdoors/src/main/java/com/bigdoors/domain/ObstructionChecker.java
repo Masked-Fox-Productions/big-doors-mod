@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -17,12 +18,10 @@ public final class ObstructionChecker {
 
     private ObstructionChecker() {}
 
-    /** Classification of a block in the swing path. */
     public enum BlockClassification {
         AIR, SOFT, PASSABLE, SOLID
     }
 
-    /** Result of checking a door's swing path. */
     public record PathCheckResult(
             boolean canOpen,
             List<BlockPos3> obstructedPositions,
@@ -30,9 +29,13 @@ public final class ObstructionChecker {
             List<BlockPos3> passableBlocks
     ) {}
 
-    /**
-     * Classify a block type ID.
-     */
+    public record CloseCheckResult(
+            boolean canClose,
+            List<BlockPos3> obstructedPositions,
+            List<BlockPos3> softBlocks,
+            List<BlockPos3> passableBlocks
+    ) {}
+
     public static BlockClassification classifyBlock(String typeId) {
         if (typeId == null || Constants.AIR_BLOCKS.contains(typeId)) {
             return BlockClassification.AIR;
@@ -48,12 +51,7 @@ public final class ObstructionChecker {
 
     /**
      * Check whether panels can swing in the given direction without hitting solid blocks.
-     *
-     * @param panelPositions current positions of all panels
-     * @param hingePos       the hinge to rotate around
-     * @param direction      "cw" or "ccw"
-     * @param blockQueryFn   function that returns the typeId at a given position
-     * @return result with canOpen flag and categorized block lists
+     * Backward-compatible overload defaulting to horizontal mode.
      */
     public static PathCheckResult checkPath(
             List<BlockPos3> panelPositions,
@@ -61,7 +59,23 @@ public final class ObstructionChecker {
             String direction,
             Function<BlockPos3, String> blockQueryFn
     ) {
-        // Build a set of current panel position keys so we can skip them
+        return checkPath(panelPositions, hingePos, direction, blockQueryFn, "horizontal", "");
+    }
+
+    /**
+     * Mode-aware path checking for door rotation.
+     */
+    public static PathCheckResult checkPath(
+            List<BlockPos3> panelPositions,
+            BlockPos3 hingePos,
+            String direction,
+            Function<BlockPos3, String> blockQueryFn,
+            String mode,
+            String facing
+    ) {
+        BiFunction<BlockPos3, BlockPos3, BlockPos3> rotateFn =
+                RotationMath.getRotateFn(mode, facing, direction);
+
         Set<String> currentPosKeys = new HashSet<>();
         for (BlockPos3 pos : panelPositions) {
             currentPosKeys.add(pos.toKey());
@@ -70,14 +84,10 @@ public final class ObstructionChecker {
         List<BlockPos3> obstructed = new ArrayList<>();
         List<BlockPos3> soft = new ArrayList<>();
         List<BlockPos3> passable = new ArrayList<>();
-        boolean canOpen = true;
 
         for (BlockPos3 pos : panelPositions) {
-            BlockPos3 dest = "cw".equals(direction)
-                    ? RotationMath.rotateCW(pos, hingePos)
-                    : RotationMath.rotateCCW(pos, hingePos);
+            BlockPos3 dest = rotateFn.apply(pos, hingePos);
 
-            // Skip destinations occupied by current panels (they'll be vacated)
             if (currentPosKeys.contains(dest.toKey())) {
                 continue;
             }
@@ -86,16 +96,48 @@ public final class ObstructionChecker {
             BlockClassification classification = classifyBlock(typeId);
 
             switch (classification) {
-                case SOLID -> {
-                    obstructed.add(dest);
-                    canOpen = false;
-                }
+                case SOLID -> obstructed.add(dest);
                 case SOFT -> soft.add(dest);
                 case PASSABLE -> passable.add(dest);
-                case AIR -> { /* nothing to track */ }
+                case AIR -> { /* nothing */ }
             }
         }
 
-        return new PathCheckResult(canOpen, obstructed, soft, passable);
+        return new PathCheckResult(obstructed.isEmpty(), obstructed, soft, passable);
+    }
+
+    /**
+     * Check whether a door can close without hitting solid blocks at its closed positions.
+     *
+     * @param closedPositions    the positions panels will return to
+     * @param currentPositionKeys keys of positions currently occupied by panels (being vacated)
+     * @param blockQueryFn       function returning typeId at a position
+     */
+    public static CloseCheckResult checkClose(
+            List<BlockPos3> closedPositions,
+            Set<String> currentPositionKeys,
+            Function<BlockPos3, String> blockQueryFn
+    ) {
+        List<BlockPos3> obstructed = new ArrayList<>();
+        List<BlockPos3> soft = new ArrayList<>();
+        List<BlockPos3> passable = new ArrayList<>();
+
+        for (BlockPos3 dest : closedPositions) {
+            if (currentPositionKeys.contains(dest.toKey())) {
+                continue;
+            }
+
+            String typeId = blockQueryFn.apply(dest);
+            BlockClassification classification = classifyBlock(typeId);
+
+            switch (classification) {
+                case SOLID -> obstructed.add(dest);
+                case SOFT -> soft.add(dest);
+                case PASSABLE -> passable.add(dest);
+                case AIR -> { /* nothing */ }
+            }
+        }
+
+        return new CloseCheckResult(obstructed.isEmpty(), obstructed, soft, passable);
     }
 }
