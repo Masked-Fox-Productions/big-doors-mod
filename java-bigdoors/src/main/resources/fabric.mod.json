@@ -3,7 +3,7 @@
   "id": "bigdoors",
   "version": "${version}",
   "name": "Big Doors",
-  "description": "Replace with your mod description",
+  "description": "Large swinging doors built from vanilla blocks with hinge-based assembly, exotic geometry, and redstone control.",
   "authors": ["Aaron Pogue"],
   "contact": {},
   "license": "MIT",
