@@ -4,7 +4,7 @@ import { __reset, system } from "./stubs/minecraft-server.mjs";
 import { DoorManager } from "../bigdoors_bp/scripts/DoorManager.js";
 import { RedstoneSubsystem } from "../bigdoors_bp/scripts/subsystem/RedstoneSubsystem.js";
 import { makeMockDimension, placeBlock } from "./helpers/mock-dimension.mjs";
-import { PANEL_BLOCK_ID, HINGE_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, REDSTONE_SOURCE_POLL_TICKS } from "../bigdoors_bp/scripts/util/Constants.js";
+import { PANEL_BLOCK_ID, HINGE_BLOCK_ID, WINCH_BLOCK_ID, REDSTONE_DEBOUNCE_TICKS, REDSTONE_SOURCE_POLL_TICKS } from "../bigdoors_bp/scripts/util/Constants.js";
 
 function posKey(pos) {
   return `${pos.x},${pos.y},${pos.z}`;
@@ -666,5 +666,173 @@ describe("RedstoneSubsystem", () => {
 
     assert.equal(manager.getAssembly(assemblyA.id).isOpen, false);
     assert.equal(manager.getAssembly(assemblyB.id).isOpen, false);
+  });
+
+  describe("winch redstone", () => {
+    function setupWinchDoor(manager) {
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "vertical", "winch");
+      manager.setDoorSide(assembly.id, "down");
+      manager.addPanelToAssembly(assembly.id, { x: 0, y: -1, z: 0 }, 12);
+      return assembly;
+    }
+
+    function buildWinchDimension() {
+      const dim = makeMockDimension(new Map());
+      dim.spawnItem = () => {};
+      dim.getEntities = () => [];
+      placeBlock(dim, WINCH_BLOCK_ID, { x: 0, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 0, y: -1, z: 0 }, { "bigdoors:material": 12 });
+      for (let x = -1; x <= 1; x++) {
+        for (let y = -3; y <= 3; y++) {
+          for (let z = -1; z <= 1; z++) {
+            const key = posKey({ x, y, z });
+            if (!dim._blocks.has(key)) {
+              placeBlock(dim, "minecraft:air", { x, y, z });
+            }
+          }
+        }
+      }
+      return dim;
+    }
+
+    it("redstone signal opens winch assembly with linear shift", () => {
+      const assembly = setupWinchDoor(manager);
+      const dim = buildWinchDimension();
+
+      const sourceBlock = placeBlock(dim, "minecraft:repeater", { x: 1, y: 0, z: 0 });
+      sourceBlock.getRedstonePower = () => 15;
+
+      const winchBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
+      winchBlock.dimension = dim;
+
+      subsystem.handleRedstoneUpdate({ block: winchBlock, powerLevel: 15 });
+
+      const updated = manager.getAssembly(assembly.id);
+      assert.equal(updated.isOpen, true);
+      assert.deepEqual(updated.panelPositions[0].currentPos, { x: 0, y: 1, z: 0 });
+    });
+
+    it("redstone power-off closes winch assembly back to closedPos", () => {
+      const assembly = setupWinchDoor(manager);
+      const dim = buildWinchDimension();
+
+      const sourceBlock = placeBlock(dim, "minecraft:repeater", { x: 1, y: 0, z: 0 });
+      sourceBlock.getRedstonePower = () => 15;
+
+      const winchBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
+      winchBlock.dimension = dim;
+
+      subsystem.handleRedstoneUpdate({ block: winchBlock, powerLevel: 15 });
+      assert.equal(manager.getAssembly(assembly.id).isOpen, true);
+
+      // Ensure closed position is available
+      placeBlock(dim, "minecraft:air", { x: 0, y: -1, z: 0 });
+
+      sourceBlock.getRedstonePower = () => 0;
+      system.advanceTicks(REDSTONE_DEBOUNCE_TICKS + 1);
+      system.advanceTicks(REDSTONE_SOURCE_POLL_TICKS);
+
+      const closed = manager.getAssembly(assembly.id);
+      assert.equal(closed.isOpen, false);
+      assert.deepEqual(closed.panelPositions[0].currentPos, { x: 0, y: -1, z: 0 });
+    });
+
+    it("winch open is blocked when destination has solid block", () => {
+      const assembly = setupWinchDoor(manager);
+      const dim = buildWinchDimension();
+      placeBlock(dim, "minecraft:stone", { x: 0, y: 1, z: 0 });
+
+      const sourceBlock = placeBlock(dim, "minecraft:repeater", { x: 1, y: 0, z: 0 });
+      sourceBlock.getRedstonePower = () => 15;
+
+      const winchBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
+      winchBlock.dimension = dim;
+
+      subsystem.handleRedstoneUpdate({ block: winchBlock, powerLevel: 15 });
+
+      assert.equal(manager.getAssembly(assembly.id).isOpen, false);
+    });
+
+    it("_findSourceNeighbor skips winch blocks", () => {
+      const assembly = setupWinchDoor(manager);
+      const dim = buildWinchDimension();
+
+      // Place a winch block as neighbor on a non-destination position
+      placeBlock(dim, WINCH_BLOCK_ID, { x: 0, y: 0, z: 1 });
+      const winchNeighbor = dim.getBlock({ x: 0, y: 0, z: 1 });
+      winchNeighbor.getRedstonePower = () => 15;
+
+      // Place actual source on the other side
+      const sourceBlock = placeBlock(dim, "minecraft:repeater", { x: 1, y: 0, z: 0 });
+      sourceBlock.getRedstonePower = () => 15;
+
+      const winchBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
+      winchBlock.dimension = dim;
+
+      subsystem.handleRedstoneUpdate({ block: winchBlock, powerLevel: 15 });
+
+      const updated = manager.getAssembly(assembly.id);
+      assert.equal(updated.isOpen, true);
+      assert.deepEqual(updated.redstoneSource, { x: 1, y: 0, z: 0 });
+    });
+
+    it("winch open uses canonical 'cw' direction", () => {
+      const assembly = setupWinchDoor(manager);
+      const dim = buildWinchDimension();
+
+      const sourceBlock = placeBlock(dim, "minecraft:repeater", { x: 1, y: 0, z: 0 });
+      sourceBlock.getRedstonePower = () => 15;
+
+      const winchBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
+      winchBlock.dimension = dim;
+
+      subsystem.handleRedstoneUpdate({ block: winchBlock, powerLevel: 15 });
+
+      assert.equal(manager.getAssembly(assembly.id).openDirection, "cw");
+    });
+
+    it("redstone double-door with winch — both open independently", () => {
+      const primary = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "vertical", "winch");
+      manager.setDoorSide(primary.id, "down");
+      manager.addPanelToAssembly(primary.id, { x: 0, y: -1, z: 0 }, 12);
+
+      const partner = manager.createAssembly({ x: 1, y: 0, z: 0 }, "north", "vertical", "winch");
+      manager.setDoorSide(partner.id, "down");
+      manager.addPanelToAssembly(partner.id, { x: 1, y: -1, z: 0 }, 12);
+      manager.pairAssemblies(primary.id, partner.id);
+
+      const dim = makeMockDimension(new Map());
+      dim.spawnItem = () => {};
+      dim.getEntities = () => [];
+      placeBlock(dim, WINCH_BLOCK_ID, { x: 0, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 0, y: -1, z: 0 });
+      placeBlock(dim, WINCH_BLOCK_ID, { x: 1, y: 0, z: 0 });
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: -1, z: 0 });
+      for (let x = -1; x <= 2; x++) {
+        for (let y = -3; y <= 3; y++) {
+          for (let z = -1; z <= 1; z++) {
+            const key = posKey({ x, y, z });
+            if (!dim._blocks.has(key)) {
+              placeBlock(dim, "minecraft:air", { x, y, z });
+            }
+          }
+        }
+      }
+
+      const sourceBlock = placeBlock(dim, "minecraft:repeater", { x: -1, y: 0, z: 0 });
+      sourceBlock.getRedstonePower = () => 15;
+
+      const winchBlock = dim.getBlock({ x: 0, y: 0, z: 0 });
+      winchBlock.dimension = dim;
+
+      subsystem.handleRedstoneUpdate({ block: winchBlock, powerLevel: 15 });
+
+      const updatedPrimary = manager.getAssembly(primary.id);
+      const updatedPartner = manager.getAssembly(partner.id);
+      assert.equal(updatedPrimary.isOpen, true);
+      assert.equal(updatedPartner.isOpen, true);
+      assert.deepEqual(updatedPrimary.panelPositions[0].currentPos, { x: 0, y: 1, z: 0 });
+      assert.deepEqual(updatedPartner.panelPositions[0].currentPos, { x: 1, y: 1, z: 0 });
+    });
   });
 });

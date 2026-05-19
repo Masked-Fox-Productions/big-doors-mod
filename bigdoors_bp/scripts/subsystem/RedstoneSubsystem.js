@@ -1,5 +1,5 @@
 import { BlockPermutation, ItemStack, system } from "@minecraft/server";
-import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, PANEL_BLOCK_IDS, REDSTONE_DEBOUNCE_TICKS, REDSTONE_SOURCE_POLL_TICKS, DIR_OFFSETS, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB, GEOMETRY_CLASS_BARS, GEOMETRY_CLASS_PANE, DOOR_OPEN_SOUND, DOOR_CLOSE_SOUND } from "../util/Constants.js";
+import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, WINCH_BLOCK_ID, HIDDEN_WINCH_BLOCK_ID, PANEL_BLOCK_IDS, REDSTONE_DEBOUNCE_TICKS, REDSTONE_SOURCE_POLL_TICKS, DIR_OFFSETS, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB, GEOMETRY_CLASS_BARS, GEOMETRY_CLASS_PANE, DOOR_OPEN_SOUND, DOOR_CLOSE_SOUND, isWinchType } from "../util/Constants.js";
 import {
   panelBlockStates,
   resolveGeometryId,
@@ -10,7 +10,8 @@ import {
 import { closedRotation, openRotation } from "../domain/PanelRotation.js";
 import { checkPath, checkClose } from "../domain/ObstructionChecker.js";
 import { getRotateFn } from "../domain/RotationMath.js";
-import { sweep } from "./EntitySweeper.js";
+import { getShiftFn, axisForDoorSide } from "../domain/ShiftMath.js";
+import { sweep, sweepLinear } from "./EntitySweeper.js";
 
 const NEIGHBOR_OFFSETS = [
   { x: 1, y: 0, z: 0 },
@@ -125,6 +126,11 @@ export class RedstoneSubsystem {
   }
 
   _openWithRedstone(assembly, dimension, signalBlock) {
+    if (isWinchType(assembly.hingeType)) {
+      this._openWinchWithRedstone(assembly, dimension, signalBlock);
+      return;
+    }
+
     const panelPositions = assembly.getAllCurrentPositions();
     const hingePos = assembly.primaryHingePos;
 
@@ -173,13 +179,164 @@ export class RedstoneSubsystem {
     }
   }
 
+  _openWinchWithRedstone(assembly, dimension, signalBlock) {
+    const panelPositions = assembly.getAllCurrentPositions();
+    const shiftFn = getShiftFn(assembly.hingePositions, assembly.doorSide);
+    const destinations = panelPositions.map((p) => shiftFn(p));
+
+    for (const dest of destinations) {
+      if (dimension.getBlock(dest) == null) return;
+    }
+
+    const currentPosSet = new Set(
+      panelPositions.map((p) => `${p.x},${p.y},${p.z}`)
+    );
+    const blockQueryFn = (pos) => {
+      const b = dimension.getBlock(pos);
+      return b?.typeId ?? null;
+    };
+
+    const result = checkClose(destinations, currentPosSet, blockQueryFn);
+    if (!result.canClose) return;
+
+    for (const pos of result.softBlocks) {
+      const b = dimension.getBlock(pos);
+      if (b) b.setType("minecraft:air");
+    }
+    for (const pos of result.passableBlocks) {
+      const b = dimension.getBlock(pos);
+      if (b) {
+        try {
+          dimension.spawnItem(new ItemStack(b.typeId, 1), pos);
+        } catch { /* may not be available */ }
+        b.setType("minecraft:air");
+      }
+    }
+
+    const shiftAxis = axisForDoorSide(assembly.doorSide);
+    const shiftSign = Math.sign(destinations[0][shiftAxis] - panelPositions[0][shiftAxis]);
+    sweepLinear(dimension, destinations, shiftAxis, shiftSign);
+
+    const tuples = assembly.panelPositions.map((panel, i) => {
+      const geoClass = geometryClassForMaterial(panel.materialIndex);
+      const rotation = closedRotation(assembly.doorSide, assembly.facing, geoClass);
+      return {
+        source: panelPositions[i],
+        dest: destinations[i],
+        blockId: panelBlockIdForMaterial(panel.materialIndex),
+        states: panelBlockStates(panel.materialIndex, this._resolveGeoForPanel(assembly, i), rotation, panel.overlay ?? 0),
+      };
+    });
+
+    for (const t of tuples) {
+      const b = dimension.getBlock(t.source);
+      if (b) b.setType("minecraft:air");
+    }
+    for (const t of tuples) {
+      const b = dimension.getBlock(t.dest);
+      if (b) {
+        b.setPermutation(BlockPermutation.resolve(t.blockId, t.states));
+      }
+    }
+
+    this._manager.openDoor(assembly.id, "cw", destinations);
+    dimension.playSound(DOOR_OPEN_SOUND, assembly.primaryHingePos);
+
+    const sourcePos = this._findSourceNeighbor(signalBlock, dimension);
+    if (sourcePos) {
+      this._manager.setRedstoneSource(assembly.id, sourcePos);
+    }
+
+    if (assembly.partnerAssemblyId) {
+      const partner = this._manager.getAssembly(assembly.partnerAssemblyId);
+      if (partner && !partner.isOpen) {
+        this._manager.setRedstoneDebounce(partner.id, system.currentTick + REDSTONE_DEBOUNCE_TICKS);
+        if (sourcePos) {
+          this._manager.setRedstoneSource(partner.id, sourcePos);
+        }
+        this._openWinchSingle(partner, dimension);
+      }
+    }
+
+    if (sourcePos) {
+      this._startSourceMonitor(assembly.id, sourcePos, dimension);
+      if (assembly.partnerAssemblyId) {
+        this._startSourceMonitor(assembly.partnerAssemblyId, sourcePos, dimension);
+      }
+    }
+  }
+
+  _openWinchSingle(assembly, dimension) {
+    const panelPositions = assembly.getAllCurrentPositions();
+    const shiftFn = getShiftFn(assembly.hingePositions, assembly.doorSide);
+    const destinations = panelPositions.map((p) => shiftFn(p));
+
+    for (const dest of destinations) {
+      if (dimension.getBlock(dest) == null) return;
+    }
+
+    const currentPosSet = new Set(
+      panelPositions.map((p) => `${p.x},${p.y},${p.z}`)
+    );
+    const blockQueryFn = (pos) => {
+      const b = dimension.getBlock(pos);
+      return b?.typeId ?? null;
+    };
+
+    const result = checkClose(destinations, currentPosSet, blockQueryFn);
+    if (!result.canClose) return;
+
+    for (const pos of result.softBlocks) {
+      const b = dimension.getBlock(pos);
+      if (b) b.setType("minecraft:air");
+    }
+    for (const pos of result.passableBlocks) {
+      const b = dimension.getBlock(pos);
+      if (b) {
+        try {
+          dimension.spawnItem(new ItemStack(b.typeId, 1), pos);
+        } catch { /* may not be available */ }
+        b.setType("minecraft:air");
+      }
+    }
+
+    const shiftAxis = axisForDoorSide(assembly.doorSide);
+    const shiftSign = Math.sign(destinations[0][shiftAxis] - panelPositions[0][shiftAxis]);
+    sweepLinear(dimension, destinations, shiftAxis, shiftSign);
+
+    const tuples = assembly.panelPositions.map((panel, i) => {
+      const geoClass = geometryClassForMaterial(panel.materialIndex);
+      const rotation = closedRotation(assembly.doorSide, assembly.facing, geoClass);
+      return {
+        source: panelPositions[i],
+        dest: destinations[i],
+        blockId: panelBlockIdForMaterial(panel.materialIndex),
+        states: panelBlockStates(panel.materialIndex, this._resolveGeoForPanel(assembly, i), rotation, panel.overlay ?? 0),
+      };
+    });
+
+    for (const t of tuples) {
+      const b = dimension.getBlock(t.source);
+      if (b) b.setType("minecraft:air");
+    }
+    for (const t of tuples) {
+      const b = dimension.getBlock(t.dest);
+      if (b) {
+        b.setPermutation(BlockPermutation.resolve(t.blockId, t.states));
+      }
+    }
+
+    this._manager.openDoor(assembly.id, "cw", destinations);
+    dimension.playSound(DOOR_OPEN_SOUND, assembly.primaryHingePos);
+  }
+
   _findSourceNeighbor(signalBlock, dimension) {
     const loc = signalBlock.location;
     for (const off of NEIGHBOR_OFFSETS) {
       const neighborPos = { x: loc.x + off.x, y: loc.y + off.y, z: loc.z + off.z };
       const nb = dimension.getBlock(neighborPos);
       if (!nb) continue;
-      if (nb.typeId === HINGE_BLOCK_ID || nb.typeId === HIDDEN_HINGE_BLOCK_ID || PANEL_BLOCK_IDS.has(nb.typeId)) continue;
+      if (nb.typeId === HINGE_BLOCK_ID || nb.typeId === HIDDEN_HINGE_BLOCK_ID || nb.typeId === WINCH_BLOCK_ID || nb.typeId === HIDDEN_WINCH_BLOCK_ID || PANEL_BLOCK_IDS.has(nb.typeId)) continue;
       const power = nb.getRedstonePower();
       if (power != null && power > 0) {
         return neighborPos;
@@ -333,24 +490,31 @@ export class RedstoneSubsystem {
     const panel = assembly.panelPositions[panelIndex];
     const matIdx = panel.materialIndex;
     const geoClass = geometryClassForMaterial(matIdx);
+    const geoId = this._resolveGeoForPanel(assembly, panelIndex);
 
-    let geoId;
-    if (geoClass === 0) {
-      geoId = 0;
-    } else if (geoClass === GEOMETRY_CLASS_SLAB && panel.geometryId !== undefined) {
-      geoId = panel.geometryId;
-    } else if (assembly.mode === "vertical" && (geoClass === GEOMETRY_CLASS_FENCE || geoClass === GEOMETRY_CLASS_BARS || geoClass === GEOMETRY_CLASS_PANE)) {
-      geoId = resolveVerticalGeometryId(assembly, panelIndex);
-    } else {
-      const hasNeighborBefore = true;
-      const hasNeighborAfter = panelIndex < assembly.panelPositions.length - 1;
-      geoId = resolveGeometryId(matIdx, hasNeighborBefore, hasNeighborAfter);
-    }
-
-    const rotation = isOpen
+    const rotation = (isOpen && !isWinchType(assembly.hingeType))
       ? openRotation(assembly.mode, assembly.doorSide, assembly.facing, direction, geoClass)
       : closedRotation(assembly.doorSide, assembly.facing, geoClass);
     return panelBlockStates(matIdx, geoId, rotation, panel.overlay ?? 0);
+  }
+
+  _resolveGeoForPanel(assembly, panelIndex) {
+    const panel = assembly.panelPositions[panelIndex];
+    const matIdx = panel.materialIndex;
+    const geoClass = geometryClassForMaterial(matIdx);
+    if (geoClass === 0) return 0;
+
+    if (geoClass === GEOMETRY_CLASS_SLAB && panel.geometryId !== undefined) {
+      return panel.geometryId;
+    }
+
+    if (assembly.mode === "vertical" && (geoClass === GEOMETRY_CLASS_FENCE || geoClass === GEOMETRY_CLASS_BARS || geoClass === GEOMETRY_CLASS_PANE)) {
+      return resolveVerticalGeometryId(assembly, panelIndex);
+    }
+
+    const hasNeighborBefore = true;
+    const hasNeighborAfter = panelIndex < assembly.panelPositions.length - 1;
+    return resolveGeometryId(matIdx, hasNeighborBefore, hasNeighborAfter);
   }
 
 }
