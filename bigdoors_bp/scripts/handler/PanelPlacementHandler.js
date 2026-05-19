@@ -17,6 +17,7 @@ import {
   isVisibleHingeType,
   blockIdForHingeType,
   areTypesCompatible,
+  MAX_DOOR_SCAN_RADIUS,
 } from "../util/Constants.js";
 import {
   indexForTypeId,
@@ -329,7 +330,7 @@ export class PanelPlacementHandler {
     const doorSideOffset = DIR_OFFSETS[assembly.doorSide];
     const hingePos = assembly.primaryHingePos;
 
-    for (let dist = 1; dist <= 16; dist++) {
+    for (let dist = 1; dist <= MAX_DOOR_SCAN_RADIUS; dist++) {
       const scanPos = {
         x: hingePos.x + doorSideOffset.x * dist,
         y: hingePos.y,
