@@ -286,6 +286,30 @@ describe("DoorAssembly", () => {
       hidden.addHinge({ x: 0, y: 1, z: 0 }, "hidden");
       assert.equal(hidden.hingeType, "hidden");
     });
+
+    it("winch type round-trips through toJSON/fromJSON", () => {
+      const winch = new DoorAssembly("w-1", { x: 0, y: 4, z: 0 }, "north", "vertical", "winch");
+      winch.addHinge({ x: 1, y: 4, z: 0 }, "winch");
+      winch.doorSide = "down";
+      winch.addPanel({ x: 0, y: 3, z: 0 }, 92);
+
+      const json = winch.toJSON();
+      assert.equal(json.hingePositions[0].type, "winch");
+      assert.equal(json.hingePositions[1].type, "winch");
+
+      const restored = DoorAssembly.fromJSON(json);
+      assert.equal(restored.hingeType, "winch");
+      assert.equal(restored.hingePositions[0].type, "winch");
+      assert.equal(restored.hingePositions[1].type, "winch");
+      assert.equal(restored.panelPositions.length, 1);
+    });
+
+    it("hidden_winch type round-trips through toJSON/fromJSON", () => {
+      const hw = new DoorAssembly("hw-1", { x: 0, y: 4, z: 0 }, "north", "vertical", "hidden_winch");
+      const json = hw.toJSON();
+      const restored = DoorAssembly.fromJSON(json);
+      assert.equal(restored.hingeType, "hidden_winch");
+    });
   });
 
   describe("panel overlay tracking", () => {

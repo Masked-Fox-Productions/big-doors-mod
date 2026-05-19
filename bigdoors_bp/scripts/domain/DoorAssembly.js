@@ -15,7 +15,7 @@ export class DoorAssembly {
    * @param {{x:number,y:number,z:number}} primaryHingePos  Lowest hinge position
    * @param {string} facing              'north'|'south'|'east'|'west'
    * @param {string} mode                'horizontal'|'vertical'
-   * @param {string} [hingeType]         'hinge'|'hidden'
+   * @param {string} [hingeType]         'hinge'|'hidden'|'winch'|'hidden_winch'
    */
   constructor(id, primaryHingePos, facing, mode, hingeType = "hinge") {
     this.id = id ?? `assembly_${_nextId++}`;
