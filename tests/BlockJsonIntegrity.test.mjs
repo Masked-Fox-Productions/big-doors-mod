@@ -20,6 +20,9 @@ function permsMatching(blockJson, predicate) {
 
 describe("Block JSON integrity", () => {
   const hinge = readJson("bigdoors_bp/blocks/hinge.json");
+  const hiddenHinge = readJson("bigdoors_bp/blocks/hidden_hinge.json");
+  const winch = readJson("bigdoors_bp/blocks/winch.json");
+  const hiddenWinch = readJson("bigdoors_bp/blocks/hidden_winch.json");
   const panel = readJson("bigdoors_bp/blocks/door_panel.json");
 
   describe("hinge.json", () => {
@@ -77,6 +80,53 @@ describe("Block JSON integrity", () => {
           "minecraft:geometry.full_block"
         );
       }
+    });
+  });
+
+  describe("winch.json", () => {
+    it("identifier is bigdoors:winch", () => {
+      assert.equal(winch["minecraft:block"].description.identifier, "bigdoors:winch");
+    });
+
+    it("has bigdoors:winch_component", () => {
+      assert.ok("bigdoors:winch_component" in winch["minecraft:block"].components);
+    });
+
+    it("states match hinge.json states", () => {
+      assert.deepEqual(
+        winch["minecraft:block"].description.states,
+        hinge["minecraft:block"].description.states
+      );
+    });
+
+    it("has same permutation count as hinge.json", () => {
+      assert.equal(
+        winch["minecraft:block"].permutations.length,
+        hinge["minecraft:block"].permutations.length
+      );
+    });
+
+    it("total state permutation count is within Bedrock limit", () => {
+      const s = winch["minecraft:block"].description.states;
+      const count = Object.values(s).reduce((acc, v) => acc * v.length, 1);
+      assert.ok(count <= 65536, `permutation count ${count} exceeds 65536`);
+    });
+  });
+
+  describe("hidden_winch.json", () => {
+    it("identifier is bigdoors:hidden_winch", () => {
+      assert.equal(hiddenWinch["minecraft:block"].description.identifier, "bigdoors:hidden_winch");
+    });
+
+    it("has bigdoors:hidden_winch_component", () => {
+      assert.ok("bigdoors:hidden_winch_component" in hiddenWinch["minecraft:block"].components);
+    });
+
+    it("states match hidden_hinge.json states", () => {
+      assert.deepEqual(
+        hiddenWinch["minecraft:block"].description.states,
+        hiddenHinge["minecraft:block"].description.states
+      );
     });
   });
 

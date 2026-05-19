@@ -1,5 +1,7 @@
 tile.bigdoors:hinge.name=Hinge
 tile.bigdoors:hidden_hinge.name=Hidden Hinge
+tile.bigdoors:winch.name=Winch
+tile.bigdoors:hidden_winch.name=Hidden Winch
 tile.bigdoors:door_panel.name=Door Panel
 tile.bigdoors:door_panel_fence.name=Door Panel
 tile.bigdoors:door_panel_bars.name=Door Panel

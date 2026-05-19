@@ -1,5 +1,5 @@
 import { world, system, BlockPermutation } from "@minecraft/server";
-import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, UNMATCHED_MATERIAL_INDEX } from "./util/Constants.js";
+import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, WINCH_BLOCK_ID, HIDDEN_WINCH_BLOCK_ID, UNMATCHED_MATERIAL_INDEX } from "./util/Constants.js";
 import { ROPE_BLOCK_ID, ROPE_LADDER_BLOCK_ID } from "./ropes/util/RopeConstants.js";
 import { DoorManager } from "./DoorManager.js";
 import { HingePlacementHandler } from "./handler/HingePlacementHandler.js";
@@ -61,6 +61,56 @@ system.beforeEvents.startup.subscribe((ev) => {
       e.permutationToPlace = BlockPermutation.resolve(HIDDEN_HINGE_BLOCK_ID, {
         "bigdoors:facing": facing,
         "bigdoors:mode": "horizontal",
+        "bigdoors:door_side": "none",
+        "bigdoors:material_group": Math.floor(UNMATCHED_MATERIAL_INDEX / 16),
+        "bigdoors:material_id": UNMATCHED_MATERIAL_INDEX % 16,
+      });
+    },
+    onRedstoneUpdate(e) {
+      redstone.handleRedstoneUpdate(e);
+    },
+  });
+
+  ev.blockComponentRegistry.registerCustomComponent("bigdoors:winch_component", {
+    onPlayerInteract(e) {
+      interaction.handleInteract(e.block, e.player, e.block.dimension);
+    },
+    onPlayerBreak(e) {
+      breakHandler.handleHingeBreak(e);
+    },
+    beforeOnPlayerPlace(e) {
+      const viewDir = e.player.getViewDirection();
+      const facing = Math.abs(viewDir.x) > Math.abs(viewDir.z)
+        ? (viewDir.x > 0 ? "east" : "west")
+        : (viewDir.z > 0 ? "south" : "north");
+      e.permutationToPlace = BlockPermutation.resolve(WINCH_BLOCK_ID, {
+        "bigdoors:facing": facing,
+        "bigdoors:mode": "vertical",
+        "bigdoors:door_side": "none",
+        "bigdoors:material_group": Math.floor(UNMATCHED_MATERIAL_INDEX / 16),
+        "bigdoors:material_id": UNMATCHED_MATERIAL_INDEX % 16,
+      });
+    },
+    onRedstoneUpdate(e) {
+      redstone.handleRedstoneUpdate(e);
+    },
+  });
+
+  ev.blockComponentRegistry.registerCustomComponent("bigdoors:hidden_winch_component", {
+    onPlayerInteract(e) {
+      interaction.handleInteract(e.block, e.player, e.block.dimension);
+    },
+    onPlayerBreak(e) {
+      breakHandler.handleHingeBreak(e);
+    },
+    beforeOnPlayerPlace(e) {
+      const viewDir = e.player.getViewDirection();
+      const facing = Math.abs(viewDir.x) > Math.abs(viewDir.z)
+        ? (viewDir.x > 0 ? "east" : "west")
+        : (viewDir.z > 0 ? "south" : "north");
+      e.permutationToPlace = BlockPermutation.resolve(HIDDEN_WINCH_BLOCK_ID, {
+        "bigdoors:facing": facing,
+        "bigdoors:mode": "vertical",
         "bigdoors:door_side": "none",
         "bigdoors:material_group": Math.floor(UNMATCHED_MATERIAL_INDEX / 16),
         "bigdoors:material_id": UNMATCHED_MATERIAL_INDEX % 16,
