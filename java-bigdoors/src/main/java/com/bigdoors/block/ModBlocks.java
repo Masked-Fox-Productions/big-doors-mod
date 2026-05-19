@@ -47,6 +47,14 @@ public class ModBlocks {
             DoorPanelSlabBlock::new,
             panelProperties());
 
+    public static final Block HIDDEN_HINGE_BLOCK = registerBlock("hidden_hinge",
+            HiddenHingeBlock::new,
+            BlockBehaviour.Properties.of()
+                    .destroyTime(3.0f)
+                    .explosionResistance(6.0f)
+                    .sound(SoundType.STONE)
+                    .requiresCorrectToolForDrops());
+
     public static Block panelBlockForGeoClass(int geoClass) {
         return switch (geoClass) {
             case Constants.GEOMETRY_CLASS_FENCE -> DOOR_PANEL_FENCE_BLOCK;
@@ -65,6 +73,7 @@ public class ModBlocks {
             output.accept(DOOR_PANEL_BARS_BLOCK);
             output.accept(DOOR_PANEL_PANE_BLOCK);
             output.accept(DOOR_PANEL_SLAB_BLOCK);
+            output.accept(HIDDEN_HINGE_BLOCK);
         });
     }
 

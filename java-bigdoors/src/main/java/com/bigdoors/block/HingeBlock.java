@@ -99,6 +99,10 @@ public class HingeBlock extends Block {
         return InteractionResult.SUCCESS;
     }
 
+    protected String getHingeType() {
+        return "hinge";
+    }
+
     // --- Placement: create or merge assembly, detect double doors ---
 
     @Override
@@ -116,7 +120,7 @@ public class HingeBlock extends Block {
         // 2. If no merge, create new assembly
         if (assembly == null) {
             String facing = state.getValue(FACING).getName();
-            assembly = manager.createAssembly(bp, facing, "horizontal");
+            assembly = manager.createAssembly(bp, facing, "horizontal", getHingeType());
         }
 
         // 3. Check for double-door pairing
