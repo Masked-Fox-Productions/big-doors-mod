@@ -29,32 +29,42 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
 
-/**
- * A door panel block whose appearance is determined by a material index (0-63).
- * Each index maps to a different vanilla texture, allowing doors to match
- * the surrounding build style. On neighbor updates, expands the door by
- * converting adjacent supported vanilla blocks into additional panels.
- */
 public class DoorPanelBlock extends Block {
 
-    public static final IntegerProperty MATERIAL_INDEX = IntegerProperty.create("material_index", 0, 63);
+    public static final IntegerProperty MATERIAL_GROUP = IntegerProperty.create("material_group", 0, 12);
+    public static final IntegerProperty MATERIAL_ID = IntegerProperty.create("material_id", 0, 15);
+    public static final IntegerProperty PANEL_ROTATION = IntegerProperty.create("panel_rotation", 0, 7);
+    public static final IntegerProperty OVERLAY = IntegerProperty.create("overlay", 0, 1);
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
     public DoorPanelBlock(BlockBehaviour.Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any()
-                .setValue(MATERIAL_INDEX, 0)
+                .setValue(MATERIAL_GROUP, 0)
+                .setValue(MATERIAL_ID, 0)
+                .setValue(PANEL_ROTATION, 0)
+                .setValue(OVERLAY, 0)
                 .setValue(POWERED, false));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(MATERIAL_INDEX, POWERED);
+        builder.add(MATERIAL_GROUP, MATERIAL_ID, PANEL_ROTATION, OVERLAY, POWERED);
     }
 
     @Override
     protected List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
         return List.of();
+    }
+
+    public static int getFlatIndex(BlockState state) {
+        return MaterialRegistry.flatIndexFromGroupAndId(
+                state.getValue(MATERIAL_GROUP), state.getValue(MATERIAL_ID));
+    }
+
+    public static BlockState applyMaterialIndex(BlockState state, int flatIndex) {
+        return state.setValue(MATERIAL_GROUP, MaterialRegistry.materialGroupForIndex(flatIndex))
+                    .setValue(MATERIAL_ID, MaterialRegistry.materialIdForIndex(flatIndex));
     }
 
     // --- Interaction: open / close door ---
@@ -106,7 +116,6 @@ public class DoorPanelBlock extends Block {
             String dir = entry.getKey();
             BlockPos3 offset = entry.getValue();
 
-            // Don't convert on the wall side
             if (dir.equals(wallSide)) continue;
 
             BlockPos neighborPos = new BlockPos(
@@ -122,14 +131,14 @@ public class DoorPanelBlock extends Block {
             int matIdx = MaterialRegistry.indexForTypeId(typeId);
             if (matIdx < 0) continue;
 
-            // Check that neighbor isn't on the wall side relative to ANY hinge in the assembly
             BlockPos3 neighborBp = new BlockPos3(neighborPos.getX(), neighborPos.getY(), neighborPos.getZ());
             if (isOnWallSideOfAnyHinge(assembly, neighborBp, wallSide)) continue;
 
             manager.startConversion(neighborPos);
             try {
-                BlockState panelState = ModBlocks.DOOR_PANEL_BLOCK.defaultBlockState()
-                        .setValue(MATERIAL_INDEX, matIdx);
+                Block panelBlock = ModBlocks.panelBlockForGeoClass(
+                        MaterialRegistry.geometryClassForMaterial(matIdx));
+                BlockState panelState = applyMaterialIndex(panelBlock.defaultBlockState(), matIdx);
                 level.setBlockAndUpdate(neighborPos, panelState);
                 manager.addPanelToAssembly(assembly.getId(), neighborBp, matIdx);
             } finally {
@@ -140,26 +149,18 @@ public class DoorPanelBlock extends Block {
         RedstoneHandler.handlePanelRedstone(state, level, pos, manager, assembly);
     }
 
-    /**
-     * Checks whether the given position is on the wall side relative to any hinge
-     * in the assembly. This prevents panels from wrapping around the hinge.
-     */
     private static boolean isOnWallSideOfAnyHinge(DoorAssembly assembly, BlockPos3 pos, String wallSide) {
         BlockPos3 wallOffset = Constants.DIR_OFFSETS.get(wallSide);
         if (wallOffset == null) return false;
 
         for (BlockPos3 hingePos : assembly.getHingeBlockPositions()) {
-            // Direction from hinge to the candidate position
             int dx = pos.x() - hingePos.x();
             int dz = pos.z() - hingePos.z();
 
-            // Check each direction to see if the candidate is on the wall side of this hinge
             for (Map.Entry<String, BlockPos3> dirEntry : Constants.DIR_OFFSETS.entrySet()) {
                 String dirName = dirEntry.getKey();
                 BlockPos3 dirOffset = dirEntry.getValue();
 
-                // Check if the position is along this direction from the hinge
-                // (i.e., the delta is a positive multiple of the direction offset)
                 if (dirOffset.x() != 0 && dx != 0 && dz == 0) {
                     if ((dx > 0 && dirOffset.x() > 0) || (dx < 0 && dirOffset.x() < 0)) {
                         if (dirName.equals(wallSide)) return true;

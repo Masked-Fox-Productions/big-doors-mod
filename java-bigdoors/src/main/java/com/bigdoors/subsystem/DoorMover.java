@@ -143,8 +143,8 @@ public final class DoorMover {
             BlockPos mcPos = new BlockPos(dest.x(), dest.y(), dest.z());
             manager.startConversion(mcPos);
             try {
-                BlockState panelState = ModBlocks.DOOR_PANEL_BLOCK.defaultBlockState()
-                        .setValue(DoorPanelBlock.MATERIAL_INDEX, matIdx);
+                BlockState panelState = DoorPanelBlock.applyMaterialIndex(
+                                ModBlocks.DOOR_PANEL_BLOCK.defaultBlockState(), matIdx);
                 level.setBlockAndUpdate(mcPos, panelState);
             } finally {
                 manager.endConversion(mcPos);
@@ -189,8 +189,8 @@ public final class DoorMover {
             BlockPos mcPos = new BlockPos(dest.x(), dest.y(), dest.z());
             manager.startConversion(mcPos);
             try {
-                BlockState panelState = ModBlocks.DOOR_PANEL_BLOCK.defaultBlockState()
-                        .setValue(DoorPanelBlock.MATERIAL_INDEX, matIdx);
+                BlockState panelState = DoorPanelBlock.applyMaterialIndex(
+                                ModBlocks.DOOR_PANEL_BLOCK.defaultBlockState(), matIdx);
                 level.setBlockAndUpdate(mcPos, panelState);
             } finally {
                 manager.endConversion(mcPos);

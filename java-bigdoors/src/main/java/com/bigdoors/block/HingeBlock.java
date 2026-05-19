@@ -232,8 +232,10 @@ public class HingeBlock extends Block {
         manager.setDoorSide(assembly.getId(), direction);
         manager.startConversion(neighborPos);
         try {
-            BlockState panelState = ModBlocks.DOOR_PANEL_BLOCK.defaultBlockState()
-                    .setValue(DoorPanelBlock.MATERIAL_INDEX, matIdx);
+            Block panelBlock = ModBlocks.panelBlockForGeoClass(
+                    MaterialRegistry.geometryClassForMaterial(matIdx));
+            BlockState panelState = DoorPanelBlock.applyMaterialIndex(
+                    panelBlock.defaultBlockState(), matIdx);
             level.setBlockAndUpdate(neighborPos, panelState);
             manager.addPanelToAssembly(assembly.getId(), panelBp, matIdx);
         } finally {
@@ -266,8 +268,10 @@ public class HingeBlock extends Block {
         BlockPos3 panelBp = new BlockPos3(neighborPos.getX(), neighborPos.getY(), neighborPos.getZ());
         manager.startConversion(neighborPos);
         try {
-            BlockState panelState = ModBlocks.DOOR_PANEL_BLOCK.defaultBlockState()
-                    .setValue(DoorPanelBlock.MATERIAL_INDEX, matIdx);
+            Block panelBlock = ModBlocks.panelBlockForGeoClass(
+                    MaterialRegistry.geometryClassForMaterial(matIdx));
+            BlockState panelState = DoorPanelBlock.applyMaterialIndex(
+                    panelBlock.defaultBlockState(), matIdx);
             level.setBlockAndUpdate(neighborPos, panelState);
             manager.addPanelToAssembly(assembly.getId(), panelBp, matIdx);
         } finally {

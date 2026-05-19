@@ -59,7 +59,7 @@ public final class BreakHandler {
 
     private static void handlePanelBreak(DoorManager manager, Level level,
                                          BlockPos pos, BlockState oldState, boolean creative) {
-        int materialIndex = oldState.getValue(DoorPanelBlock.MATERIAL_INDEX);
+        int materialIndex = DoorPanelBlock.getFlatIndex(oldState);
         BlockPos3 bp = new BlockPos3(pos.getX(), pos.getY(), pos.getZ());
         DoorAssembly assembly = manager.findByPosition(bp);
 
