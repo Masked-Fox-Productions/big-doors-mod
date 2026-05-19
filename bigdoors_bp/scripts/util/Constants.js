@@ -29,6 +29,10 @@ export const PERSISTENCE_KEY = "bigdoors:state";
 // Scan / size limits
 export const MAX_DOOR_SCAN_RADIUS = 16;
 
+// Sound effects
+export const DOOR_OPEN_SOUND = "random.door_open";
+export const DOOR_CLOSE_SOUND = "random.door_close";
+
 // Tick intervals (20 ticks = 1 second)
 export const REDSTONE_DEBOUNCE_TICKS = 4;
 export const REDSTONE_SOURCE_POLL_TICKS = 4;

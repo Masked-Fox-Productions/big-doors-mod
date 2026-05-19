@@ -1,5 +1,5 @@
 import { BlockPermutation, ItemStack, system } from "@minecraft/server";
-import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, PANEL_BLOCK_IDS, REDSTONE_DEBOUNCE_TICKS, REDSTONE_SOURCE_POLL_TICKS, DIR_OFFSETS, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB, GEOMETRY_CLASS_BARS, GEOMETRY_CLASS_PANE } from "../util/Constants.js";
+import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, PANEL_BLOCK_IDS, REDSTONE_DEBOUNCE_TICKS, REDSTONE_SOURCE_POLL_TICKS, DIR_OFFSETS, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB, GEOMETRY_CLASS_BARS, GEOMETRY_CLASS_PANE, DOOR_OPEN_SOUND, DOOR_CLOSE_SOUND } from "../util/Constants.js";
 import {
   panelBlockStates,
   resolveGeometryId,
@@ -263,6 +263,7 @@ export class RedstoneSubsystem {
     }
 
     this._manager.openDoor(assembly.id, direction, newPositions);
+    dimension.playSound(DOOR_OPEN_SOUND, hingePos);
   }
 
   _closeSingleAssembly(assembly, dimension) {
@@ -324,6 +325,7 @@ export class RedstoneSubsystem {
     }
 
     this._manager.closeDoor(assembly.id);
+    dimension.playSound(DOOR_CLOSE_SOUND, closedPositions[0]);
     return true;
   }
 

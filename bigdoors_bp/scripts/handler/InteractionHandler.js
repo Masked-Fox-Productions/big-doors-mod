@@ -2,7 +2,7 @@ import { BlockPermutation, ItemStack, system } from "@minecraft/server";
 import { getRotateFn } from "../domain/RotationMath.js";
 import { checkPath, checkClose } from "../domain/ObstructionChecker.js";
 import { sweep } from "../subsystem/EntitySweeper.js";
-import { REDSTONE_DEBOUNCE_TICKS, DIR_OFFSETS, OPPOSITE_DIR, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB, GEOMETRY_CLASS_BARS, GEOMETRY_CLASS_PANE } from "../util/Constants.js";
+import { REDSTONE_DEBOUNCE_TICKS, DIR_OFFSETS, OPPOSITE_DIR, GEOMETRY_CLASS_FENCE, GEOMETRY_CLASS_SLAB, GEOMETRY_CLASS_BARS, GEOMETRY_CLASS_PANE, DOOR_OPEN_SOUND, DOOR_CLOSE_SOUND } from "../util/Constants.js";
 import {
   materialToBlockStates,
   panelBlockStates,
@@ -169,6 +169,7 @@ export class InteractionHandler {
 
     // Update manager state
     this._manager.openDoor(assembly.id, direction, destinations);
+    dimension.playSound(DOOR_OPEN_SOUND, hingePos);
     return true;
   }
 
@@ -244,6 +245,7 @@ export class InteractionHandler {
 
     this._manager.closeDoor(assembly.id);
     this._manager.clearRedstoneSource(assembly.id);
+    dimension.playSound(DOOR_CLOSE_SOUND, closedPositions[0]);
     return true;
   }
 

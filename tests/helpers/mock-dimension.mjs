@@ -33,6 +33,7 @@ export function makeMockDimension(blockMap = new Map()) {
     getBlock(pos) {
       return blockMap.get(posKey(pos)) ?? null;
     },
+    playSound(_soundId, _location) {},
     setBlock(pos, block) {
       block.location = { ...pos };
       block.dimension = dim;

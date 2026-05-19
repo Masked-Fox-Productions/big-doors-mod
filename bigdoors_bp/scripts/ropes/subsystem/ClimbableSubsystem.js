@@ -1,5 +1,5 @@
 import { world, system, InputButton } from "@minecraft/server";
-import { CLIMB_INTERVAL_TICKS, ROPE_CLIMB_SPEED, LADDER_CLIMB_SPEED } from "../util/RopeConstants.js";
+import { CLIMB_INTERVAL_TICKS, ROPE_CLIMB_SPEED, LADDER_CLIMB_SPEED, WHIP_CLIMB_SPEED } from "../util/RopeConstants.js";
 
 const SLOW_FALLING_DURATION = 4;
 const SLOW_FALLING_ID = "slow_falling";
@@ -79,6 +79,8 @@ export class ClimbableSubsystem {
           this._applyVerticalLift(player, LADDER_CLIMB_SPEED);
         }
       } else {
+        const climbSpeed = chain.type === "whip" ? WHIP_CLIMB_SPEED : ROPE_CLIMB_SPEED;
+
         if (!state.effectApplied) {
           try {
             player.addEffect(SLOW_FALLING_ID, SLOW_FALLING_DURATION, { amplifier: 0, showParticles: false });
@@ -87,7 +89,7 @@ export class ClimbableSubsystem {
         }
 
         if (isJumping) {
-          this._applyVerticalLift(player, ROPE_CLIMB_SPEED);
+          this._applyVerticalLift(player, climbSpeed);
         } else if (isSneaking) {
           try {
             player.removeEffect(SLOW_FALLING_ID);
