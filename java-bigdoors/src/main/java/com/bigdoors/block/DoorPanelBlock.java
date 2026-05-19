@@ -148,7 +148,7 @@ public class DoorPanelBlock extends Block {
         BlockPos3 wallOffset = Constants.DIR_OFFSETS.get(wallSide);
         if (wallOffset == null) return false;
 
-        for (BlockPos3 hingePos : assembly.getHingePositions()) {
+        for (BlockPos3 hingePos : assembly.getHingeBlockPositions()) {
             // Direction from hinge to the candidate position
             int dx = pos.x() - hingePos.x();
             int dz = pos.z() - hingePos.z();

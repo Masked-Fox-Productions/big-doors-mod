@@ -91,7 +91,7 @@ public final class RedstoneHandler {
         if (asm == null || !asm.isOpen()) return;
 
         boolean stillPowered = false;
-        for (BlockPos3 hingePos : asm.getHingePositions()) {
+        for (BlockPos3 hingePos : asm.getHingeBlockPositions()) {
             BlockPos bp = new BlockPos(hingePos.x(), hingePos.y(), hingePos.z());
             if (level.getBestNeighborSignal(bp) > 0) {
                 stillPowered = true;

@@ -1,7 +1,9 @@
 package com.bigdoors.domain;
 
 import com.bigdoors.util.BlockPos3;
+import com.bigdoors.util.Constants;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
@@ -17,9 +19,10 @@ public class DoorAssembly {
     private static final AtomicInteger ID_COUNTER = new AtomicInteger(0);
 
     private final String id;
-    private final BlockPos3 primaryHingePos;
-    private final List<BlockPos3> hingePositions;
+    private BlockPos3 primaryHingePos;
+    private final List<HingeRecord> hingePositions;
     private final List<PanelEntry> panelPositions;
+    private final List<PanelEntry> boundaryPanels;
     private String facing;
     private String doorSide;
     private String mode;
@@ -27,21 +30,31 @@ public class DoorAssembly {
     private String openDirection;
     private String partnerAssemblyId;
 
-    /**
-     * A single door panel with its material index and positions.
-     */
-    public record PanelEntry(int materialIndex, BlockPos3 closedPos, BlockPos3 currentPos) {
+    public record HingeRecord(BlockPos3 pos, String type, int materialIndex) {}
+
+    public record PanelEntry(int materialIndex, BlockPos3 closedPos, BlockPos3 currentPos,
+                             Integer geometryId, int overlay) {
+        public PanelEntry(int materialIndex, BlockPos3 closedPos, BlockPos3 currentPos) {
+            this(materialIndex, closedPos, currentPos, null, 0);
+        }
+
         public PanelEntry withCurrentPos(BlockPos3 newCurrentPos) {
-            return new PanelEntry(materialIndex, closedPos, newCurrentPos);
+            return new PanelEntry(materialIndex, closedPos, newCurrentPos, geometryId, overlay);
         }
     }
 
     public DoorAssembly(String id, BlockPos3 primaryHingePos, String facing, String mode) {
+        this(id, primaryHingePos, facing, mode, "hinge", Constants.UNMATCHED_MATERIAL_INDEX);
+    }
+
+    public DoorAssembly(String id, BlockPos3 primaryHingePos, String facing, String mode,
+                        String hingeType, int hingeMaterialIndex) {
         this.id = (id != null) ? id : "assembly_" + ID_COUNTER.getAndIncrement();
         this.primaryHingePos = primaryHingePos;
         this.hingePositions = new ArrayList<>();
-        this.hingePositions.add(primaryHingePos);
+        this.hingePositions.add(new HingeRecord(primaryHingePos, hingeType, hingeMaterialIndex));
         this.panelPositions = new ArrayList<>();
+        this.boundaryPanels = new ArrayList<>();
         this.facing = facing;
         this.doorSide = null;
         this.mode = mode;
@@ -53,15 +66,36 @@ public class DoorAssembly {
     // --- Mutators ---
 
     public void addHinge(BlockPos3 pos) {
-        hingePositions.add(pos);
+        hingePositions.add(new HingeRecord(pos, "hinge", Constants.UNMATCHED_MATERIAL_INDEX));
+    }
+
+    public void addHingeRecord(BlockPos3 pos, String type, int materialIndex) {
+        hingePositions.add(new HingeRecord(pos, type, materialIndex));
+    }
+
+    public boolean removeHinge(BlockPos3 pos) {
+        return hingePositions.removeIf(h -> h.pos().equals(pos));
     }
 
     public void addPanel(BlockPos3 pos, int materialIndex) {
         panelPositions.add(new PanelEntry(materialIndex, pos, pos));
     }
 
+    public void addPanel(BlockPos3 pos, int materialIndex, Integer geometryId, int overlay) {
+        panelPositions.add(new PanelEntry(materialIndex, pos, pos, geometryId, overlay));
+    }
+
     public boolean removePanel(BlockPos3 pos) {
         return panelPositions.removeIf(p ->
+                p.currentPos().equals(pos) || p.closedPos().equals(pos));
+    }
+
+    public void addBoundaryPanel(BlockPos3 pos, int materialIndex, Integer geometryId, int overlay) {
+        boundaryPanels.add(new PanelEntry(materialIndex, pos, pos, geometryId, overlay));
+    }
+
+    public boolean removeBoundaryPanel(BlockPos3 pos) {
+        return boundaryPanels.removeIf(p ->
                 p.currentPos().equals(pos) || p.closedPos().equals(pos));
     }
 
@@ -76,6 +110,10 @@ public class DoorAssembly {
         }
     }
 
+    public void setPrimaryHingePos(BlockPos3 pos) {
+        this.primaryHingePos = pos;
+    }
+
     // --- Queries ---
 
     public List<BlockPos3> getAllCurrentPositions() {
@@ -86,12 +124,26 @@ public class DoorAssembly {
         return result;
     }
 
+    public List<BlockPos3> getHingeBlockPositions() {
+        List<BlockPos3> result = new ArrayList<>(hingePositions.size());
+        for (HingeRecord h : hingePositions) {
+            result.add(h.pos());
+        }
+        return result;
+    }
+
+    public String getHingeType() {
+        if (hingePositions.isEmpty()) return "hinge";
+        return hingePositions.get(0).type();
+    }
+
     // --- Getters / Setters ---
 
     public String getId() { return id; }
     public BlockPos3 getPrimaryHingePos() { return primaryHingePos; }
-    public List<BlockPos3> getHingePositions() { return hingePositions; }
+    public List<HingeRecord> getHingePositions() { return hingePositions; }
     public List<PanelEntry> getPanelPositions() { return panelPositions; }
+    public List<PanelEntry> getBoundaryPanels() { return boundaryPanels; }
     public String getFacing() { return facing; }
     public void setFacing(String facing) { this.facing = facing; }
     public String getDoorSide() { return doorSide; }
@@ -125,20 +177,38 @@ public class DoorAssembly {
         if (partnerAssemblyId != null) obj.addProperty("partnerAssemblyId", partnerAssemblyId);
 
         JsonArray hinges = new JsonArray();
-        for (BlockPos3 h : hingePositions) {
-            hinges.add(posToJson(h));
+        for (HingeRecord h : hingePositions) {
+            JsonObject hr = new JsonObject();
+            hr.add("pos", posToJson(h.pos()));
+            hr.addProperty("type", h.type());
+            hr.addProperty("materialIndex", h.materialIndex());
+            hinges.add(hr);
         }
         obj.add("hingePositions", hinges);
 
-        JsonArray panels = new JsonArray();
-        for (PanelEntry p : panelPositions) {
+        obj.add("panelPositions", panelListToJson(panelPositions));
+
+        if (!boundaryPanels.isEmpty()) {
+            obj.add("boundaryPanels", panelListToJson(boundaryPanels));
+        }
+    }
+
+    private static JsonArray panelListToJson(List<PanelEntry> panels) {
+        JsonArray arr = new JsonArray();
+        for (PanelEntry p : panels) {
             JsonObject pe = new JsonObject();
             pe.addProperty("materialIndex", p.materialIndex());
             pe.add("closedPos", posToJson(p.closedPos()));
             pe.add("currentPos", posToJson(p.currentPos()));
-            panels.add(pe);
+            if (p.geometryId() != null) {
+                pe.addProperty("geometryId", p.geometryId());
+            }
+            if (p.overlay() != 0) {
+                pe.addProperty("overlay", p.overlay());
+            }
+            arr.add(pe);
         }
-        obj.add("panelPositions", panels);
+        return arr;
     }
 
     public static DoorAssembly fromJson(JsonObject obj) {
@@ -158,19 +228,43 @@ public class DoorAssembly {
         assembly.hingePositions.clear();
         JsonArray hinges = obj.getAsJsonArray("hingePositions");
         for (int i = 0; i < hinges.size(); i++) {
-            assembly.hingePositions.add(posFromJson(hinges.get(i).getAsJsonObject()));
+            JsonElement elem = hinges.get(i);
+            if (elem.isJsonObject() && elem.getAsJsonObject().has("pos")) {
+                // New format: HingeRecord with pos, type, materialIndex
+                JsonObject hr = elem.getAsJsonObject();
+                BlockPos3 pos = posFromJson(hr.getAsJsonObject("pos"));
+                String type = hr.has("type") ? hr.get("type").getAsString() : "hinge";
+                int materialIndex = hr.has("materialIndex") ? hr.get("materialIndex").getAsInt() : Constants.UNMATCHED_MATERIAL_INDEX;
+                assembly.hingePositions.add(new HingeRecord(pos, type, materialIndex));
+            } else {
+                // Old format: plain BlockPos3
+                BlockPos3 pos = posFromJson(elem.getAsJsonObject());
+                assembly.hingePositions.add(new HingeRecord(pos, "hinge", Constants.UNMATCHED_MATERIAL_INDEX));
+            }
         }
 
         JsonArray panels = obj.getAsJsonArray("panelPositions");
         for (int i = 0; i < panels.size(); i++) {
-            JsonObject pe = panels.get(i).getAsJsonObject();
-            int matIdx = pe.get("materialIndex").getAsInt();
-            BlockPos3 closedPos = posFromJson(pe.getAsJsonObject("closedPos"));
-            BlockPos3 currentPos = posFromJson(pe.getAsJsonObject("currentPos"));
-            assembly.panelPositions.add(new PanelEntry(matIdx, closedPos, currentPos));
+            assembly.panelPositions.add(panelEntryFromJson(panels.get(i).getAsJsonObject()));
+        }
+
+        if (obj.has("boundaryPanels")) {
+            JsonArray bp = obj.getAsJsonArray("boundaryPanels");
+            for (int i = 0; i < bp.size(); i++) {
+                assembly.boundaryPanels.add(panelEntryFromJson(bp.get(i).getAsJsonObject()));
+            }
         }
 
         return assembly;
+    }
+
+    private static PanelEntry panelEntryFromJson(JsonObject pe) {
+        int matIdx = pe.get("materialIndex").getAsInt();
+        BlockPos3 closedPos = posFromJson(pe.getAsJsonObject("closedPos"));
+        BlockPos3 currentPos = posFromJson(pe.getAsJsonObject("currentPos"));
+        Integer geometryId = pe.has("geometryId") ? pe.get("geometryId").getAsInt() : null;
+        int overlay = pe.has("overlay") ? pe.get("overlay").getAsInt() : 0;
+        return new PanelEntry(matIdx, closedPos, currentPos, geometryId, overlay);
     }
 
     // --- Helpers ---

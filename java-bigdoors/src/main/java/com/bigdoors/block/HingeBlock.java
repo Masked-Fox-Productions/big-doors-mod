@@ -142,7 +142,7 @@ public class HingeBlock extends Block {
 
     private static void detectDoubleDoor(Level level, DoorManager manager,
                                           DoorAssembly assembly, BlockPos3 bp) {
-        for (Map.Entry<String, BlockPos3> entry : Constants.DIR_OFFSETS.entrySet()) {
+        for (Map.Entry<String, BlockPos3> entry : Constants.HORIZONTAL_DIR_OFFSETS.entrySet()) {
             String dir = entry.getKey();
             BlockPos3 offset = entry.getValue();
             BlockPos neighborPos = new BlockPos(bp.x() + offset.x(), bp.y() + offset.y(), bp.z() + offset.z());
@@ -189,7 +189,9 @@ public class HingeBlock extends Block {
 
     private static void tryConvertNeighbors(Level level, DoorManager manager,
                                              DoorAssembly assembly, BlockPos pos) {
-        for (Map.Entry<String, BlockPos3> entry : Constants.DIR_OFFSETS.entrySet()) {
+        Map<String, BlockPos3> offsets = "vertical".equals(assembly.getMode())
+                ? Constants.DIR_OFFSETS : Constants.HORIZONTAL_DIR_OFFSETS;
+        for (Map.Entry<String, BlockPos3> entry : offsets.entrySet()) {
             String dir = entry.getKey();
             BlockPos3 offset = entry.getValue();
             BlockPos neighborPos = new BlockPos(

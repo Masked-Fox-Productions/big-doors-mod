@@ -36,8 +36,11 @@ public class DoorManager {
             DoorAssembly assembly = DoorAssembly.fromJson(data.get(i).getAsJsonObject());
             assemblies.put(assembly.getId(), assembly);
 
-            for (BlockPos3 hPos : assembly.getHingePositions()) {
+            for (BlockPos3 hPos : assembly.getHingeBlockPositions()) {
                 positionIndex.put(hPos.toKey(), assembly.getId());
+            }
+            for (DoorAssembly.PanelEntry bp : assembly.getBoundaryPanels()) {
+                positionIndex.put(bp.currentPos().toKey(), assembly.getId());
             }
             for (DoorAssembly.PanelEntry panel : assembly.getPanelPositions()) {
                 positionIndex.put(panel.currentPos().toKey(), assembly.getId());
@@ -131,11 +134,14 @@ public class DoorManager {
         DoorAssembly assembly = assemblies.get(assemblyId);
         if (assembly == null) return;
 
-        for (BlockPos3 hPos : assembly.getHingePositions()) {
+        for (BlockPos3 hPos : assembly.getHingeBlockPositions()) {
             positionIndex.remove(hPos.toKey());
         }
         for (DoorAssembly.PanelEntry panel : assembly.getPanelPositions()) {
             positionIndex.remove(panel.currentPos().toKey());
+        }
+        for (DoorAssembly.PanelEntry bp : assembly.getBoundaryPanels()) {
+            positionIndex.remove(bp.currentPos().toKey());
         }
 
         assemblies.remove(assemblyId);
