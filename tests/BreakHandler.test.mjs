@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { __reset } from "./stubs/minecraft-server.mjs";
 import { DoorManager } from "../bigdoors_bp/scripts/DoorManager.js";
 import { BreakHandler } from "../bigdoors_bp/scripts/handler/BreakHandler.js";
-import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, PANEL_BLOCK_ID } from "../bigdoors_bp/scripts/util/Constants.js";
+import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, WINCH_BLOCK_ID, HIDDEN_WINCH_BLOCK_ID, PANEL_BLOCK_ID } from "../bigdoors_bp/scripts/util/Constants.js";
 import { makeMockDimension, placeBlock } from "./helpers/mock-dimension.mjs";
 
 function makeSurvivalPlayer() {
@@ -315,6 +315,26 @@ describe("BreakHandler", () => {
       assert.ok(manager.getAssembly(a.id));
       assert.equal(a.partnerAssemblyId, b.id);
       assert.equal(b.partnerAssemblyId, a.id);
+    });
+
+    it("breaking winch drops bigdoors:winch", () => {
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "vertical", "winch");
+
+      const event = makeHingeBreakEvent({ x: 0, y: 0, z: 0 }, dim);
+      handler.handleHingeBreak(event);
+
+      assert.equal(spawnedItems.length, 1);
+      assert.equal(spawnedItems[0].typeId, WINCH_BLOCK_ID);
+    });
+
+    it("breaking hidden winch drops bigdoors:hidden_winch", () => {
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "vertical", "hidden_winch");
+
+      const event = makeHingeBreakEvent({ x: 0, y: 0, z: 0 }, dim);
+      handler.handleHingeBreak(event);
+
+      assert.equal(spawnedItems.length, 1);
+      assert.equal(spawnedItems[0].typeId, HIDDEN_WINCH_BLOCK_ID);
     });
   });
 });

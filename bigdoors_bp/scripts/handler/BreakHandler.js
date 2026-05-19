@@ -1,6 +1,6 @@
 import { BlockPermutation, ItemStack } from "@minecraft/server";
 import { typeIdForIndex, blockStatesToMaterial } from "../domain/MaterialRegistry.js";
-import { HINGE_BLOCK_ID, HIDDEN_HINGE_BLOCK_ID, UNMATCHED_MATERIAL_INDEX } from "../util/Constants.js";
+import { UNMATCHED_MATERIAL_INDEX, blockIdForHingeType } from "../util/Constants.js";
 
 export class BreakHandler {
   constructor(manager) {
@@ -24,7 +24,7 @@ export class BreakHandler {
       for (const hinge of assembly.hingePositions) {
         const hBlock = dimension.getBlock(hinge);
         if (hBlock) {
-          const blockId = hinge.type === "hidden" ? HIDDEN_HINGE_BLOCK_ID : HINGE_BLOCK_ID;
+          const blockId = blockIdForHingeType(hinge.type);
           hBlock.setPermutation(
             BlockPermutation.resolve(blockId, {
               "bigdoors:facing": assembly.facing,
@@ -57,7 +57,7 @@ export class BreakHandler {
     const hingeEntry = assembly.hingePositions.find(
       (h) => h.x === hingePos.x && h.y === hingePos.y && h.z === hingePos.z
     );
-    const dropId = hingeEntry?.type === "hidden" ? HIDDEN_HINGE_BLOCK_ID : HINGE_BLOCK_ID;
+    const dropId = blockIdForHingeType(hingeEntry?.type);
 
     const result = this._manager.removeHingeFromAssembly(assembly.id, hingePos);
 

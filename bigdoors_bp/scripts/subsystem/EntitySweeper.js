@@ -1,6 +1,58 @@
 import { computeArcPositions } from "../domain/RotationMath.js";
 import { posKey } from "../util/posKey.js";
 
+export function sweepLinear(dimension, destinations, shiftAxis, shiftSign) {
+  if (destinations.length === 0) return;
+
+  let minX = Infinity, minY = Infinity, minZ = Infinity;
+  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  for (const p of destinations) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+    if (p.z < minZ) minZ = p.z;
+    if (p.z > maxZ) maxZ = p.z;
+  }
+
+  const center = {
+    x: (minX + maxX) / 2,
+    y: (minY + maxY) / 2 + 0.5,
+    z: (minZ + maxZ) / 2,
+  };
+  const maxDist = Math.max(maxX - minX, maxY - minY, maxZ - minZ) / 2 + 2;
+
+  const destSet = new Set(destinations.map((p) => posKey(p)));
+
+  let entities;
+  try {
+    entities = dimension.getEntities({ location: center, maxDistance: maxDist });
+  } catch {
+    return;
+  }
+
+  for (const entity of entities) {
+    if (!entity.location) continue;
+    const eKey = posKey({
+      x: Math.floor(entity.location.x),
+      y: Math.floor(entity.location.y),
+      z: Math.floor(entity.location.z),
+    });
+    if (!destSet.has(eKey)) continue;
+
+    const pushVec = { x: 0, y: 0, z: 0 };
+    pushVec[shiftAxis] = shiftSign * 1.5;
+
+    try {
+      entity.teleport({
+        x: entity.location.x + pushVec.x,
+        y: entity.location.y + pushVec.y,
+        z: entity.location.z + pushVec.z,
+      });
+    } catch { /* Entity may have been removed */ }
+  }
+}
+
 /**
  * Sweep entities out of the path of a rotating door.
  *
