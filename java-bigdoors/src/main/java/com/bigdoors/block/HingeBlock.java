@@ -259,6 +259,12 @@ public class HingeBlock extends Block {
         } finally {
             manager.endConversion(neighborPos);
         }
+
+        if ("hidden".equals(assembly.getHingeType())) {
+            manager.setHingeMaterialIndex(assembly.getId(), matIdx);
+            HiddenHingeBlock.updateHingeBlockStates(level, assembly, matIdx);
+        }
+
         return true;
     }
 

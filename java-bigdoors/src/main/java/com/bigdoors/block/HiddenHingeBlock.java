@@ -47,4 +47,15 @@ public class HiddenHingeBlock extends HingeBlock {
                     .setValue(MATERIAL_ID, MaterialRegistry.materialIdForIndex(flatIndex))
                     .setValue(MATCHED, true);
     }
+
+    public static void updateHingeBlockStates(Level level, DoorAssembly assembly, int materialIndex) {
+        for (BlockPos3 hingePos : assembly.getHingeBlockPositions()) {
+            BlockPos mcPos = new BlockPos(hingePos.x(), hingePos.y(), hingePos.z());
+            BlockState currentState = level.getBlockState(mcPos);
+            if (currentState.getBlock() instanceof HiddenHingeBlock) {
+                BlockState newState = applyMaterial(currentState, materialIndex);
+                level.setBlockAndUpdate(mcPos, newState);
+            }
+        }
+    }
 }
