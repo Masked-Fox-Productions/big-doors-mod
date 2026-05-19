@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "bottom": "minecraft:block/iron_bars",
+    "top": "minecraft:block/iron_bars",
+    "side": "minecraft:block/iron_bars"
+  }
+}

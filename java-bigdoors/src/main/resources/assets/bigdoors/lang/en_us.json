@@ -1,4 +1,9 @@
 {
-  "block.bigdoors.hinge": "Door Hinge",
-  "block.bigdoors.door_panel": "Door Panel"
+  "block.bigdoors.hinge": "Hinge",
+  "block.bigdoors.door_panel": "Door Panel",
+  "block.bigdoors.door_panel_fence": "Door Panel (Fence)",
+  "block.bigdoors.door_panel_bars": "Door Panel (Bars)",
+  "block.bigdoors.door_panel_pane": "Door Panel (Pane)",
+  "block.bigdoors.door_panel_slab": "Door Panel (Slab)",
+  "block.bigdoors.hidden_hinge": "Hidden Hinge"
 }
