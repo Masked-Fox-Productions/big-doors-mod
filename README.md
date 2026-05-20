@@ -78,6 +78,10 @@ If one direction is blocked, the door tries the other. If both are blocked, it d
 - **Horizontal** (placed on a wall) — swings like a normal door
 - **Vertical** (placed on floor/ceiling) — swings like a trapdoor or drawbridge
 
+## Migration Notice
+
+Rope, rope ladder, and whip functionality has moved to the separate [Ropes and Ladders](https://github.com/Masked-Fox-Productions/ropes-and-ladders) mod. If you are updating Big Doors from a version that included ropes, you must install the Ropes and Ladders mod to keep your existing rope builds working.
+
 ## Installation
 
 ### Bedrock Edition

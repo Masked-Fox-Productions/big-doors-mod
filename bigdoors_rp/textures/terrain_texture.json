@@ -377,21 +377,6 @@
     "waxed_oxidized_cut_copper_slab": {
       "textures": "textures/blocks/oxidized_cut_copper"
     },
-    "ropes_rope_segment": {
-      "textures": "textures/blocks/rope_segment"
-    },
-    "ropes_rope_coil": {
-      "textures": "textures/blocks/rope_coil"
-    },
-    "ropes_rope_ladder_segment": {
-      "textures": "textures/blocks/rope_ladder_segment"
-    },
-    "ropes_rope_ladder_coil": {
-      "textures": "textures/blocks/rope_ladder_coil"
-    },
-    "ropes_whip_handle": {
-      "textures": "textures/blocks/whip_handle"
-    },
     "bigdoors_winch_front": {
       "textures": "textures/blocks/winch_front"
     },

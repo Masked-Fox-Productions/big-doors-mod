@@ -80,14 +80,6 @@ Tracks feature parity between Bedrock and Java implementations.
 | Exotic panel blockstates + models | N/A (JSON defs) | Yes | Fence, bars, pane, slab variants |
 | Hidden hinge blockstates + models | N/A (JSON defs) | Yes | Matched + unmatched states |
 
-## Deferred Features
-
-| Feature | Bedrock | Java | Notes |
-|---|---|---|---|
-| Ropes | Yes | No | Separate plan: docs/plans/2026-05-18-002-feat-ropes-rope-ladders-whips-plan.md |
-| Rope ladders | Yes | No | Separate plan |
-| Whips | Yes | No | Separate plan |
-
 ## Platform Differences (Acceptable)
 
 | Difference | Bedrock | Java | Rationale |
