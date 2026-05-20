@@ -186,7 +186,7 @@ describe("BreakHandler", () => {
       assert.equal(spawnedItems[0].typeId, HINGE_BLOCK_ID);
     });
 
-    it("closes open door before dissolving assembly", () => {
+    it("dissolves open door in-place at current positions", () => {
       const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
       manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 11);
 
@@ -199,13 +199,28 @@ describe("BreakHandler", () => {
       const event = makeHingeBreakEvent({ x: 0, y: 0, z: 0 }, dim);
       handler.handleHingeBreak(event);
 
-      // Open position should be cleared to air
+      // Open position should have vanilla block (dissolved in-place)
       const openBlock = dim.getBlock({ x: 0, y: 0, z: -1 });
-      assert.equal(openBlock.typeId, "minecraft:air");
+      assert.equal(openBlock.typeId, "minecraft:stone");
 
-      // Closed position should have vanilla block
+      // Closed position should remain air (not snapped back)
       const closedBlock = dim.getBlock({ x: 1, y: 0, z: 0 });
-      assert.equal(closedBlock.typeId, "minecraft:stone");
+      assert.equal(closedBlock.typeId, "minecraft:air");
+
+      assert.equal(manager.getAssembly(assembly.id), null);
+    });
+
+    it("dissolves closed door at closed positions", () => {
+      const assembly = manager.createAssembly({ x: 0, y: 0, z: 0 }, "north", "horizontal");
+      manager.addPanelToAssembly(assembly.id, { x: 1, y: 0, z: 0 }, 11);
+
+      placeBlock(dim, PANEL_BLOCK_ID, { x: 1, y: 0, z: 0 }, { "bigdoors:material": 11 });
+
+      const event = makeHingeBreakEvent({ x: 0, y: 0, z: 0 }, dim);
+      handler.handleHingeBreak(event);
+
+      const block = dim.getBlock({ x: 1, y: 0, z: 0 });
+      assert.equal(block.typeId, "minecraft:stone");
 
       assert.equal(manager.getAssembly(assembly.id), null);
     });

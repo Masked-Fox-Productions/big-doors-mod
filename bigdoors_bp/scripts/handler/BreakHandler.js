@@ -73,18 +73,10 @@ export class BreakHandler {
 
 
   _dissolveAssembly(assembly, dimension) {
-    if (assembly.isOpen) {
-      for (const panel of assembly.panelPositions) {
-        const b = dimension.getBlock(panel.currentPos);
-        if (b) b.setType("minecraft:air");
-      }
-    }
-
     for (const panel of assembly.panelPositions) {
-      const targetPos = panel.closedPos;
       const vanillaTypeId = typeIdForIndex(panel.materialIndex);
       if (vanillaTypeId) {
-        const b = dimension.getBlock(targetPos);
+        const b = dimension.getBlock(panel.currentPos);
         if (b) b.setType(vanillaTypeId);
       }
     }
@@ -92,11 +84,9 @@ export class BreakHandler {
     for (const panel of assembly.boundaryPanels) {
       const vanillaTypeId = typeIdForIndex(panel.materialIndex);
       if (vanillaTypeId) {
-        const b = dimension.getBlock(panel.closedPos);
+        const b = dimension.getBlock(panel.currentPos);
         if (b) b.setType(vanillaTypeId);
       }
     }
-
-    this._manager.dissolveAssembly(assembly.id);
   }
 }
