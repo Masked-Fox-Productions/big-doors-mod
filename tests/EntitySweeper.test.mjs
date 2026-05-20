@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { __reset } from "./stubs/minecraft-server.mjs";
+import { __reset, __setSystem } from "./stubs/minecraft-server.mjs";
 import { sweep, sweepLinear } from "../bigdoors_bp/scripts/subsystem/EntitySweeper.js";
 
 function makeEntity(x, y, z) {
@@ -24,6 +24,17 @@ function makeEntity(x, y, z) {
       this._damage = { amount, options };
     },
   };
+}
+
+function makePlayer(x, y, z) {
+  const player = makeEntity(x, y, z);
+  player.id = "-1";
+  player.typeId = "minecraft:player";
+  player._cleared = false;
+  player.clearVelocity = function clearVelocity() {
+    this._cleared = true;
+  };
+  return player;
 }
 
 function makeDimension(entities, blockMap = {}) {
@@ -144,6 +155,19 @@ describe("EntitySweeper — rotating door physics", () => {
     );
   });
 
+  it("crush resolution preserves panel-motion impulse direction", () => {
+    const entity = makeEntity(0, 0, 1);
+    const blockMap = { "0,0,2": "minecraft:stone" };
+    const dimension = makeDimension([entity], blockMap);
+
+    sweep(dimension, [{ x: 0, y: 0, z: 1 }], [{ x: 1, y: 0, z: 0 }], { x: 0, y: 0, z: 0 });
+
+    assert.ok(entity._teleported);
+    assert.ok(entity._impulse);
+    assert.ok(entity._impulse.x < 0, "Impulse should follow panel motion toward negative X");
+    assert.ok(entity._impulse.z > 0, "Impulse should follow panel motion toward positive Z");
+  });
+
   it("handles entity removal gracefully during sweep", () => {
     const entity = {
       id: "fragile",
@@ -168,6 +192,51 @@ describe("EntitySweeper — rotating door physics", () => {
     sweep(dimension, [{ x: 0, y: 0, z: 1 }], [{ x: 1, y: 0, z: 0 }], { x: 0, y: 0, z: 0 });
 
     assert.ok(entity._knockback, "Should fall back to knockback");
+  });
+
+  it("vertical catapult affects entity standing on horizontal source panel", () => {
+    const entity = makeEntity(0.5, 1, 4.5);
+    const dimension = makeDimension([entity]);
+
+    sweep(
+      dimension,
+      [{ x: 0, y: 4, z: 0 }],
+      [{ x: 0, y: 0, z: 4 }],
+      { x: 0, y: 0, z: 0 },
+      "cw",
+      "vertical",
+      "north"
+    );
+
+    assert.ok(entity._teleported, "Entity standing on source panel should be teleported");
+    assert.ok(entity._impulse, "Entity standing on source panel should receive impulse");
+    assert.ok(entity._impulse.y > 0, "Impulse should launch upward");
+  });
+
+  it("player motion uses delayed knockback plus horizontal carry impulse", () => {
+    const scheduled = [];
+    __setSystem({
+      runTimeout(fn, ticks) {
+        scheduled.push({ fn, ticks });
+        return scheduled.length;
+      },
+    });
+    const player = makePlayer(0, 0, 1);
+    const dimension = makeDimension([player]);
+
+    sweep(dimension, [{ x: 0, y: 0, z: 1 }], [{ x: 1, y: 0, z: 0 }], { x: 0, y: 0, z: 0 });
+
+    assert.equal(scheduled.length, 2);
+    assert.equal(player._knockback, null);
+
+    scheduled.sort((a, b) => a.ticks - b.ticks);
+    scheduled[0].fn();
+    scheduled[1].fn();
+
+    assert.ok(player._cleared, "Player velocity should be cleared before knockback");
+    assert.ok(player._knockback, "Player should receive knockback");
+    assert.ok(player._impulse, "Player should receive a follow-up horizontal carry impulse");
+    assert.equal(player._impulse.y, 0);
   });
 });
 
@@ -228,5 +297,18 @@ describe("EntitySweeper — linear door physics", () => {
 
     assert.ok(entityAtTop._teleported, "Entity at top of destination range should be detected");
     assert.equal(entityFarAway._teleported, null, "Entity far away should not be affected");
+  });
+
+  it("matches entity in the middle of a multi-block winch travel path", () => {
+    const entity = makeEntity(0, 3, 0);
+    const dimension = makeDimension([entity]);
+    const sources = [{ x: 0, y: 1, z: 0 }];
+    const destinations = [{ x: 0, y: 5, z: 0 }];
+
+    sweepLinear(dimension, destinations, sources, "y", 1);
+
+    assert.ok(entity._teleported, "Entity in intermediate path should be teleported");
+    assert.ok(entity._impulse, "Entity in intermediate path should receive impulse");
+    assert.ok(entity._impulse.y > 0, "Impulse should follow winch motion");
   });
 });

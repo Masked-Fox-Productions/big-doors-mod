@@ -28,9 +28,12 @@ export function computeDisplacements(
   const results = [];
 
   for (const entity of entities) {
-    const eKey = `${entity.blockPos.x},${entity.blockPos.y},${entity.blockPos.z}`;
+    const entityKeys = [
+      `${entity.blockPos.x},${entity.blockPos.y},${entity.blockPos.z}`,
+      `${entity.blockPos.x},${entity.blockPos.y - 1},${entity.blockPos.z}`,
+    ];
 
-    const panelIndex = matchPanel(eKey, sweptPositionsByPanel, destinations, entity.blockPos);
+    const panelIndex = matchPanel(entityKeys, sweptPositionsByPanel, destinations, entity.blockPos);
     if (panelIndex === -1) continue;
 
     const source = sources[panelIndex];
@@ -38,32 +41,42 @@ export function computeDisplacements(
     const distance = euclidean(source, dest);
 
     let outward;
+    let teleportTarget;
+    let impulseSource = source;
+    let impulseDest = dest;
     if (mode === "linear") {
       outward = { x: 0, y: 0, z: 0 };
       outward[shiftAxis] = shiftSign;
+      teleportTarget = computeLinearEscapeTarget(dest, destinations, shiftAxis, shiftSign);
+      const travel = maxLinearTravel(sources, destinations, shiftAxis);
+      impulseSource = { x: 0, y: 0, z: 0 };
+      impulseDest = {
+        x: outward.x * travel,
+        y: outward.y * travel,
+        z: outward.z * travel,
+      };
     } else {
       outward = computeRotatingOutward(dest, hingePos, facing, rotationMode);
+      teleportTarget = {
+        x: dest.x + outward.x,
+        y: dest.y + outward.y,
+        z: dest.z + outward.z,
+      };
     }
-
-    const teleportTarget = {
-      x: dest.x + outward.x,
-      y: dest.y + outward.y,
-      z: dest.z + outward.z,
-    };
 
     const damage = Math.max(0, Math.floor(distance - DOOR_DAMAGE_THRESHOLD));
 
-    const moveDelta = {
-      x: teleportTarget.x - entity.originalPos.x,
-      y: teleportTarget.y - entity.originalPos.y,
-      z: teleportTarget.z - entity.originalPos.z,
+    const motionDelta = {
+      x: impulseDest.x - impulseSource.x,
+      y: impulseDest.y - impulseSource.y,
+      z: impulseDest.z - impulseSource.z,
     };
-    const moveLen = Math.sqrt(moveDelta.x ** 2 + moveDelta.y ** 2 + moveDelta.z ** 2) || 1;
+    const motionLen = Math.sqrt(motionDelta.x ** 2 + motionDelta.y ** 2 + motionDelta.z ** 2) || 1;
     const impulseMag = Math.min(MAX_IMPULSE, BASE_IMPULSE + distance * IMPULSE_SCALE);
     const impulseVector = {
-      x: (moveDelta.x / moveLen) * impulseMag,
-      y: (moveDelta.y / moveLen) * impulseMag,
-      z: (moveDelta.z / moveLen) * impulseMag,
+      x: (motionDelta.x / motionLen) * impulseMag,
+      y: (motionDelta.y / motionLen) * impulseMag,
+      z: (motionDelta.z / motionLen) * impulseMag,
     };
 
     results.push({
@@ -78,10 +91,10 @@ export function computeDisplacements(
   return results;
 }
 
-function matchPanel(eKey, sweptPositionsByPanel, destinations, entityBlockPos) {
+function matchPanel(entityKeys, sweptPositionsByPanel, destinations, entityBlockPos) {
   const matches = [];
   for (let i = 0; i < sweptPositionsByPanel.length; i++) {
-    if (sweptPositionsByPanel[i].has(eKey)) {
+    if (entityKeys.some((key) => sweptPositionsByPanel[i].has(key))) {
       matches.push(i);
     }
   }
@@ -99,6 +112,25 @@ function matchPanel(eKey, sweptPositionsByPanel, destinations, entityBlockPos) {
     }
   }
   return bestIdx;
+}
+
+function computeLinearEscapeTarget(dest, destinations, axis, sign) {
+  let edge = dest[axis];
+  for (const d of destinations) {
+    edge = sign > 0 ? Math.max(edge, d[axis]) : Math.min(edge, d[axis]);
+  }
+
+  const target = { ...dest };
+  target[axis] = edge + sign;
+  return target;
+}
+
+function maxLinearTravel(sources, destinations, axis) {
+  let max = 0;
+  for (let i = 0; i < sources.length; i++) {
+    max = Math.max(max, Math.abs((destinations[i]?.[axis] ?? sources[i][axis]) - sources[i][axis]));
+  }
+  return max;
 }
 
 function computeRotatingOutward(dest, hingePos, facing, rotationMode) {

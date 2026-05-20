@@ -201,6 +201,40 @@ describe("computeDisplacements — vertical-mode catapult", () => {
     assert.ok(r.impulseVector.y > 0, "should have upward impulse component");
     assert.ok(r.damage > 0, "large door should deal damage");
   });
+
+  it("vertical door closing upward, entity standing on source panel matches panel beneath feet", () => {
+    const hinge = { x: 0, y: 0, z: 0 };
+    const sources = [{ x: 0, y: 0, z: 4 }];
+    const dests = [{ x: 0, y: 4, z: 0 }];
+    const swept = [new Set([posKey(sources[0]), posKey(dests[0])])];
+    const entities = [entity(0.5, 1, 4.5)];
+
+    const results = computeDisplacements(
+      entities, sources, dests, swept, hinge, "rotating", "north", "", 1, "vertical"
+    );
+
+    assert.equal(results.length, 1);
+    assert.ok(results[0].teleportTarget.y > 4, "should teleport above the raised panel");
+    assert.ok(results[0].impulseVector.y > 0, "should launch upward");
+  });
+
+  it("impulse follows panel travel direction, not escape target direction", () => {
+    const hinge = { x: 0, y: 0, z: 0 };
+    const sources = [{ x: 4, y: 0, z: 0 }];
+    const dests = [{ x: 0, y: 4, z: 0 }];
+    const swept = [new Set([posKey(sources[0])])];
+    const entities = [entity(4.5, 1, 0.5)];
+
+    const results = computeDisplacements(
+      entities, sources, dests, swept, hinge, "rotating", "west", "", 1, "vertical"
+    );
+
+    assert.equal(results.length, 1);
+    assert.ok(results[0].teleportTarget.x < 0, "escape target can be outward/left of destination");
+    assert.ok(results[0].impulseVector.x < 0, "panel moved toward negative X");
+    assert.ok(results[0].impulseVector.y > 0, "panel moved upward");
+    assert.equal(Math.abs(results[0].impulseVector.z) < 0.0001, true, "panel did not move in Z");
+  });
 });
 
 describe("computeDisplacements — linear/winch door", () => {
@@ -228,5 +262,35 @@ describe("computeDisplacements — linear/winch door", () => {
     assert.equal(results.length, 1);
     const r = results[0];
     assert.ok(r.teleportTarget.y > dests[0].y, "should teleport beyond destination in shift dir");
+  });
+
+  it("linear multi-panel door escapes beyond the leading edge of the whole door", () => {
+    const hinge = { x: 0, y: 0, z: 0 };
+    const sources = [
+      { x: 0, y: 0, z: 1 },
+      { x: 0, y: 0, z: 2 },
+      { x: 0, y: 0, z: 3 },
+    ];
+    const dests = [
+      { x: 0, y: 0, z: -1 },
+      { x: 0, y: 0, z: -2 },
+      { x: 0, y: 0, z: -3 },
+    ];
+    const swept = [
+      new Set([posKey({ x: 0, y: 0, z: -1 })]),
+      new Set([posKey({ x: 0, y: 0, z: -1 })]),
+      new Set([posKey({ x: 0, y: 0, z: -1 })]),
+    ];
+    const entities = [entity(0.5, 0, -0.5)];
+
+    const results = computeDisplacements(
+      entities, sources, dests, swept, hinge, "linear", "", "z", -1
+    );
+
+    assert.equal(results.length, 1);
+    assert.equal(results[0].teleportTarget.z, -4);
+    assert.equal(results[0].impulseVector.x, 0);
+    assert.equal(results[0].impulseVector.y, 0);
+    assert.ok(results[0].impulseVector.z < 0, "impulse should follow winch motion");
   });
 });
