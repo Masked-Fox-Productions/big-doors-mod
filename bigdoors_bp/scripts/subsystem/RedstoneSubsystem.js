@@ -215,7 +215,7 @@ export class RedstoneSubsystem {
 
     const shiftAxis = axisForDoorSide(assembly.doorSide);
     const shiftSign = Math.sign(destinations[0][shiftAxis] - panelPositions[0][shiftAxis]);
-    sweepLinear(dimension, destinations, shiftAxis, shiftSign);
+    sweepLinear(dimension, destinations, panelPositions, shiftAxis, shiftSign);
 
     const tuples = assembly.panelPositions.map((panel, i) => {
       const geoClass = geometryClassForMaterial(panel.materialIndex);
@@ -302,7 +302,7 @@ export class RedstoneSubsystem {
 
     const shiftAxis = axisForDoorSide(assembly.doorSide);
     const shiftSign = Math.sign(destinations[0][shiftAxis] - panelPositions[0][shiftAxis]);
-    sweepLinear(dimension, destinations, shiftAxis, shiftSign);
+    sweepLinear(dimension, destinations, panelPositions, shiftAxis, shiftSign);
 
     const tuples = assembly.panelPositions.map((panel, i) => {
       const geoClass = geometryClassForMaterial(panel.materialIndex);
@@ -399,7 +399,7 @@ export class RedstoneSubsystem {
       }
     }
 
-    sweep(dimension, newPositions, panelPositions, hingePos);
+    sweep(dimension, newPositions, panelPositions, hingePos, direction, assembly.mode, assembly.facing);
 
     const tuples = assembly.panelPositions.map((panel, i) => ({
       source: panelPositions[i],
@@ -461,6 +461,15 @@ export class RedstoneSubsystem {
         }
         b.setType("minecraft:air");
       }
+    }
+
+    if (isWinchType(assembly.hingeType)) {
+      const shiftAxis = axisForDoorSide(assembly.doorSide);
+      const shiftSign = Math.sign(closedPositions[0][shiftAxis] - currentPositions[0][shiftAxis]);
+      sweepLinear(dimension, closedPositions, currentPositions, shiftAxis, shiftSign);
+    } else {
+      const closeDir = assembly.openDirection === "cw" ? "ccw" : "cw";
+      sweep(dimension, closedPositions, currentPositions, assembly.primaryHingePos, closeDir, assembly.mode, assembly.facing);
     }
 
     const tuples = assembly.panelPositions.map((panel, i) => ({

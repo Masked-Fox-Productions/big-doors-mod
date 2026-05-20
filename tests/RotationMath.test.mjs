@@ -181,4 +181,41 @@ describe("computeArcPositions", () => {
     assert.equal(arc.length, 1);
     assert.deepEqual(arc[0], { x: 5, y: 0, z: 5 });
   });
+
+  it("CCW direction samples correct arc midpoint (mirrored from CW)", () => {
+    const hinge = { x: 0, y: 0, z: 0 };
+    const pos = { x: 4, y: 0, z: 0 };
+    const cwArc = computeArcPositions(pos, hinge, "cw");
+    const ccwArc = computeArcPositions(pos, hinge, "ccw");
+    assert.equal(cwArc[0].x, ccwArc[0].x, "X should be same (symmetric)");
+    assert.equal(cwArc[0].z, -ccwArc[0].z, "Z should be mirrored");
+  });
+
+  it("vertical-mode north-facing: arc midpoint in Y/Z plane", () => {
+    const hinge = { x: 0, y: 0, z: 0 };
+    const pos = { x: 0, y: 4, z: 0 };
+    const arc = computeArcPositions(pos, hinge, "cw", "vertical", "north");
+    assert.equal(arc[0].x, 0, "X unchanged for north-facing vertical");
+    assert.ok(Number.isInteger(arc[0].y));
+    assert.ok(Number.isInteger(arc[0].z));
+    assert.ok(arc[0].y !== pos.y || arc[0].z !== pos.z, "should differ from source");
+  });
+
+  it("vertical-mode east-facing: arc midpoint in Y/X plane", () => {
+    const hinge = { x: 0, y: 0, z: 0 };
+    const pos = { x: 0, y: 4, z: 0 };
+    const arc = computeArcPositions(pos, hinge, "cw", "vertical", "east");
+    assert.equal(arc[0].z, 0, "Z unchanged for east-facing vertical");
+    assert.ok(Number.isInteger(arc[0].x));
+    assert.ok(Number.isInteger(arc[0].y));
+  });
+
+  it("vertical-mode CCW is mirrored from CW", () => {
+    const hinge = { x: 0, y: 0, z: 0 };
+    const pos = { x: 0, y: 4, z: 0 };
+    const cwArc = computeArcPositions(pos, hinge, "cw", "vertical", "north");
+    const ccwArc = computeArcPositions(pos, hinge, "ccw", "vertical", "north");
+    assert.equal(cwArc[0].y, ccwArc[0].y, "Y should be same");
+    assert.equal(cwArc[0].z, -ccwArc[0].z, "Z should be mirrored");
+  });
 });
