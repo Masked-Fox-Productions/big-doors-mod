@@ -1,7 +1,7 @@
 ---
 title: "refactor: Extract ropes-and-ladders into a standalone repo"
 type: refactor
-status: active
+status: completed
 date: 2026-05-19
 origin: docs/brainstorms/2026-05-17-ropes-and-whips-requirements.md
 ---
