@@ -39,6 +39,12 @@ export const DOOR_CLOSE_SOUND = "random.door_close";
 export const REDSTONE_DEBOUNCE_TICKS = 4;
 export const REDSTONE_SOURCE_POLL_TICKS = 4;
 
+// Entity physics — impulse and damage tuning
+export const IMPULSE_SCALE = 0.5;
+export const BASE_IMPULSE = 0.2;
+export const MAX_IMPULSE = 3.0;
+export const DOOR_DAMAGE_THRESHOLD = 3;
+
 // Direction helpers — cardinal direction labels used by assemblies
 export const DIRECTIONS = {
   NORTH: "north",

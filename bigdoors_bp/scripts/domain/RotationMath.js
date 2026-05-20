@@ -110,18 +110,39 @@ export function getRotateFn(mode, facing, direction) {
  * for entity sweep purposes. Returns an array of {x,y,z} positions the
  * panel passes through during the 90-degree sweep.
  *
- * For horizontal mode, we sample at 45 degrees (midpoint of the arc).
+ * @param {{x:number,y:number,z:number}} pos - panel position
+ * @param {{x:number,y:number,z:number}} hingePos - hinge center
+ * @param {'cw'|'ccw'} [direction='cw'] - rotation direction
+ * @param {string} [mode='horizontal'] - 'horizontal' or 'vertical'
+ * @param {string} [facing=''] - hinge facing for vertical mode
  */
-export function computeArcPositions(pos, hingePos) {
-  const dx = pos.x - hingePos.x;
-  const dz = pos.z - hingePos.z;
-
-  // 45-degree rotation: cos(45°) = sin(45°) ≈ 0.7071
+export function computeArcPositions(pos, hingePos, direction = "cw", mode = "horizontal", facing = "") {
   const cos45 = Math.SQRT1_2;
   const sin45 = Math.SQRT1_2;
+  const sign = direction === "ccw" ? -1 : 1;
 
-  const midX = Math.round(hingePos.x + dx * cos45 - dz * sin45);
-  const midZ = Math.round(hingePos.z + dx * sin45 + dz * cos45);
+  if (mode === "vertical") {
+    if (facing === "north" || facing === "south") {
+      const dz = pos.z - hingePos.z;
+      const dy = pos.y - hingePos.y;
+      return [{
+        x: pos.x,
+        y: Math.round(hingePos.y + dy * cos45 - sign * dz * sin45),
+        z: Math.round(hingePos.z + sign * dy * sin45 + dz * cos45),
+      }];
+    }
+    const dx = pos.x - hingePos.x;
+    const dy = pos.y - hingePos.y;
+    return [{
+      x: Math.round(hingePos.x + dx * cos45 + sign * dy * sin45),
+      y: Math.round(hingePos.y - sign * dx * sin45 + dy * cos45),
+      z: pos.z,
+    }];
+  }
 
+  const dx = pos.x - hingePos.x;
+  const dz = pos.z - hingePos.z;
+  const midX = Math.round(hingePos.x + dx * cos45 - sign * dz * sin45);
+  const midZ = Math.round(hingePos.z + sign * dx * sin45 + dz * cos45);
   return [{ x: midX, y: pos.y, z: midZ }];
 }
