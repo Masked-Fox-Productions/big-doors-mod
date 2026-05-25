@@ -243,17 +243,56 @@ describe("EntitySweeper — rotating door physics", () => {
 describe("EntitySweeper — linear door physics", () => {
   beforeEach(() => __reset());
 
-  it("pushes entity at destination along shift axis with impulse", () => {
-    const entity = makeEntity(0, 1, 0);
+  it("pushes entity the door moves into along shift axis with impulse", () => {
+    const entity = makeEntity(0, 2, 0);
     const dimension = makeDimension([entity]);
     const sources = [{ x: 0, y: 0, z: 0 }];
-    const destinations = [{ x: 0, y: 1, z: 0 }];
+    const destinations = [{ x: 0, y: 2, z: 0 }];
 
     sweepLinear(dimension, destinations, sources, "y", 1);
 
     assert.ok(entity._teleported, "Entity should be teleported");
     assert.ok(entity._impulse, "Entity should receive impulse");
     assert.ok(entity._impulse.y > 0, "Impulse should be in +Y direction");
+  });
+
+  it("does not knock back an entity already resting on the door as it opens", () => {
+    // Lowered portcullis (4 panels) standing on the ground; player on top of it.
+    const entity = makeEntity(0, 4, 0);
+    const dimension = makeDimension([entity]);
+    const sources = [
+      { x: 0, y: 0, z: 0 }, { x: 0, y: 1, z: 0 },
+      { x: 0, y: 2, z: 0 }, { x: 0, y: 3, z: 0 },
+    ];
+    const destinations = [
+      { x: 0, y: 4, z: 0 }, { x: 0, y: 5, z: 0 },
+      { x: 0, y: 6, z: 0 }, { x: 0, y: 7, z: 0 },
+    ];
+
+    sweepLinear(dimension, destinations, sources, "y", 1);
+
+    assert.equal(entity._teleported, null, "Door opens out from under the entity");
+    assert.equal(entity._impulse, null, "Entity already collided before the trigger");
+  });
+
+  it("knocks back an entity the door closes into", () => {
+    // Raised portcullis (4 panels) closing back down onto a player on the floor.
+    const entity = makeEntity(0, 0, 0);
+    const dimension = makeDimension([entity]);
+    const sources = [
+      { x: 0, y: 4, z: 0 }, { x: 0, y: 5, z: 0 },
+      { x: 0, y: 6, z: 0 }, { x: 0, y: 7, z: 0 },
+    ];
+    const destinations = [
+      { x: 0, y: 0, z: 0 }, { x: 0, y: 1, z: 0 },
+      { x: 0, y: 2, z: 0 }, { x: 0, y: 3, z: 0 },
+    ];
+
+    sweepLinear(dimension, destinations, sources, "y", -1);
+
+    assert.ok(entity._teleported, "Closing door collides with the entity after the trigger");
+    assert.ok(entity._impulse, "Entity should receive impulse");
+    assert.ok(entity._impulse.y < 0, "Impulse should follow the closing motion");
   });
 
   it("does not push entity outside destination positions", () => {
@@ -286,16 +325,16 @@ describe("EntitySweeper — linear door physics", () => {
   });
 
   it("portcullis destinations spanning multiple Y levels", () => {
-    const entityAtTop = makeEntity(0, 7, 0);
-    const entityFarAway = makeEntity(10, 7, 10);
-    const dimension = makeDimension([entityAtTop, entityFarAway]);
+    const entityInPath = makeEntity(0, 8, 0);
+    const entityFarAway = makeEntity(10, 8, 10);
+    const dimension = makeDimension([entityInPath, entityFarAway]);
 
     const sources = [{ x: 0, y: 4, z: 0 }, { x: 0, y: 5, z: 0 }, { x: 0, y: 6, z: 0 }];
-    const destinations = [{ x: 0, y: 5, z: 0 }, { x: 0, y: 6, z: 0 }, { x: 0, y: 7, z: 0 }];
+    const destinations = [{ x: 0, y: 6, z: 0 }, { x: 0, y: 7, z: 0 }, { x: 0, y: 8, z: 0 }];
 
     sweepLinear(dimension, destinations, sources, "y", 1);
 
-    assert.ok(entityAtTop._teleported, "Entity at top of destination range should be detected");
+    assert.ok(entityInPath._teleported, "Entity in the door's upward path should be detected");
     assert.equal(entityFarAway._teleported, null, "Entity far away should not be affected");
   });
 

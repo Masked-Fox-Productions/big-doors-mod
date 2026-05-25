@@ -27,11 +27,23 @@ export function computeDisplacements(
 ) {
   const results = [];
 
+  // Winch doors only knock back entities the panels collide with *after* the
+  // trigger. An entity already touching a panel's source position when the door
+  // is activated (e.g. standing on a lowered portcullis as it opens upward) was
+  // collided with before the trigger, so the door moves out from under it
+  // instead of knocking it back. Closing back into those blocks counts as an
+  // after-trigger collision, so the entity is no longer at a source position.
+  const sourceKeys = mode === "linear"
+    ? new Set(sources.map((s) => `${s.x},${s.y},${s.z}`))
+    : null;
+
   for (const entity of entities) {
     const entityKeys = [
       `${entity.blockPos.x},${entity.blockPos.y},${entity.blockPos.z}`,
       `${entity.blockPos.x},${entity.blockPos.y - 1},${entity.blockPos.z}`,
     ];
+
+    if (sourceKeys && entityKeys.some((key) => sourceKeys.has(key))) continue;
 
     const panelIndex = matchPanel(entityKeys, sweptPositionsByPanel, destinations, entity.blockPos);
     if (panelIndex === -1) continue;

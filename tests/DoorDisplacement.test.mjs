@@ -253,7 +253,8 @@ describe("computeDisplacements — linear/winch door", () => {
       { x: 0, y: 5, z: 0 },
     ];
     const swept = makeSweptSets(sources, dests);
-    const entities = [entity(0, 3, 0)];
+    // Entity in the door's path above the source columns (collided after trigger).
+    const entities = [entity(0, 4, 0)];
 
     const results = computeDisplacements(
       entities, sources, dests, swept, hinge, "linear", "", "y", 1
@@ -262,6 +263,46 @@ describe("computeDisplacements — linear/winch door", () => {
     assert.equal(results.length, 1);
     const r = results[0];
     assert.ok(r.teleportTarget.y > dests[0].y, "should teleport beyond destination in shift dir");
+  });
+
+  it("entity already at a panel source is not knocked (collision before trigger)", () => {
+    const hinge = { x: 0, y: 0, z: 0 };
+    const sources = [
+      { x: 0, y: 0, z: 0 },
+      { x: 0, y: 1, z: 0 },
+      { x: 0, y: 2, z: 0 },
+    ];
+    const dests = [
+      { x: 0, y: 3, z: 0 },
+      { x: 0, y: 4, z: 0 },
+      { x: 0, y: 5, z: 0 },
+    ];
+    const swept = makeSweptSets(sources, dests);
+    // Standing on top of the lowered door (block beneath feet is a source).
+    const entities = [entity(0, 3, 0)];
+
+    const results = computeDisplacements(
+      entities, sources, dests, swept, hinge, "linear", "", "y", 1
+    );
+
+    assert.equal(results.length, 0, "door opens out from under the entity, no knockback");
+  });
+
+  it("entity standing inside the door footprint as it closes is knocked (collision after trigger)", () => {
+    const hinge = { x: 0, y: 0, z: 0 };
+    // Door closing downward: sources are the raised (open) positions.
+    const sources = [{ x: 0, y: 5, z: 0 }];
+    const dests = [{ x: 0, y: 0, z: 0 }];
+    const swept = [new Set([posKey({ x: 0, y: 0, z: 0 })])];
+    // Standing on the floor where the door will land.
+    const entities = [entity(0, 0, 0)];
+
+    const results = computeDisplacements(
+      entities, sources, dests, swept, hinge, "linear", "", "y", -1
+    );
+
+    assert.equal(results.length, 1, "closing door collides with the entity after the trigger");
+    assert.ok(results[0].impulseVector.y < 0, "knocked along the closing motion");
   });
 
   it("linear multi-panel door escapes beyond the leading edge of the whole door", () => {
